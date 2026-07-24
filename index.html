@@ -139,6 +139,110 @@
   #cropCancelBtn { background: #6c757d; }
   #cropConfirmBtn { background: #1d7a4c; }
 
+  #detailModal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.65);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    overflow-y: auto;
+  }
+  #detailModal.open { display: flex; }
+  #detailModalInner {
+    position: relative;
+    background: white;
+    border-radius: 14px;
+    padding: 20px;
+    max-width: 340px;
+    width: 92%;
+    text-align: center;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+    margin: auto;
+  }
+  #detailCloseBtn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: none;
+    background: #eef1f4;
+    color: #2c3e50;
+    font-size: 18px;
+    cursor: pointer;
+    line-height: 1;
+  }
+  #detailArtFrame {
+    background: #f4f6f8;
+    border: 2px solid #b8860b;
+    border-radius: 8px;
+    margin: 0 auto 12px auto;
+    width: 200px;
+    aspect-ratio: 5 / 7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  #detailArtFrame img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  #detailHeaderRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #2c3e50;
+    color: white;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 10px;
+  }
+  #detailHeaderRow #detailName { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
+  .detail-owned-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 15px;
+    color: #2c3e50;
+    margin-bottom: 12px;
+    cursor: pointer;
+  }
+  .detail-owned-row input { width: 20px; height: 20px; cursor: pointer; }
+  #detailValueRow { justify-content: center; margin-bottom: 14px; gap: 6px; }
+  #detailValueRow .euro { font-weight: 700; font-size: 16px; }
+  #detailValueInput { width: 70px; font-size: 16px; padding: 6px 8px; border: 1px solid #b8860b; border-radius: 6px; text-align: right; }
+  #detailValueRow .stepper .step-btn { width: 24px; height: 18px; font-size: 12px; border: 1px solid #b8860b; background: #fff4d6; color: #5a3d00; cursor: pointer; }
+  #detailValueRow .stepper .step-btn:first-child { border-radius: 5px 5px 0 0; border-bottom: none; }
+  #detailValueRow .stepper .step-btn:last-child { border-radius: 0 0 5px 5px; }
+  #detailImgActions { display: flex; gap: 8px; justify-content: center; margin-bottom: 6px; flex-wrap: wrap; }
+  #detailImgActions button {
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: none;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    color: white;
+  }
+  #detailUploadBtn { background: #457b9d; }
+  #detailResetImgBtn { background: #e63946; }
+  .detail-label { display: block; text-align: left; font-size: 13px; color: #555; margin: 10px 0 4px 0; font-weight: 600; }
+  #detailNotitie {
+    width: 100%;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    resize: vertical;
+    box-sizing: border-box;
+  }
+
   #settingsPanel {
     display: none;
     max-width: 520px;
@@ -433,6 +537,40 @@
     </div>
   </div>
 </div>
+
+<div id="detailModal">
+  <div id="detailModalInner">
+    <button type="button" id="detailCloseBtn">&times;</button>
+    <div id="detailArtFrame">
+      <img id="detailImg" src="" alt="">
+    </div>
+    <div id="detailHeaderRow">
+      <span id="detailName"></span>
+      <span id="detailNum"></span>
+    </div>
+    <label class="detail-owned-row">
+      <input type="checkbox" id="detailOwnedCheck"> In bezit
+    </label>
+    <div id="detailValueRow" class="value-row">
+      <span class="stepper euro-stepper">
+        <button type="button" class="step-btn" data-delta="1">▲</button>
+        <button type="button" class="step-btn" data-delta="-1">▼</button>
+      </span>
+      <span class="euro">&euro;</span><input type="text" inputmode="decimal" id="detailValueInput" placeholder="0,00">
+      <span class="stepper cent-stepper">
+        <button type="button" class="step-btn" data-delta="0.01">▲</button>
+        <button type="button" class="step-btn" data-delta="-0.01">▼</button>
+      </span>
+    </div>
+    <div id="detailImgActions">
+      <button type="button" id="detailUploadBtn">📷 Foto wijzigen</button>
+      <button type="button" id="detailResetImgBtn">Standaardafbeelding</button>
+    </div>
+    <p class="crop-hint">Tip: plak een gekopieerde afbeelding met Ctrl+V / Cmd+V terwijl dit venster open staat.</p>
+    <label for="detailNotitie" class="detail-label">Notitie</label>
+    <textarea id="detailNotitie" rows="3" placeholder="Bijv. conditie, aankoopdatum, opmerkingen..."></textarea>
+  </div>
+</div>
 <div id="status">Nog niet verbonden met Supabase. Klik op "⚙️ Supabase-instellingen" om te starten.</div>
 
 <div class="grid active" id="grid"></div>
@@ -716,11 +854,6 @@
       resetImage(id);
     });
     frame.appendChild(resetBtn);
-
-    card.addEventListener('click', () => {
-      if (!card.classList.contains('is-owned')) return;
-      setActiveCard(card, id);
-    });
   }
 
   function setActiveCard(card, id) {
@@ -728,6 +861,86 @@
     document.querySelectorAll('.card').forEach(c => c.classList.remove('active-for-paste'));
     card.classList.add('active-for-paste');
   }
+
+  // ---------- Detail modal: tap a card to open a large view with extra fields ----------
+  const detailModal = document.getElementById('detailModal');
+  const detailImg = document.getElementById('detailImg');
+  const detailName = document.getElementById('detailName');
+  const detailNum = document.getElementById('detailNum');
+  const detailOwnedCheck = document.getElementById('detailOwnedCheck');
+  const detailValueInput = document.getElementById('detailValueInput');
+  const detailNotitie = document.getElementById('detailNotitie');
+  let currentDetailId = null;
+
+  function refreshDetailModal() {
+    const rec = getRec(currentDetailId);
+    if (!rec) return;
+    const num = String(rec.nummer || '');
+    detailImg.src = rec.afbeelding || defaultArtUrl(num);
+    detailImg.onerror = () => { detailImg.onerror = null; detailImg.src = defaultSpriteUrl(num); };
+    detailName.textContent = rec.naam || '(onbekend)';
+    detailNum.textContent = '#' + num.padStart(4, '0');
+    detailOwnedCheck.checked = !!rec.inbezit;
+    detailValueInput.value = formatValue(rec.waarde);
+    detailNotitie.value = rec.notitie || '';
+  }
+
+  function openDetailModal(id) {
+    currentDetailId = id;
+    activeCardNum = id; // so pasting an image while the modal is open targets this record
+    refreshDetailModal();
+    detailModal.classList.add('open');
+  }
+  function closeDetailModal() {
+    detailModal.classList.remove('open');
+    currentDetailId = null;
+  }
+
+  document.getElementById('detailCloseBtn').addEventListener('click', closeDetailModal);
+  detailModal.addEventListener('click', (e) => {
+    if (e.target === detailModal) closeDetailModal();
+  });
+
+  grid.addEventListener('click', (e) => {
+    if (e.target.closest('input, button, label, .stepper')) return;
+    const card = e.target.closest('.card');
+    if (!card) return;
+    openDetailModal(card.dataset.id);
+  });
+
+  detailOwnedCheck.addEventListener('change', async (e) => {
+    await setOwned(currentDetailId, e.target.checked);
+  });
+  detailValueInput.addEventListener('change', async (e) => {
+    await setValue(currentDetailId, e.target.value);
+    detailValueInput.value = formatValue(getRec(currentDetailId).waarde);
+  });
+  detailValueInput.addEventListener('focus', (e) => e.target.select());
+  document.getElementById('detailValueRow').addEventListener('click', async (e) => {
+    const btn = e.target.closest('.step-btn');
+    if (!btn || !currentDetailId) return;
+    await stepValue(currentDetailId, parseFloat(btn.dataset.delta));
+    detailValueInput.value = formatValue(getRec(currentDetailId).waarde);
+  });
+  document.getElementById('detailUploadBtn').addEventListener('click', () => {
+    pendingImgTarget = currentDetailId;
+    globalImgFileInput.click();
+  });
+  document.getElementById('detailResetImgBtn').addEventListener('click', async () => {
+    await resetImage(currentDetailId);
+    refreshDetailModal();
+  });
+  let notitieTimer = null;
+  detailNotitie.addEventListener('input', () => {
+    clearTimeout(notitieTimer);
+    const id = currentDetailId;
+    notitieTimer = setTimeout(async () => {
+      const rec = getRec(id);
+      if (!rec) return;
+      rec.notitie = detailNotitie.value;
+      await patchRecord(id, { notitie: detailNotitie.value });
+    }, 600);
+  });
 
   function getRec(id) { return records.find(r => String(r.id) === String(id)); }
 
@@ -834,6 +1047,7 @@
     renderGrid();
     reorderGrid();
     applyFilter();
+    if (currentDetailId === id) refreshDetailModal();
     await patchRecord(id, { afbeelding: url });
   }
 
