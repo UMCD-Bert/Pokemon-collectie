@@ -110,19 +110,21 @@
     page-break-inside: avoid; break-inside: avoid;
   }
   .placeholder-mark { font-size: 11mm; font-weight: 900; color: #9a9a9a; }
-  .owned-toggle { position: absolute; top: 1mm; right: 1mm; z-index: 2; cursor: pointer; }
+  .owned-toggle { display: inline-flex; align-items: center; cursor: pointer; flex-shrink: 0; }
   .owned-toggle input { position: absolute; opacity: 0; width: 4.6mm; height: 4.6mm; margin: 0; cursor: pointer; }
-  .owned-toggle .box { display: block; width: 4.6mm; height: 4.6mm; background: white; border: 0.5mm solid #2c3e50; border-radius: 0.8mm; }
-  .owned-toggle input:checked + .box { background: #2c3e50; }
+  .owned-toggle .box { display: block; width: 4.6mm; height: 4.6mm; background: white; border: 0.5mm solid white; border-radius: 0.8mm; flex-shrink: 0; }
+  .owned-toggle input:checked + .box { background: #2c3e50; border-color: #2c3e50; }
   .owned-toggle input:checked + .box::after {
     content: ""; display: block; width: 1.5mm; height: 2.7mm; border: solid #ffe066;
     border-width: 0 0.55mm 0.55mm 0; transform: rotate(45deg); margin: 0.3mm auto 0 auto;
   }
   .card-header {
-    display: flex; justify-content: space-between; align-items: center;
+    display: flex; align-items: center; gap: 0.8mm;
     background: #2c3e50; color: white; border-radius: 1.2mm; padding: 0.8mm 1.2mm;
-    padding-right: 4.2mm; font-size: 2.3mm; font-weight: 700;
+    font-size: 2.3mm; font-weight: 700;
   }
+  .card-header .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .card-header .num { flex-shrink: 0; }
   .art-frame {
     position: relative; flex: 1; background: #f4f6f8; border: 1.2px solid #b8860b;
     border-radius: 1.2mm; margin: 1.2mm 0; display: flex; align-items: center; justify-content: center; overflow: hidden;
@@ -132,7 +134,16 @@
   .card-footer .value-row { display: none; align-items: center; justify-content: center; gap: 0.8mm; }
   .card.is-owned .card-footer .value-row { display: flex; }
   .value-row .euro { font-weight: 700; font-size: 2.6mm; }
-  .value-row input.value-input { width: 11mm; font-size: 2.6mm; border: 0.3mm solid #b8860b; border-radius: 0.6mm; padding: 0.3mm; text-align: right; }
+  .value-row input.value-input { width: 15mm; font-size: 2.6mm; border: 0.3mm solid #b8860b; border-radius: 0.6mm; padding: 0.3mm 0.5mm; text-align: right; }
+  .stepper { display: flex; flex-direction: column; }
+  .stepper .step-btn {
+    width: 3mm; height: 2.3mm; padding: 0; font-size: 1.6mm; line-height: 1;
+    border: 0.3mm solid #b8860b; background: #fff4d6; color: #5a3d00; cursor: pointer;
+  }
+  .stepper .step-btn:first-child { border-radius: 0.6mm 0.6mm 0 0; border-bottom: none; }
+  .stepper .step-btn:last-child { border-radius: 0 0 0.6mm 0.6mm; }
+  .stepper .step-btn:active { background: #ffe6a1; }
+  @media print { .stepper { display: none !important; } }
   .img-edit-btn {
     display: none; position: absolute; bottom: 0.5mm; right: 0.5mm; z-index: 3;
     width: 4mm; height: 4mm; border-radius: 50%; background: rgba(44,62,80,0.85); color: white;
@@ -234,7 +245,8 @@
   .check-row .row-name { flex: 1; }
   .check-row input[type="checkbox"] { width: 15px; height: 15px; flex-shrink: 0; cursor: pointer; }
   .check-row .row-value { display: flex; align-items: center; gap: 3px; flex-shrink: 0; }
-  .check-row input.value-input { width: 46px; font-size: 12px; border: 1px solid #ccc; border-radius: 4px; padding: 2px 4px; text-align: right; }
+  .check-row input.value-input { width: 62px; font-size: 13px; border: 1px solid #ccc; border-radius: 4px; padding: 3px 5px; text-align: right; }
+  .check-row .stepper .step-btn { width: 16px; height: 12px; font-size: 9px; border: 1px solid #ccc; background: #f4f6f8; color: #444; }
 
   @media print {
     body { background: white; padding: 0; }
@@ -423,6 +435,11 @@
     return n.toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
+  function formatValue(v) {
+    if (v === '' || v === null || v === undefined || isNaN(parseFloat(v))) return '';
+    return parseFloat(v).toFixed(2);
+  }
+
   const DEFAULT_CONFIG = {
     url: 'https://dckojtvyxqsgvcfgufpf.supabase.co',
     table: 'pokemon',
@@ -560,18 +577,26 @@
       : `<div class="placeholder-mark">?</div>`;
     return `
       <div class="card ${owned ? 'is-owned' : ''}" data-id="${rec.id}" data-name="${naam.toLowerCase()}" data-num="${num}">
-        <label class="owned-toggle">
-          <input type="checkbox" class="owned-check" ${owned ? 'checked' : ''}>
-          <span class="box"></span>
-        </label>
         <div class="card-header">
           <span class="name">${naam}</span>
           <span class="num">#${num.padStart(4, '0')}</span>
+          <label class="owned-toggle">
+            <input type="checkbox" class="owned-check" ${owned ? 'checked' : ''}>
+            <span class="box"></span>
+          </label>
         </div>
         <div class="art-frame">${artBlock}</div>
         <div class="card-footer">
           <span class="value-row">
-            <span class="euro">&euro;</span><input type="number" class="value-input" min="0" step="0.01" value="${value}" placeholder="0,00">
+            <span class="stepper euro-stepper">
+              <button type="button" class="step-btn" data-delta="1">▲</button>
+              <button type="button" class="step-btn" data-delta="-1">▼</button>
+            </span>
+            <span class="euro">&euro;</span><input type="text" inputmode="decimal" class="value-input" value="${formatValue(value)}" placeholder="0,00">
+            <span class="stepper cent-stepper">
+              <button type="button" class="step-btn" data-delta="0.01">▲</button>
+              <button type="button" class="step-btn" data-delta="-0.01">▼</button>
+            </span>
           </span>
         </div>
       </div>`;
@@ -583,6 +608,7 @@
       const id = card.dataset.id;
       card.querySelector('.owned-check').addEventListener('change', (e) => setOwned(id, e.target.checked));
       card.querySelector('.value-input').addEventListener('change', (e) => setValue(id, e.target.value));
+      card.querySelector('.value-input').addEventListener('focus', (e) => e.target.select());
       setupImageControls(card, id);
     });
   }
@@ -645,16 +671,38 @@
     await patchRecord(id, { inbezit: checked });
   }
 
+  function stepValue(id, delta) {
+    const rec = getRec(id);
+    if (!rec) return;
+    const current = parseFloat(rec.waarde) || 0;
+    const next = Math.max(0, Math.round((current + delta) * 100) / 100);
+    setValue(id, next.toFixed(2));
+  }
+
+  function handleStepperClick(e) {
+    const btn = e.target.closest('.step-btn');
+    if (!btn) return;
+    const container = btn.closest('[data-id]');
+    if (!container) return;
+    const delta = parseFloat(btn.dataset.delta);
+    stepValue(container.dataset.id, delta);
+  }
+  grid.addEventListener('click', handleStepperClick);
+  checklistTable.addEventListener('click', handleStepperClick);
+
   async function setValue(id, val) {
     const rec = getRec(id);
     if (!rec) return;
-    const num = val === '' ? null : parseFloat(val);
-    rec.waarde = num;
-    document.querySelectorAll(`.card[data-id="${id}"] .value-input`).forEach(i => i.value = val);
+    const normalized = String(val).trim().replace(',', '.');
+    const num = normalized === '' ? null : parseFloat(normalized);
+    const validNum = (num === null || isNaN(num)) ? null : num;
+    rec.waarde = validNum;
+    const displayVal = formatValue(validNum);
+    document.querySelectorAll(`.card[data-id="${id}"] .value-input`).forEach(i => i.value = displayVal);
     const row = checklistTable.querySelector(`.check-row[data-id="${id}"] .value-input`);
-    if (row) row.value = val;
+    if (row) row.value = displayVal;
     updateProgress();
-    await patchRecord(id, { waarde: num });
+    await patchRecord(id, { waarde: validNum });
   }
 
   const globalImgFileInput = document.getElementById('globalImgFileInput');
@@ -784,13 +832,24 @@
           <input type="checkbox" ${owned ? 'checked' : ''}>
           <span class="row-num">#${num.padStart(4,'0')}</span>
           <span class="row-name">${naam}</span>
-          <span class="row-value">&euro;<input type="number" class="value-input" min="0" step="0.01" value="${value}" placeholder="0,00"></span>
+          <span class="row-value">
+            <span class="stepper euro-stepper">
+              <button type="button" class="step-btn" data-delta="1">▲</button>
+              <button type="button" class="step-btn" data-delta="-1">▼</button>
+            </span>
+            &euro;<input type="text" inputmode="decimal" class="value-input" value="${formatValue(value)}" placeholder="0,00">
+            <span class="stepper cent-stepper">
+              <button type="button" class="step-btn" data-delta="0.01">▲</button>
+              <button type="button" class="step-btn" data-delta="-0.01">▼</button>
+            </span>
+          </span>
         </div>`;
     }).join('');
     checklistTable.querySelectorAll('.check-row').forEach(row => {
       const id = row.dataset.id;
       row.querySelector('input[type="checkbox"]').addEventListener('change', (e) => setOwned(id, e.target.checked));
       row.querySelector('input.value-input').addEventListener('change', (e) => setValue(id, e.target.value));
+      row.querySelector('input.value-input').addEventListener('focus', (e) => e.target.select());
     });
   }
 
