@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<title>Pokemon Collectie (Supabase)</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    background: #eef1f4;
+    margin: 0;
+    padding: 20px;
+  }
+  h1 { text-align: center; color: #2c3e50; }
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .toolbar-actions { margin-bottom: 4px; }
+  .toolbar-sep { width: 1px; height: 24px; background: #ccc; display: inline-block; }
+  input#search, select#filterOwned, select#sortMode {
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 15px;
+  }
+  input#search { width: 240px; max-width: 90%; }
+  button {
+    padding: 10px 16px;
+    border-radius: 8px;
+    border: none;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    color: white;
+  }
+  #printBtn { background: #457b9d; }
+  #printMancoBtn { background: #6a4c93; }
+  #resetOwnedBtn { background: #6c757d; }
+  #viewToggleBtn { background: #2a9d8f; }
+  #settingsBtn {
+    background: #3ecf8e; position: fixed; top: 10px; right: 10px; z-index: 50;
+    width: 34px; height: 34px; padding: 0; border-radius: 50%; font-size: 15px;
+    display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+  }
+  @media print { #settingsBtn { display: none !important; } }
+  .print-filter-toggle {
+    display: flex; align-items: center; gap: 6px; font-size: 14px; color: #2c3e50;
+    background: #f1f3f5; border: 1px solid #ccc; border-radius: 8px; padding: 9px 14px; cursor: pointer;
+  }
+  .print-filter-toggle input { width: 16px; height: 16px; cursor: pointer; }
+
+  #progressDashboard { max-width: 260px; margin: 0 auto 10px auto; text-align: center; }
+  #gaugePct { font-size: 22px; font-weight: 800; fill: #2c3e50; }
+  #gaugeLabel { font-weight: 700; color: #2c3e50; margin-top: -6px; font-size: 14px; }
+  #valueLabel { font-weight: 700; color: #1d7a4c; margin-top: 2px; font-size: 15px; }
+  @media print { #progressDashboard { display: none; } }
+
+  #status, #countStatus, #imgHint { text-align: center; font-size: 13px; color: #666; margin-bottom: 6px; }
+  @media print { #status, #countStatus, #imgHint { display: none; } }
+
+  #settingsPanel {
+    display: none;
+    max-width: 520px;
+    margin: 0 auto 16px auto;
+    background: white;
+    border-radius: 10px;
+    padding: 16px 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  }
+  #settingsPanel.open { display: block; }
+  #settingsPanel label { display: block; font-size: 13px; color: #444; margin: 8px 0 3px 0; }
+  #settingsPanel input { width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px; }
+  #settingsPanel .settings-actions { margin-top: 12px; display: flex; gap: 8px; justify-content: flex-end; }
+  #settingsSaveBtn { background: #1d7a4c; }
+  #settingsCancelBtn { background: #6c757d; }
+  #settingsPanel p { font-size: 12px; color: #777; margin: 4px 0 0 0; }
+  @media print { #settingsPanel { display: none !important; } }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, 36mm); gap: 4mm; justify-content: center; max-width: 1400px; margin: 0 auto; }
+  .card {
+    position: relative; width: 36mm; height: 54mm;
+    background: linear-gradient(180deg, #ffe066 0%, #ffd23f 100%);
+    border: 2px solid #b8860b; border-radius: 2.5mm; padding: 1.7mm;
+    display: flex; flex-direction: column; box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    page-break-inside: avoid; break-inside: avoid;
+  }
+  .placeholder-mark { font-size: 11mm; font-weight: 900; color: #9a9a9a; }
+  .owned-toggle { position: absolute; top: 1mm; right: 1mm; z-index: 2; cursor: pointer; }
+  .owned-toggle input { position: absolute; opacity: 0; width: 4.6mm; height: 4.6mm; margin: 0; cursor: pointer; }
+  .owned-toggle .box { display: block; width: 4.6mm; height: 4.6mm; background: white; border: 0.5mm solid #2c3e50; border-radius: 0.8mm; }
+  .owned-toggle input:checked + .box { background: #2c3e50; }
+  .owned-toggle input:checked + .box::after {
+    content: ""; display: block; width: 1.5mm; height: 2.7mm; border: solid #ffe066;
+    border-width: 0 0.55mm 0.55mm 0; transform: rotate(45deg); margin: 0.3mm auto 0 auto;
+  }
+  .card-header {
+    display: flex; justify-content: space-between; align-items: center;
+    background: #2c3e50; color: white; border-radius: 1.2mm; padding: 0.8mm 1.2mm;
+    padding-right: 4.2mm; font-size: 2.3mm; font-weight: 700;
+  }
+  .art-frame {
+    position: relative; flex: 1; background: #f4f6f8; border: 1.2px solid #b8860b;
+    border-radius: 1.2mm; margin: 1.2mm 0; display: flex; align-items: center; justify-content: center; overflow: hidden;
+  }
+  .art-frame img { max-width: 90%; max-height: 90%; width: auto; height: auto; object-fit: contain; }
+  .card-footer { text-align: center; font-size: 1.6mm; color: #5a3d00; min-height: 4mm; }
+  .card-footer .value-row { display: none; align-items: center; justify-content: center; gap: 0.8mm; }
+  .card.is-owned .card-footer .value-row { display: flex; }
+  .value-row .euro { font-weight: 700; font-size: 2.6mm; }
+  .value-row input.value-input { width: 11mm; font-size: 2.6mm; border: 0.3mm solid #b8860b; border-radius: 0.6mm; padding: 0.3mm; text-align: right; }
+  .img-edit-btn {
+    display: none; position: absolute; bottom: 0.5mm; right: 0.5mm; z-index: 3;
+    width: 4mm; height: 4mm; border-radius: 50%; background: rgba(44,62,80,0.85); color: white;
+    align-items: center; justify-content: center; font-size: 2.2mm; cursor: pointer; line-height: 1;
+  }
+  .card.is-owned .img-edit-btn { display: flex; }
+  .img-reset-btn {
+    display: none; position: absolute; bottom: 0.5mm; left: 0.5mm; z-index: 3;
+    width: 4mm; height: 4mm; border-radius: 50%; background: rgba(230,57,70,0.85); color: white;
+    align-items: center; justify-content: center; font-size: 2.4mm; cursor: pointer; line-height: 1;
+  }
+  .card.has-custom-img .img-reset-btn { display: flex; }
+  .card.active-for-paste { outline: 2.5px dashed #1d7a4c; outline-offset: 1px; }
+  .card.hidden { display: none; }
+  @media print { .img-edit-btn, .img-reset-btn { display: none !important; } }
+
+  #checklistView {
+    display: none; max-width: 950px; margin: 0 auto; background: white; border-radius: 8px;
+    padding: 16px 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  }
+  #checklistView.active { display: block; }
+  .grid.active { display: grid; }
+  .grid:not(.active) { display: none; }
+  #checklistTable { column-count: 2; column-gap: 24px; }
+  .check-row { display: flex; align-items: center; gap: 6px; padding: 4px 0; break-inside: avoid; border-bottom: 1px solid #eee; font-size: 13px; }
+  .check-row.hidden { display: none; }
+  .check-row .row-num { color: #888; width: 42px; flex-shrink: 0; }
+  .check-row .row-name { flex: 1; }
+  .check-row input[type="checkbox"] { width: 15px; height: 15px; flex-shrink: 0; cursor: pointer; }
+  .check-row .row-value { display: flex; align-items: center; gap: 3px; flex-shrink: 0; }
+  .check-row input.value-input { width: 46px; font-size: 12px; border: 1px solid #ccc; border-radius: 4px; padding: 2px 4px; text-align: right; }
+
+  @media print {
+    body { background: white; padding: 0; }
+    h1, .toolbar, #status, #countStatus { display: none; }
+    .grid.active { grid-template-columns: repeat(5, 36mm); grid-auto-rows: 54mm; gap: 2mm; align-content: start; }
+    .card { box-shadow: none; }
+    #checklistView { box-shadow: none; padding: 0; max-width: 100%; }
+    #checklistTable { column-count: 3; column-gap: 16px; }
+    .check-row { font-size: 11px; }
+    @page { size: A4; margin: 5mm; }
+
+    body.manco-mode .check-row .row-value,
+    body.manco-mode .check-row .row-num { display: none; }
+    body.manco-mode #checklistTable {
+      display: grid; grid-auto-flow: column;
+      grid-template-columns: repeat(var(--manco-cols, 7), 1fr);
+      grid-template-rows: repeat(var(--manco-rows, 10), var(--manco-rowheight, 4mm));
+      column-gap: 6px; row-gap: 0; height: var(--manco-height, 287mm); align-content: start;
+    }
+    body.manco-mode .check-row {
+      font-size: var(--manco-font, 6.5px); padding: 0.3mm 0; border-bottom: none; gap: 3px;
+      line-height: 1.25; overflow: hidden; white-space: nowrap;
+    }
+    body.manco-mode .check-row input[type="checkbox"] {
+      width: var(--manco-checkbox, 3mm); height: var(--manco-checkbox, 3mm); accent-color: #2c3e50; flex-shrink: 0;
+    }
+  }
+</style>
+</head>
+<body>
+<h1>Pokemon collectie van Bert &amp; Ellen</h1>
+
+<button id="settingsBtn" title="Supabase-instellingen">⚙️</button>
+
+<div id="settingsPanel">
+  <label for="cfgUrl">Project URL</label>
+  <input type="text" id="cfgUrl" placeholder="https://xxxxxxxxxxxxx.supabase.co">
+  <label for="cfgTable">Tabelnaam</label>
+  <input type="text" id="cfgTable" placeholder="pokemon" value="pokemon">
+  <label for="cfgKey">Publishable key (sb_publishable_...)</label>
+  <input type="password" id="cfgKey" placeholder="sb_publishable_XXXXXXXXXXXXXX">
+  <p>Deze gegevens worden alleen lokaal in je browser bewaard en rechtstreeks vanuit jouw apparaat naar Supabase gestuurd — ze gaan niet via Claude.</p>
+  <div class="settings-actions">
+    <button id="settingsCancelBtn">Annuleren</button>
+    <button id="settingsSaveBtn">Opslaan &amp; laden</button>
+  </div>
+</div>
+
+<div class="toolbar toolbar-browse">
+  <input type="text" id="search" placeholder="Zoek op naam of nummer...">
+  <select id="filterOwned">
+    <option value="alle">Alle kaarten</option>
+    <option value="bezit">Alleen in bezit</option>
+    <option value="mis">Alleen ontbrekend</option>
+  </select>
+  <select id="sortMode">
+    <option value="nummer">Sorteer op nummer</option>
+    <option value="naam">Sorteer op naam</option>
+    <option value="waarde">Sorteer op waarde</option>
+  </select>
+  <button id="viewToggleBtn">Wissel naar checklist</button>
+</div>
+<div class="toolbar toolbar-actions">
+  <button id="printBtn">🖨️ Print</button>
+  <label class="print-filter-toggle">
+    <input type="checkbox" id="printOnlyVisible" checked>
+    Alleen huidige filter printen
+  </label>
+  <span class="toolbar-sep"></span>
+  <button id="printMancoBtn">📋 Mancolijst printen</button>
+  <span class="toolbar-sep"></span>
+  <button id="resetOwnedBtn">🗑️ Wis alle vinkjes</button>
+</div>
+
+<div id="progressDashboard">
+  <svg viewBox="0 0 200 115" width="220">
+    <path d="M 15 100 A 85 85 0 0 1 185 100" fill="none" stroke="#dfe4ea" stroke-width="16" stroke-linecap="round"/>
+    <path id="gaugeArc" d="M 15 100 A 85 85 0 0 1 185 100" fill="none" stroke="#3ecf8e" stroke-width="16" stroke-linecap="round" pathLength="100" stroke-dasharray="0 100"/>
+    <text id="gaugePct" x="100" y="90" text-anchor="middle">0%</text>
+  </svg>
+  <div id="gaugeLabel">Verzameld: 0 / 0</div>
+  <div id="valueLabel">Totale waarde verzameling: &euro; 0,00</div>
+</div>
+<div id="countStatus"></div>
+<div id="imgHint">Tip: klik op het camera-icoontje op een kaart die je in bezit hebt om een eigen foto te uploaden, of klik op de kaart en plak een gekopieerde afbeelding met Ctrl+V / Cmd+V.</div>
+<input type="file" id="globalImgFileInput" accept="image/*" style="display:none">
+<div id="status">Nog niet verbonden met Supabase. Klik op "⚙️ Supabase-instellingen" om te starten.</div>
+
+<div class="grid active" id="grid"></div>
+<div id="checklistView"><div id="checklistTable"></div></div>
+
+<script>
+  const search = document.getElementById('search');
+  const filterOwned = document.getElementById('filterOwned');
+  const sortMode = document.getElementById('sortMode');
+  const viewToggleBtn = document.getElementById('viewToggleBtn');
+  const grid = document.getElementById('grid');
+  const checklistView = document.getElementById('checklistView');
+  const checklistTable = document.getElementById('checklistTable');
+  const countStatus = document.getElementById('countStatus');
+  const statusEl = document.getElementById('status');
+  const gaugeLabel = document.getElementById('gaugeLabel');
+  const gaugePct = document.getElementById('gaugePct');
+  const gaugeArc = document.getElementById('gaugeArc');
+  const valueLabel = document.getElementById('valueLabel');
+
+  const CONFIG_KEY = 'supabase_pokemon_config_v1';
+  let config = null; // { url, table, key }
+  let records = []; // flat rows: { id, nummer, naam, afbeelding, inbezit, waarde, notitie }
+  let currentView = 'cards';
+  let activeCardNum = null;
+
+  function fmtEuro(n) {
+    return n.toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function loadConfig() {
+    try {
+      const raw = localStorage.getItem(CONFIG_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  }
+  function saveConfig(cfg) { localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg)); }
+
+  const settingsBtn = document.getElementById('settingsBtn');
+  const settingsPanel = document.getElementById('settingsPanel');
+  const cfgUrl = document.getElementById('cfgUrl');
+  const cfgTable = document.getElementById('cfgTable');
+  const cfgKey = document.getElementById('cfgKey');
+
+  settingsBtn.addEventListener('click', () => {
+    const existing = loadConfig();
+    if (existing) {
+      cfgUrl.value = existing.url || '';
+      cfgTable.value = existing.table || 'pokemon';
+      cfgKey.value = existing.key || '';
+    }
+    settingsPanel.classList.add('open');
+  });
+  document.getElementById('settingsCancelBtn').addEventListener('click', () => settingsPanel.classList.remove('open'));
+  document.getElementById('settingsSaveBtn').addEventListener('click', async () => {
+    const cfg = {
+      url: cfgUrl.value.trim().replace(/\/+$/, ''),
+      table: cfgTable.value.trim() || 'pokemon',
+      key: cfgKey.value.trim()
+    };
+    if (!cfg.url || !cfg.key) { alert('Vul zowel Project URL als Publishable key in.'); return; }
+    saveConfig(cfg);
+    config = cfg;
+    settingsPanel.classList.remove('open');
+    await loadAllRecords();
+  });
+
+  function restUrl(path) { return `${config.url}/rest/v1/${config.table}${path || ''}`; }
+  function authHeaders(extra) {
+    return Object.assign({ 'apikey': config.key, 'Authorization': `Bearer ${config.key}`, 'Content-Type': 'application/json' }, extra || {});
+  }
+
+  async function loadAllRecords() {
+    statusEl.style.display = 'block';
+    statusEl.textContent = 'Bezig met laden vanuit Supabase...';
+    records = [];
+    const pageSize = 1000;
+    let offset = 0;
+    try {
+      while (true) {
+        const url = restUrl(`?select=*&order=id.asc&limit=${pageSize}&offset=${offset}`);
+        const res = await fetch(url, { headers: authHeaders() });
+        if (!res.ok) {
+          const errBody = await res.text();
+          throw new Error(`Supabase gaf status ${res.status}. ${errBody}`);
+        }
+        const data = await res.json();
+        records = records.concat(data);
+        if (data.length < pageSize) break;
+        offset += pageSize;
+      }
+      statusEl.textContent = `${records.length} kaarten geladen vanuit Supabase.`;
+      setTimeout(() => { if (statusEl.textContent.includes('geladen')) statusEl.style.display = 'none'; }, 3000);
+      renderGrid();
+      if (currentView === 'checklist') renderChecklist();
+      applyFilter();
+      updateProgress();
+      backfillMissingImages();
+    } catch (err) {
+      statusEl.style.display = 'block';
+      statusEl.textContent = 'Kon niet laden: ' + err.message + ' — controleer Project URL, tabelnaam en key in de instellingen.';
+      console.error(err);
+    }
+  }
+
+  async function patchRecord(id, fields) {
+    try {
+      const res = await fetch(restUrl(`?id=eq.${id}`), {
+        method: 'PATCH',
+        headers: authHeaders({ 'Prefer': 'return=minimal' }),
+        body: JSON.stringify(fields)
+      });
+      if (!res.ok) {
+        const errBody = await res.text();
+        throw new Error(`Status ${res.status}: ${errBody}`);
+      }
+    } catch (err) {
+      alert('Opslaan naar Supabase mislukt: ' + err.message);
+      console.error(err);
+    }
+  }
+
+  async function backfillMissingImages() {
+    const todo = records.filter(r => {
+      const num = parseInt(r.nummer);
+      return !r.afbeelding && num && num < 1026;
+    });
+    if (todo.length === 0) return;
+    statusEl.style.display = 'block';
+    let done = 0;
+    for (const rec of todo) {
+      const url = defaultArtUrl(String(rec.nummer));
+      rec.afbeelding = url;
+      await patchRecord(rec.id, { afbeelding: url });
+      done++;
+      statusEl.textContent = `Standaardplaatjes aanvullen in Supabase: ${done}/${todo.length}...`;
+      await new Promise(res => setTimeout(res, 100));
+    }
+    statusEl.textContent = `Klaar — ${done} ontbrekende afbeeldingen aangevuld.`;
+    setTimeout(() => statusEl.style.display = 'none', 3000);
+  }
+
+  function defaultArtUrl(num) {
+    return `https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/other/official-artwork/${num}.png`;
+  }
+  function defaultSpriteUrl(num) {
+    return `https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/${num}.png`;
+  }
+
+  function cardHtml(rec) {
+    const num = String(rec.nummer || '');
+    const naam = rec.naam || '(onbekend)';
+    const owned = !!rec.inbezit;
+    const value = (rec.waarde !== undefined && rec.waarde !== null) ? rec.waarde : '';
+    const imgUrl = rec.afbeelding || defaultArtUrl(num);
+    const fallbackUrl = defaultSpriteUrl(num);
+    const artBlock = imgUrl
+      ? `<img src="${imgUrl}" alt="${naam}" onerror="this.onerror=null; this.src='${fallbackUrl}'; this.onerror=function(){this.replaceWith(Object.assign(document.createElement('div'),{className:'placeholder-mark',textContent:'?'}))};">`
+      : `<div class="placeholder-mark">?</div>`;
+    return `
+      <div class="card ${owned ? 'is-owned' : ''}" data-id="${rec.id}" data-name="${naam.toLowerCase()}" data-num="${num}">
+        <label class="owned-toggle">
+          <input type="checkbox" class="owned-check" ${owned ? 'checked' : ''}>
+          <span class="box"></span>
+        </label>
+        <div class="card-header">
+          <span class="name">${naam}</span>
+          <span class="num">#${num.padStart(4, '0')}</span>
+        </div>
+        <div class="art-frame">${artBlock}</div>
+        <div class="card-footer">
+          <span class="value-row">
+            <span class="euro">&euro;</span><input type="number" class="value-input" min="0" step="0.01" value="${value}" placeholder="0,00">
+          </span>
+        </div>
+      </div>`;
+  }
+
+  function renderGrid() {
+    grid.innerHTML = records.map(cardHtml).join('');
+    grid.querySelectorAll('.card').forEach(card => {
+      const id = card.dataset.id;
+      card.querySelector('.owned-check').addEventListener('change', (e) => setOwned(id, e.target.checked));
+      card.querySelector('.value-input').addEventListener('change', (e) => setValue(id, e.target.value));
+      setupImageControls(card, id);
+    });
+  }
+
+  function setupImageControls(card, id) {
+    const frame = card.querySelector('.art-frame');
+    const rec = getRec(id);
+    if (rec && rec.afbeelding && rec.afbeelding !== defaultArtUrl(String(rec.nummer))) {
+      card.classList.add('has-custom-img');
+    }
+
+    const editBtn = document.createElement('div');
+    editBtn.className = 'img-edit-btn';
+    editBtn.title = 'Upload eigen foto';
+    editBtn.textContent = '📷';
+    editBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      pendingImgTarget = id;
+      setActiveCard(card, id);
+      globalImgFileInput.click();
+    });
+    frame.appendChild(editBtn);
+
+    const resetBtn = document.createElement('div');
+    resetBtn.className = 'img-reset-btn';
+    resetBtn.title = 'Terug naar standaardafbeelding';
+    resetBtn.textContent = '\u00d7';
+    resetBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      resetImage(id);
+    });
+    frame.appendChild(resetBtn);
+
+    card.addEventListener('click', () => {
+      if (!card.classList.contains('is-owned')) return;
+      setActiveCard(card, id);
+    });
+  }
+
+  function setActiveCard(card, id) {
+    activeCardNum = id;
+    document.querySelectorAll('.card').forEach(c => c.classList.remove('active-for-paste'));
+    card.classList.add('active-for-paste');
+  }
+
+  function getRec(id) { return records.find(r => String(r.id) === String(id)); }
+
+  async function setOwned(id, checked) {
+    const rec = getRec(id);
+    if (!rec) return;
+    rec.inbezit = checked;
+    document.querySelectorAll(`.card[data-id="${id}"]`).forEach(c => {
+      c.classList.toggle('is-owned', checked);
+      c.querySelector('.owned-check').checked = checked;
+    });
+    const row = checklistTable.querySelector(`.check-row[data-id="${id}"] input[type="checkbox"]`);
+    if (row) row.checked = checked;
+    applyFilter();
+    updateProgress();
+    await patchRecord(id, { inbezit: checked });
+  }
+
+  async function setValue(id, val) {
+    const rec = getRec(id);
+    if (!rec) return;
+    const num = val === '' ? null : parseFloat(val);
+    rec.waarde = num;
+    document.querySelectorAll(`.card[data-id="${id}"] .value-input`).forEach(i => i.value = val);
+    const row = checklistTable.querySelector(`.check-row[data-id="${id}"] .value-input`);
+    if (row) row.value = val;
+    updateProgress();
+    await patchRecord(id, { waarde: num });
+  }
+
+  const globalImgFileInput = document.getElementById('globalImgFileInput');
+  let pendingImgTarget = null;
+  const STORAGE_BUCKET = 'afbeeldingen';
+
+  function resizeImageToBlob(fileOrBlob, maxDim, quality) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          let w = img.width, h = img.height;
+          if (w > h && w > maxDim) { h = Math.round(h * maxDim / w); w = maxDim; }
+          else if (h > maxDim) { w = Math.round(w * maxDim / h); h = maxDim; }
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          canvas.toBlob((blob) => resolve(blob), 'image/jpeg', quality);
+        };
+        img.onerror = reject;
+        img.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(fileOrBlob);
+    });
+  }
+
+  async function uploadImageForRecord(id, blob) {
+    const path = `pokemon/${id}.jpg`;
+    const uploadUrl = `${config.url}/storage/v1/object/${STORAGE_BUCKET}/${path}`;
+    const res = await fetch(uploadUrl, {
+      method: 'POST',
+      headers: {
+        'apikey': config.key,
+        'Authorization': `Bearer ${config.key}`,
+        'Content-Type': 'image/jpeg',
+        'x-upsert': 'true'
+      },
+      body: blob
+    });
+    if (!res.ok) {
+      const errBody = await res.text();
+      throw new Error(`Upload mislukt (status ${res.status}): ${errBody}`);
+    }
+    // cache-bust so the browser/CDN doesn't keep showing an old cached copy after an overwrite
+    return `${config.url}/storage/v1/object/public/${STORAGE_BUCKET}/${path}?t=${Date.now()}`;
+  }
+
+  async function setImageUrl(id, url) {
+    const rec = getRec(id);
+    if (!rec) return;
+    rec.afbeelding = url;
+    renderGrid();
+    reorderGrid();
+    applyFilter();
+    await patchRecord(id, { afbeelding: url });
+  }
+
+  async function resetImage(id) {
+    const rec = getRec(id);
+    if (!rec) return;
+    const url = defaultArtUrl(String(rec.nummer));
+    await setImageUrl(id, url);
+  }
+
+  globalImgFileInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file || !pendingImgTarget) return;
+    statusEl.style.display = 'block';
+    statusEl.textContent = 'Foto uploaden...';
+    try {
+      const blob = await resizeImageToBlob(file, 500, 0.85);
+      const url = await uploadImageForRecord(pendingImgTarget, blob);
+      await setImageUrl(pendingImgTarget, url);
+      statusEl.textContent = 'Foto geüpload en opgeslagen.';
+      setTimeout(() => statusEl.style.display = 'none', 2000);
+    } catch (err) {
+      alert('Kon deze foto niet uploaden: ' + err.message);
+      statusEl.style.display = 'none';
+    }
+    globalImgFileInput.value = '';
+  });
+
+  document.addEventListener('paste', async (e) => {
+    if (!activeCardNum) return;
+    const items = e.clipboardData && e.clipboardData.items;
+    if (!items) return;
+    for (const item of items) {
+      if (item.type.indexOf('image') !== -1) {
+        const blob = item.getAsFile();
+        statusEl.style.display = 'block';
+        statusEl.textContent = 'Geplakte afbeelding uploaden...';
+        try {
+          const resized = await resizeImageToBlob(blob, 500, 0.85);
+          const url = await uploadImageForRecord(activeCardNum, resized);
+          await setImageUrl(activeCardNum, url);
+          statusEl.textContent = 'Foto geüpload en opgeslagen.';
+          setTimeout(() => statusEl.style.display = 'none', 2000);
+        } catch (err) {
+          alert('Kon de geplakte afbeelding niet uploaden: ' + err.message);
+          statusEl.style.display = 'none';
+        }
+        break;
+      }
+    }
+  });
+
+  function sortedRecords() {
+    const mode = sortMode.value;
+    return [...records].sort((a, b) => {
+      if (mode === 'naam') return (a.naam || '').localeCompare(b.naam || '', 'nl');
+      if (mode === 'waarde') return (parseFloat(b.waarde) || 0) - (parseFloat(a.waarde) || 0);
+      return (parseInt(a.nummer) || 0) - (parseInt(b.nummer) || 0);
+    });
+  }
+
+  function renderChecklist() {
+    const sorted = sortedRecords();
+    checklistTable.innerHTML = sorted.map(rec => {
+      const num = String(rec.nummer || '');
+      const naam = rec.naam || '(onbekend)';
+      const owned = !!rec.inbezit;
+      const value = (rec.waarde !== undefined && rec.waarde !== null) ? rec.waarde : '';
+      return `
+        <div class="check-row" data-id="${rec.id}" data-name="${naam.toLowerCase()}" data-num="${num}">
+          <input type="checkbox" ${owned ? 'checked' : ''}>
+          <span class="row-num">#${num.padStart(4,'0')}</span>
+          <span class="row-name">${naam}</span>
+          <span class="row-value">&euro;<input type="number" class="value-input" min="0" step="0.01" value="${value}" placeholder="0,00"></span>
+        </div>`;
+    }).join('');
+    checklistTable.querySelectorAll('.check-row').forEach(row => {
+      const id = row.dataset.id;
+      row.querySelector('input[type="checkbox"]').addEventListener('change', (e) => setOwned(id, e.target.checked));
+      row.querySelector('input.value-input').addEventListener('change', (e) => setValue(id, e.target.value));
+    });
+  }
+
+  function reorderGrid() {
+    const mode = sortMode.value;
+    const cards = Array.from(document.querySelectorAll('.card'));
+    cards.sort((a, b) => {
+      if (mode === 'naam') return a.dataset.name.localeCompare(b.dataset.name, 'nl');
+      if (mode === 'waarde') {
+        const ra = getRec(a.dataset.id), rb = getRec(b.dataset.id);
+        return (parseFloat(rb.waarde) || 0) - (parseFloat(ra.waarde) || 0);
+      }
+      return (parseInt(a.dataset.num) || 0) - (parseInt(b.dataset.num) || 0);
+    });
+    cards.forEach(c => grid.appendChild(c));
+  }
+
+  function setView(view) {
+    currentView = view;
+    if (view === 'cards') {
+      grid.classList.add('active');
+      checklistView.classList.remove('active');
+      viewToggleBtn.textContent = 'Wissel naar checklist';
+    } else {
+      renderChecklist();
+      grid.classList.remove('active');
+      checklistView.classList.add('active');
+      viewToggleBtn.textContent = 'Wissel naar kaarten';
+    }
+    applyFilter();
+  }
+  viewToggleBtn.addEventListener('click', () => setView(currentView === 'cards' ? 'checklist' : 'cards'));
+  sortMode.addEventListener('change', () => { if (currentView === 'cards') reorderGrid(); else renderChecklist(); });
+
+  function updateProgress() {
+    const total = records.length;
+    const owned = records.filter(r => r.inbezit).length;
+    const pct = total > 0 ? Math.round((owned / total) * 100) : 0;
+    gaugeLabel.textContent = `Verzameld: ${owned} / ${total}`;
+    gaugePct.textContent = pct + '%';
+    gaugeArc.setAttribute('stroke-dasharray', `${pct} 100`);
+    let totalValue = 0;
+    records.forEach(r => { if (r.inbezit && !isNaN(parseFloat(r.waarde))) totalValue += parseFloat(r.waarde); });
+    valueLabel.innerHTML = `Totale waarde verzameling: &euro; ${fmtEuro(totalValue)}`;
+  }
+
+  function applyFilter() {
+    const q = search.value.toLowerCase();
+    const mode = filterOwned.value;
+    let visible = 0, total = 0;
+    const items = currentView === 'cards' ? Array.from(document.querySelectorAll('.card')) : Array.from(checklistTable.querySelectorAll('.check-row'));
+    items.forEach(el => {
+      total++;
+      const matchesText = el.dataset.name.includes(q) || el.dataset.num.includes(q);
+      const rec = getRec(el.dataset.id);
+      const owned = rec ? !!rec.inbezit : false;
+      let matchesOwned = true;
+      if (mode === 'bezit') matchesOwned = owned;
+      if (mode === 'mis') matchesOwned = !owned;
+      const show = matchesText && matchesOwned;
+      el.classList.toggle('hidden', !show);
+      if (show) visible++;
+    });
+    countStatus.textContent = `${visible} van ${total} zichtbaar`;
+  }
+  search.addEventListener('input', applyFilter);
+  filterOwned.addEventListener('change', applyFilter);
+
+  document.getElementById('resetOwnedBtn').addEventListener('click', async () => {
+    const ownedCount = records.filter(r => r.inbezit).length;
+    const message = ownedCount > 0
+      ? `Je hebt momenteel ${ownedCount} kaart(en) aangevinkt in Supabase. Weet je zeker dat je deze allemaal wilt wissen? Dit kan niet ongedaan gemaakt worden.`
+      : 'Je hebt nog geen kaarten aangevinkt. Toch doorgaan?';
+    if (!confirm(message)) return;
+    statusEl.style.display = 'block';
+    statusEl.textContent = 'Bezig met wissen...';
+    for (const rec of records) {
+      if (rec.inbezit) {
+        rec.inbezit = false;
+        await patchRecord(rec.id, { inbezit: false });
+      }
+    }
+    renderGrid();
+    if (currentView === 'checklist') renderChecklist();
+    applyFilter();
+    updateProgress();
+    statusEl.textContent = 'Alle vinkjes gewist.';
+    setTimeout(() => statusEl.style.display = 'none', 2000);
+  });
+
+  document.getElementById('printBtn').addEventListener('click', () => {
+    const onlyVisible = document.getElementById('printOnlyVisible').checked;
+    const items = currentView === 'cards' ? Array.from(document.querySelectorAll('.card')) : Array.from(checklistTable.querySelectorAll('.check-row'));
+    if (onlyVisible) {
+      window.print();
+    } else {
+      const hiddenBefore = items.filter(el => el.classList.contains('hidden'));
+      items.forEach(el => el.classList.remove('hidden'));
+      window.print();
+      const restoreHidden = () => {
+        hiddenBefore.forEach(el => el.classList.add('hidden'));
+        window.removeEventListener('afterprint', restoreHidden);
+      };
+      window.addEventListener('afterprint', restoreHidden);
+    }
+  });
+
+  function computeMancoLayout(n) {
+    const availW = 200, availH = 287 * 0.96, gap = 6 / 3.7795, vPad = 0.6;
+    let best = null;
+    for (let c = 1; c <= 12; c++) {
+      const rows = Math.ceil(n / c);
+      const colWidth = (availW - (c - 1) * gap) / c;
+      const maxRowHeight = availH / rows;
+      const maxFontByWidth = colWidth / 8;
+      let fontMM = Math.min((maxRowHeight - vPad) / 1.35, maxFontByWidth, 4.5);
+      fontMM = Math.max(fontMM, 0.9);
+      const checkboxMM = Math.max(1.2, Math.min(fontMM * 1.15, 3.5));
+      const rowHeightMM = Math.max(fontMM * 1.35, checkboxMM) + vPad;
+      const totalHeightMM = rows * rowHeightMM;
+      if (totalHeightMM <= availH && (!best || fontMM > best.fontMM)) {
+        best = { cols: c, rows, fontMM, checkboxMM, rowHeightMM, totalHeightMM };
+      }
+    }
+    if (!best) {
+      const c = 12, rows = Math.ceil(n / c), rowHeightMM = availH / rows;
+      best = { cols: c, rows, fontMM: 0.9, checkboxMM: 1.2, rowHeightMM, totalHeightMM: availH };
+    }
+    return best;
+  }
+
+  document.getElementById('printMancoBtn').addEventListener('click', () => {
+    const prevView = currentView, prevFilter = filterOwned.value, prevSearch = search.value;
+    search.value = ''; filterOwned.value = 'mis'; setView('checklist');
+    const visibleCount = checklistTable.querySelectorAll('.check-row:not(.hidden)').length;
+    const layout = computeMancoLayout(Math.max(visibleCount, 1));
+    document.documentElement.style.setProperty('--manco-cols', layout.cols);
+    document.documentElement.style.setProperty('--manco-rows', layout.rows);
+    document.documentElement.style.setProperty('--manco-font', layout.fontMM.toFixed(2) + 'mm');
+    document.documentElement.style.setProperty('--manco-checkbox', layout.checkboxMM.toFixed(2) + 'mm');
+    document.documentElement.style.setProperty('--manco-rowheight', layout.rowHeightMM.toFixed(2) + 'mm');
+    document.documentElement.style.setProperty('--manco-height', layout.totalHeightMM.toFixed(2) + 'mm');
+    document.body.classList.add('manco-mode');
+    const restore = () => {
+      document.body.classList.remove('manco-mode');
+      ['--manco-cols','--manco-rows','--manco-font','--manco-checkbox','--manco-rowheight','--manco-height'].forEach(p => document.documentElement.style.removeProperty(p));
+      search.value = prevSearch; filterOwned.value = prevFilter; setView(prevView);
+      window.removeEventListener('afterprint', restore);
+    };
+    window.addEventListener('afterprint', restore);
+    window.print();
+  });
+
+  (function init() {
+    config = loadConfig();
+    if (config) {
+      loadAllRecords();
+    } else {
+      statusEl.textContent = 'Nog niet verbonden met Supabase. Klik op "⚙️ Supabase-instellingen" om te starten.';
+    }
+  })();
+</script>
+</body>
+</html>
