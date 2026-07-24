@@ -2,6 +2,7 @@
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 
 <title>Pokemon Collectie (Supabase)</title>
@@ -139,6 +140,16 @@
   .grid.active { display: grid; }
   .grid:not(.active) { display: none; }
   #checklistTable { column-count: 2; column-gap: 24px; }
+
+  @media (max-width: 480px) {
+    body { padding: 10px; }
+    h1 { font-size: 20px; }
+    #checklistTable { column-count: 1; }
+    input#search { width: 100%; }
+    .toolbar { gap: 6px; }
+    button { padding: 9px 12px; font-size: 13px; }
+    .print-filter-toggle { font-size: 12px; padding: 8px 10px; }
+  }
   .check-row { display: flex; align-items: center; gap: 6px; padding: 4px 0; break-inside: avoid; border-bottom: 1px solid #eee; font-size: 13px; }
   .check-row.hidden { display: none; }
   .check-row .row-num { color: #888; width: 42px; flex-shrink: 0; }
