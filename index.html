@@ -31,7 +31,24 @@
     border: 1px solid #ccc;
     font-size: 15px;
   }
-  input#search { width: 240px; max-width: 90%; }
+  input#search { width: 240px; max-width: 100%; padding-right: 28px; box-sizing: border-box; }
+  .search-wrap { position: relative; display: inline-block; max-width: 90%; }
+  #searchClearBtn {
+    display: none;
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 18px;
+    line-height: 1;
+    padding: 2px 4px;
+    cursor: pointer;
+  }
+  #searchClearBtn:hover { color: #333; }
+  .search-wrap.has-text #searchClearBtn { display: block; }
   button {
     padding: 10px 16px;
     border-radius: 8px;
@@ -139,13 +156,74 @@
   #checklistView.active { display: block; }
   .grid.active { display: grid; }
   .grid:not(.active) { display: none; }
+  .visually-hidden-select { display: none; }
+
+  .dropdown { position: relative; display: inline-block; }
+  .dropdown-btn {
+    background: #eef1f4;
+    color: #2c3e50;
+    border: 1px solid #ccc;
+    padding: 9px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .dropdown-btn .caret { font-size: 11px; margin-left: 2px; }
+  .dropdown-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+    min-width: 200px;
+    z-index: 100;
+    overflow: hidden;
+  }
+  .dropdown.open .dropdown-menu { display: block; }
+  .dropdown-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    padding: 10px 14px;
+    font-size: 14px;
+    color: #2c3e50;
+    cursor: pointer;
+    font-weight: 500;
+  }
+  .dropdown-item:hover { background: #f1f3f5; }
+  .dropdown-item.active { background: #2a9d8f; color: white; }
+  .dropdown-checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #444;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+  }
+  .dropdown-checkbox-item input { width: 16px; height: 16px; cursor: pointer; }
+  #resetOwnedBtn { width: 42px; font-size: 16px; padding: 9px; }
+  #viewToggleBtn { white-space: nowrap; }
+
+  @media (max-width: 480px) {
+    .dropdown-btn { font-size: 12.5px; padding: 8px 9px; }
+  }
+
   #checklistTable { column-count: 2; column-gap: 24px; }
 
   @media (max-width: 480px) {
     body { padding: 10px; }
     h1 { font-size: 20px; }
     #checklistTable { column-count: 1; }
-    input#search { width: 100%; }
+    input#search, .search-wrap { width: 100%; max-width: 100%; }
     .toolbar { gap: 6px; }
     button { padding: 9px 12px; font-size: 13px; }
     .print-filter-toggle { font-size: 12px; padding: 8px 10px; }
@@ -206,29 +284,54 @@
 </div>
 
 <div class="toolbar toolbar-browse">
-  <input type="text" id="search" placeholder="Zoek op naam of nummer...">
-  <select id="filterOwned">
+  <span class="search-wrap">
+    <input type="text" id="search" placeholder="Zoek op naam of nummer...">
+    <button type="button" id="searchClearBtn" title="Wis zoekopdracht">&times;</button>
+  </span>
+
+  <select id="filterOwned" class="visually-hidden-select">
     <option value="alle">Alle kaarten</option>
     <option value="bezit">Alleen in bezit</option>
     <option value="mis">Alleen ontbrekend</option>
   </select>
-  <select id="sortMode">
+  <div class="dropdown" id="filterDropdown">
+    <button type="button" class="dropdown-btn" id="filterDropdownBtn">Filter: Alle <span class="caret">▾</span></button>
+    <div class="dropdown-menu" id="filterDropdownMenu">
+      <button type="button" class="dropdown-item" data-value="alle">Alle kaarten</button>
+      <button type="button" class="dropdown-item" data-value="bezit">Alleen in bezit</button>
+      <button type="button" class="dropdown-item" data-value="mis">Alleen ontbrekend</button>
+    </div>
+  </div>
+
+  <select id="sortMode" class="visually-hidden-select">
     <option value="nummer">Sorteer op nummer</option>
     <option value="naam">Sorteer op naam</option>
     <option value="waarde">Sorteer op waarde</option>
   </select>
-  <button id="viewToggleBtn">Wissel naar checklist</button>
+  <div class="dropdown" id="sortDropdown">
+    <button type="button" class="dropdown-btn" id="sortDropdownBtn">Sorteer: Nummer <span class="caret">▾</span></button>
+    <div class="dropdown-menu" id="sortDropdownMenu">
+      <button type="button" class="dropdown-item" data-value="nummer">Op nummer</button>
+      <button type="button" class="dropdown-item" data-value="naam">Op naam</button>
+      <button type="button" class="dropdown-item" data-value="waarde">Op waarde</button>
+    </div>
+  </div>
+
+  <button id="viewToggleBtn" title="Wissel weergave">☰ Checklist</button>
 </div>
 <div class="toolbar toolbar-actions">
-  <button id="printBtn">🖨️ Print</button>
-  <label class="print-filter-toggle">
-    <input type="checkbox" id="printOnlyVisible" checked>
-    Alleen huidige filter printen
-  </label>
-  <span class="toolbar-sep"></span>
-  <button id="printMancoBtn">📋 Mancolijst printen</button>
-  <span class="toolbar-sep"></span>
-  <button id="resetOwnedBtn">🗑️ Wis alle vinkjes</button>
+  <div class="dropdown" id="printDropdown">
+    <button type="button" class="dropdown-btn" id="printDropdownBtn">🖨️ Print <span class="caret">▾</span></button>
+    <div class="dropdown-menu" id="printDropdownMenu">
+      <label class="dropdown-checkbox-item">
+        <input type="checkbox" id="printOnlyVisible" checked>
+        Alleen huidige filter printen
+      </label>
+      <button type="button" class="dropdown-item" id="printNowBtn">Print</button>
+      <button type="button" class="dropdown-item" id="printMancoBtn">Mancolijst printen (compact)</button>
+    </div>
+  </div>
+  <button id="resetOwnedBtn" title="Wis alle vinkjes">🗑️</button>
 </div>
 
 <div id="progressDashboard">
@@ -253,6 +356,53 @@
   const filterOwned = document.getElementById('filterOwned');
   const sortMode = document.getElementById('sortMode');
   const viewToggleBtn = document.getElementById('viewToggleBtn');
+
+  // --- Generic compact dropdown behaviour ---
+  function setupDropdown(dropdownId, hiddenSelect, labelPrefix, labelMap) {
+    const dropdown = document.getElementById(dropdownId);
+    const btn = dropdown.querySelector('.dropdown-btn');
+    const items = dropdown.querySelectorAll('.dropdown-item[data-value]');
+
+    function refreshLabel() {
+      btn.innerHTML = `${labelPrefix}: ${labelMap[hiddenSelect.value] || hiddenSelect.value} <span class="caret">▾</span>`;
+      items.forEach(it => it.classList.toggle('active', it.dataset.value === hiddenSelect.value));
+    }
+
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const wasOpen = dropdown.classList.contains('open');
+      document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
+      if (!wasOpen) dropdown.classList.add('open');
+    });
+
+    items.forEach(item => {
+      item.addEventListener('click', () => {
+        hiddenSelect.value = item.dataset.value;
+        hiddenSelect.dispatchEvent(new Event('change'));
+        refreshLabel();
+        dropdown.classList.remove('open');
+      });
+    });
+
+    refreshLabel();
+    return refreshLabel;
+  }
+
+  setupDropdown('filterDropdown', filterOwned, 'Filter', { alle: 'Alle', bezit: 'In bezit', mis: 'Ontbrekend' });
+  setupDropdown('sortDropdown', sortMode, 'Sorteer', { nummer: 'Nummer', naam: 'Naam', waarde: 'Waarde' });
+
+  // Print dropdown: its items are plain action buttons, not a synced select
+  document.getElementById('printDropdownBtn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    const dropdown = document.getElementById('printDropdown');
+    const wasOpen = dropdown.classList.contains('open');
+    document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
+    if (!wasOpen) dropdown.classList.add('open');
+  });
+
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
+  });
   const grid = document.getElementById('grid');
   const checklistView = document.getElementById('checklistView');
   const checklistTable = document.getElementById('checklistTable');
@@ -663,12 +813,12 @@
     if (view === 'cards') {
       grid.classList.add('active');
       checklistView.classList.remove('active');
-      viewToggleBtn.textContent = 'Wissel naar checklist';
+      viewToggleBtn.textContent = '☰ Checklist';
     } else {
       renderChecklist();
       grid.classList.remove('active');
       checklistView.classList.add('active');
-      viewToggleBtn.textContent = 'Wissel naar kaarten';
+      viewToggleBtn.textContent = '🗂️ Kaarten';
     }
     applyFilter();
   }
@@ -706,7 +856,18 @@
     });
     countStatus.textContent = `${visible} van ${total} zichtbaar`;
   }
-  search.addEventListener('input', applyFilter);
+  const searchWrap = document.querySelector('.search-wrap');
+  const searchClearBtn = document.getElementById('searchClearBtn');
+  function updateSearchClearVisibility() {
+    searchWrap.classList.toggle('has-text', search.value.length > 0);
+  }
+  search.addEventListener('input', () => { applyFilter(); updateSearchClearVisibility(); });
+  searchClearBtn.addEventListener('click', () => {
+    search.value = '';
+    applyFilter();
+    updateSearchClearVisibility();
+    search.focus();
+  });
   filterOwned.addEventListener('change', applyFilter);
 
   document.getElementById('resetOwnedBtn').addEventListener('click', async () => {
@@ -731,7 +892,7 @@
     setTimeout(() => statusEl.style.display = 'none', 2000);
   });
 
-  document.getElementById('printBtn').addEventListener('click', () => {
+  document.getElementById('printNowBtn').addEventListener('click', () => {
     const onlyVisible = document.getElementById('printOnlyVisible').checked;
     const items = currentView === 'cards' ? Array.from(document.querySelectorAll('.card')) : Array.from(checklistTable.querySelectorAll('.check-row'));
     if (onlyVisible) {
