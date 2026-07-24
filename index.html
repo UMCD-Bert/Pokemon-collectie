@@ -262,11 +262,17 @@
     return n.toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
+  const DEFAULT_CONFIG = {
+    url: 'https://dckojtvyxqsgvcfgufpf.supabase.co',
+    table: 'pokemon',
+    key: 'sb_publishable_KELGR-EkKYZBF_knnwdNvg_vA966Yqr'
+  };
+
   function loadConfig() {
     try {
       const raw = localStorage.getItem(CONFIG_KEY);
-      return raw ? JSON.parse(raw) : null;
-    } catch (e) { return null; }
+      return raw ? JSON.parse(raw) : DEFAULT_CONFIG;
+    } catch (e) { return DEFAULT_CONFIG; }
   }
   function saveConfig(cfg) { localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg)); }
 
