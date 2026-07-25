@@ -541,6 +541,20 @@
   }
   #detailInstancesList, #extraInstancesList { display: flex; flex-direction: column; gap: 6px; }
   .instance-group { margin-bottom: 10px; }
+  .instance-group-photo { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+  .group-thumb {
+    width: 32px; height: 32px; border-radius: 6px; background: #e8e8e8; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; overflow: hidden; font-size: 15px; color: #bbb;
+  }
+  .group-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .group-photo-upload {
+    flex: 1; text-align: left; padding: 6px 8px; border-radius: 6px; border: 1px dashed #b8860b;
+    background: #fffaf0; color: #8a5a1a; font-size: 11px; font-weight: 600; cursor: pointer;
+  }
+  .group-photo-edit {
+    flex-shrink: 0; width: 28px; height: 28px; border-radius: 6px; border: none;
+    background: #6a4c93; color: white; font-size: 12px; cursor: pointer;
+  }
   .instance-group-header {
     display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
     padding: 4px 2px; border-bottom: 1.5px solid #ddd; margin-bottom: 5px;
@@ -822,14 +836,6 @@
   <div class="modal-box">
     <button type="button" class="modal-close" id="instanceCloseBtn">&times;</button>
     <h3 id="instanceModalTitle">Kaartexemplaar</h3>
-    <div id="instanceArtFrame">
-      <img id="instanceImg" src="" alt="" style="display:none;">
-      <span id="instanceImgPlaceholder" class="placeholder-mark">🎴</span>
-    </div>
-    <div id="instanceImgActions">
-      <button type="button" id="instanceUploadBtn">📷 Foto toevoegen</button>
-      <button type="button" id="instanceEditCurrentBtn" style="display:none;">✂️ Bewerk foto</button>
-    </div>
     <label class="field-label">Serie</label>
     <div class="field-with-picker">
       <input type="text" class="field-input" id="iSerie" placeholder="Typ of kies rechts...">
@@ -1467,7 +1473,8 @@
   const cropZoomSlider = document.getElementById('cropZoomSlider');
   let cropImg = null;
   let cropTargetId = null;
-  let cropContext = 'pokemon'; // 'pokemon' or 'extra'
+  let cropContext = 'pokemon'; // 'pokemon', 'extra', or 'group'
+  let cropGroupTarget = null; // { parentType, parentId, serie, set_naam }
   let cropMinScale = 1;
   let cropScale = 1;
   let cropOffsetX = 0;
@@ -1660,7 +1667,8 @@
   });
 
   document.getElementById('cropConfirmBtn').addEventListener('click', async () => {
-    if (!cropImg || !cropTargetId) return;
+    if (!cropImg) return;
+    if (cropContext !== 'group' && !cropTargetId) return;
     const targetId = cropTargetId;
     // Render the same crop, but at a higher output resolution for good image quality
     const outW = 500, outH = 700;
@@ -1687,6 +1695,8 @@
         } else if (cropContext === 'instance') {
           const url = await uploadImageForInstance(targetId, blob);
           await setInstanceImageUrl(targetId, url);
+        } else if (cropContext === 'group') {
+          await uploadImageForGroup(cropGroupTarget, blob);
         } else {
           const url = await uploadImageForRecord(targetId, blob);
           await setImageUrl(targetId, url);
@@ -2368,11 +2378,9 @@
   }
 
   function instanceRowHtml(inst) {
-    const thumb = inst.afbeelding ? `<img src="${inst.afbeelding}" alt="">` : '🎴';
     const subParts = [inst.versie, `${inst.aantal || 1}x`].filter(Boolean).join(' · ') || `${inst.aantal || 1}x`;
     return `
       <div class="instance-row" data-inst-id="${inst.id}">
-        <div class="inst-thumb">${thumb}</div>
         <div class="inst-info">
           <div class="inst-sub">${subParts}</div>
         </div>
@@ -2410,8 +2418,15 @@
       const groupCount = group.items.reduce((sum, i) => sum + (parseInt(i.aantal) || 1), 0);
       const groupValue = group.items.reduce((sum, i) => sum + instanceLineValue(i), 0);
       const countLabel = `${groupCount} ${groupCount === 1 ? 'exemplaar' : 'exemplaren'}`;
+      const photoUrl = (group.items.find(i => i.afbeelding) || {}).afbeelding;
+      const thumbHtml = photoUrl ? `<img src="${photoUrl}" alt="">` : '🎴';
       return `
         <div class="instance-group">
+          <div class="instance-group-photo">
+            <div class="group-thumb">${thumbHtml}</div>
+            <button type="button" class="group-photo-upload">📷 ${photoUrl ? 'Vervang groepsfoto' : 'Groepsfoto toevoegen'}</button>
+            ${photoUrl ? `<button type="button" class="group-photo-edit">✂️</button>` : ''}
+          </div>
           <div class="instance-group-header">
             <span class="instance-group-title">${title}</span>
             <span class="instance-group-total">${countLabel} &middot; &euro; ${fmtEuro(groupValue)}</span>
@@ -2422,19 +2437,37 @@
     containerEl.querySelectorAll('.instance-row').forEach(row => {
       row.addEventListener('click', () => openInstanceModal(parentType, parentId, row.dataset.instId));
     });
+    containerEl.querySelectorAll('.instance-group').forEach((groupEl, idx) => {
+      const group = groups[idx];
+      const target = { parentType, parentId, serie: group.serie, set_naam: group.set_naam };
+      const uploadBtn = groupEl.querySelector('.group-photo-upload');
+      uploadBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        cropContext = 'group';
+        cropGroupTarget = target;
+        globalImgFileInput.click();
+      });
+      const editBtn = groupEl.querySelector('.group-photo-edit');
+      if (editBtn) {
+        editBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          cropContext = 'group';
+          cropGroupTarget = target;
+          const photoUrl = (group.items.find(i => i.afbeelding) || {}).afbeelding;
+          if (photoUrl) openCropModalFromUrl(photoUrl, null);
+        });
+      }
+    });
   }
 
   // ---------- Instance add/edit modal ----------
   const instanceModal = document.getElementById('instanceModal');
-  const instanceImg = document.getElementById('instanceImg');
-  const instanceImgPlaceholder = document.getElementById('instanceImgPlaceholder');
   const iSerie = document.getElementById('iSerie');
   const iSet = document.getElementById('iSet');
   const iVersie = document.getElementById('iVersie');
   const iWaarde = document.getElementById('iWaarde');
   const iAantal = document.getElementById('iAantal');
   const instanceDeleteBtn = document.getElementById('instanceDeleteBtn');
-  const instanceEditCurrentBtn = document.getElementById('instanceEditCurrentBtn');
   let currentInstanceParentType = null;
   let currentInstanceParentId = null;
   let currentInstanceId = null; // null = new
@@ -2468,15 +2501,6 @@
     iVersie.value = inst ? (inst.versie || '') : '';
     iWaarde.value = inst ? formatValue(inst.waarde) : '';
     iAantal.value = inst ? (inst.aantal || 1) : 1;
-    if (inst && inst.afbeelding) {
-      instanceImg.src = inst.afbeelding; instanceImg.style.display = '';
-      instanceImgPlaceholder.style.display = 'none';
-      instanceEditCurrentBtn.style.display = 'inline-block';
-    } else {
-      instanceImg.style.display = 'none';
-      instanceImgPlaceholder.style.display = '';
-      instanceEditCurrentBtn.style.display = 'none';
-    }
     instanceDeleteBtn.style.display = inst ? 'inline-block' : 'none';
     instanceModal.classList.add('open');
   }
@@ -2510,6 +2534,11 @@
     const payload = collectInstancePayload();
     try {
       if (currentInstanceId === null) {
+        const sibling = allInstances.find(i =>
+          i.parent_type === payload.parent_type && String(i.parent_id) === String(payload.parent_id) &&
+          (i.serie || null) === payload.serie && (i.set_naam || null) === payload.set_naam && i.afbeelding
+        );
+        if (sibling) payload.afbeelding = sibling.afbeelding;
         const res = await fetch(instRestUrl(), {
           method: 'POST',
           headers: authHeaders({ 'Prefer': 'return=representation' }),
@@ -2573,20 +2602,38 @@
     iAantal.value = (parseInt(iAantal.value) || 1) + 1;
   });
 
-  document.getElementById('instanceUploadBtn').addEventListener('click', async () => {
-    if (currentInstanceId === null) {
-      await saveInstance(false); // need an id before we can upload a photo for it
-    }
-    cropContext = 'instance';
-    pendingImgTarget = currentInstanceId;
-    globalImgFileInput.click();
-  });
-  document.getElementById('instanceEditCurrentBtn').addEventListener('click', () => {
-    const inst = getInstance(currentInstanceId);
-    if (!inst || !inst.afbeelding) return;
-    cropContext = 'instance';
-    openCropModalFromUrl(inst.afbeelding, currentInstanceId);
-  });
+  async function uploadImageForGroup(groupTarget, blob) {
+    const safeKey = `${groupTarget.parentType}_${groupTarget.parentId}_${groupTarget.serie || 'geen'}_${groupTarget.set_naam || 'geen'}`
+      .replace(/[^a-zA-Z0-9_-]/g, '_');
+    const path = `kaart_groepen/${safeKey}.jpg`;
+    const uploadUrl = `${config.url}/storage/v1/object/${STORAGE_BUCKET}/${path}`;
+    const res = await fetch(uploadUrl, {
+      method: 'POST',
+      headers: { 'apikey': config.key, 'Authorization': `Bearer ${config.key}`, 'Content-Type': 'image/jpeg', 'x-upsert': 'true' },
+      body: blob
+    });
+    if (!res.ok) throw new Error(`Upload mislukt (status ${res.status}): ${await res.text()}`);
+    const url = `${config.url}/storage/v1/object/public/${STORAGE_BUCKET}/${path}?t=${Date.now()}`;
+
+    const filters = [
+      `parent_type=eq.${groupTarget.parentType}`,
+      `parent_id=eq.${groupTarget.parentId}`,
+      groupTarget.serie ? `serie=eq.${encodeURIComponent(groupTarget.serie)}` : 'serie=is.null',
+      groupTarget.set_naam ? `set_naam=eq.${encodeURIComponent(groupTarget.set_naam)}` : 'set_naam=is.null'
+    ];
+    const patchRes = await fetch(instRestUrl(`?${filters.join('&')}`), {
+      method: 'PATCH',
+      headers: authHeaders({ 'Prefer': 'return=representation' }),
+      body: JSON.stringify({ afbeelding: url })
+    });
+    if (!patchRes.ok) throw new Error(`Kon groepsfoto niet koppelen: ${await patchRes.text()}`);
+    const updated = await patchRes.json();
+    updated.forEach(u => {
+      const idx = allInstances.findIndex(i => String(i.id) === String(u.id));
+      if (idx !== -1) allInstances[idx] = u;
+    });
+    refreshParentUI(groupTarget.parentType, groupTarget.parentId);
+  }
 
   async function uploadImageForInstance(id, blob) {
     const path = `kaart_exemplaren/${id}.jpg`;
