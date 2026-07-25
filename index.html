@@ -481,7 +481,7 @@
   .extra-waarde { color: #1d7a4c; font-weight: 700; font-size: 13px; margin-top: 4px; }
 
   #extraFab {
-    position: fixed; bottom: 22px; right: 22px; width: 54px; height: 54px; border-radius: 50%;
+    position: fixed; bottom: 22px; right: max(22px, calc(50vw - 550px + 22px)); width: 54px; height: 54px; border-radius: 50%;
     background: #2c3e50; color: white; font-size: 28px; border: none; box-shadow: 0 2px 10px rgba(0,0,0,0.3);
     display: flex; align-items: center; justify-content: center; z-index: 40; cursor: pointer;
   }
@@ -540,6 +540,14 @@
     border: 1.5px dashed #b8860b; background: #fffaf0; color: #8a5a1a; font-weight: 600; font-size: 13px; cursor: pointer;
   }
   #detailInstancesList, #extraInstancesList { display: flex; flex-direction: column; gap: 6px; }
+  .instance-group { margin-bottom: 10px; }
+  .instance-group-header {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
+    padding: 4px 2px; border-bottom: 1.5px solid #ddd; margin-bottom: 5px;
+  }
+  .instance-group-title { font-size: 12.5px; font-weight: 700; color: #2c3e50; }
+  .instance-group-total { font-size: 11.5px; font-weight: 700; color: #1d7a4c; white-space: nowrap; flex-shrink: 0; }
+  .instance-group-rows { display: flex; flex-direction: column; gap: 5px; padding-left: 6px; }
   .instance-row {
     display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: #f7f7f7;
     border-radius: 8px; cursor: pointer; text-align: left;
@@ -2361,24 +2369,56 @@
 
   function instanceRowHtml(inst) {
     const thumb = inst.afbeelding ? `<img src="${inst.afbeelding}" alt="">` : '🎴';
-    const titleParts = [inst.serie, inst.set_naam].filter(Boolean).join(' · ') || '(geen serie/set)';
-    const subParts = [inst.versie, `${inst.aantal || 1}x`].filter(Boolean).join(' · ');
+    const subParts = [inst.versie, `${inst.aantal || 1}x`].filter(Boolean).join(' · ') || `${inst.aantal || 1}x`;
     return `
       <div class="instance-row" data-inst-id="${inst.id}">
         <div class="inst-thumb">${thumb}</div>
         <div class="inst-info">
-          <div class="inst-title">${titleParts}</div>
           <div class="inst-sub">${subParts}</div>
         </div>
         <div class="inst-value">&euro; ${fmtEuro(instanceLineValue(inst))}</div>
       </div>`;
   }
 
+  function groupInstances(list) {
+    const groups = {};
+    list.forEach(inst => {
+      const key = `${inst.serie || ''}|||${inst.set_naam || ''}`;
+      if (!groups[key]) groups[key] = { serie: inst.serie || '', set_naam: inst.set_naam || '', items: [] };
+      groups[key].items.push(inst);
+    });
+    const groupList = Object.values(groups);
+    groupList.sort((a, b) => {
+      const ia = SERIE_ORDER_INDEX[a.serie], ib = SERIE_ORDER_INDEX[b.serie];
+      if (ia !== undefined && ib !== undefined && ia !== ib) return ib - ia;
+      const sa = SET_ORDER_INDEX[a.set_naam], sb = SET_ORDER_INDEX[b.set_naam];
+      if (sa !== undefined && sb !== undefined && sa !== sb) return sb - sa;
+      return 0;
+    });
+    return groupList;
+  }
+
   function renderInstancesInto(containerEl, parentType, parentId) {
     const list = instancesFor(parentType, parentId);
-    containerEl.innerHTML = list.length
-      ? list.map(instanceRowHtml).join('')
-      : `<p style="font-size:12px;color:#999;text-align:center;">Nog geen exemplaren toegevoegd.</p>`;
+    if (list.length === 0) {
+      containerEl.innerHTML = `<p style="font-size:12px;color:#999;text-align:center;">Nog geen exemplaren toegevoegd.</p>`;
+      return;
+    }
+    const groups = groupInstances(list);
+    containerEl.innerHTML = groups.map(group => {
+      const title = [group.serie, group.set_naam].filter(Boolean).join(' · ') || '(geen serie/set)';
+      const groupCount = group.items.reduce((sum, i) => sum + (parseInt(i.aantal) || 1), 0);
+      const groupValue = group.items.reduce((sum, i) => sum + instanceLineValue(i), 0);
+      const countLabel = `${groupCount} ${groupCount === 1 ? 'exemplaar' : 'exemplaren'}`;
+      return `
+        <div class="instance-group">
+          <div class="instance-group-header">
+            <span class="instance-group-title">${title}</span>
+            <span class="instance-group-total">${countLabel} &middot; &euro; ${fmtEuro(groupValue)}</span>
+          </div>
+          <div class="instance-group-rows">${group.items.map(instanceRowHtml).join('')}</div>
+        </div>`;
+    }).join('');
     containerEl.querySelectorAll('.instance-row').forEach(row => {
       row.addEventListener('click', () => openInstanceModal(parentType, parentId, row.dataset.instId));
     });
