@@ -564,7 +564,7 @@
   #instanceImgActions button { padding: 7px 12px; border-radius: 8px; border: none; font-weight: 600; font-size: 12px; cursor: pointer; color: white; background: #457b9d; }
   #instanceEditCurrentBtn { background: #6a4c93; }
 
-  #instanceValueRow { justify-content: center; margin: 4px 0; gap: 6px; }
+  #instanceValueRow { display: flex; align-items: center; justify-content: center; margin: 4px 0; gap: 6px; }
   #instanceValueRow .euro { font-weight: 700; font-size: 15px; }
   #iWaarde { width: 74px; font-size: 15px; padding: 6px 8px; border: 1px solid #b8860b; border-radius: 6px; text-align: right; }
   #instanceValueRow .stepper { flex-direction: row; }
@@ -578,15 +578,11 @@
   }
   #iAantal { width: 50px; text-align: center; font-size: 15px; padding: 6px 4px; border: 1px solid #ccc; border-radius: 6px; }
 
-  .combo-wrap { position: relative; }
-  .combo-menu {
-    display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 60;
-    background: white; border: 1px solid #ccc; border-radius: 6px; max-height: 170px; overflow-y: auto;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.18); margin-top: 2px;
-  }
-  .combo-menu.open { display: block; }
-  .combo-menu .combo-option { padding: 9px 12px; font-size: 13px; color: #333; cursor: pointer; }
-  .combo-menu .combo-option:hover, .combo-menu .combo-option:active { background: #f0f0f0; }
+  .field-with-picker { display: flex; gap: 6px; align-items: stretch; }
+  .field-with-picker .field-input { flex: 1; min-width: 0; }
+  .mini-picker { flex-shrink: 0; }
+  .mini-picker .picker-btn { height: 100%; padding: 0 12px; font-size: 14px; }
+  .mini-picker .dropdown-menu { right: 0; left: auto; min-width: 220px; max-height: 220px; overflow-y: auto; }
 </style>
 </head>
 <body>
@@ -827,19 +823,28 @@
       <button type="button" id="instanceEditCurrentBtn" style="display:none;">✂️ Bewerk foto</button>
     </div>
     <label class="field-label">Serie</label>
-    <div class="combo-wrap">
-      <input type="text" class="field-input" id="iSerie" autocomplete="off">
-      <div class="combo-menu" id="iSerieMenu"></div>
+    <div class="field-with-picker">
+      <input type="text" class="field-input" id="iSerie" placeholder="Typ of kies rechts...">
+      <div class="dropdown mini-picker" id="iSeriePicker">
+        <button type="button" class="dropdown-btn picker-btn" id="iSeriePickerBtn">▾</button>
+        <div class="dropdown-menu" id="iSerieMenu"></div>
+      </div>
     </div>
     <label class="field-label">Set</label>
-    <div class="combo-wrap">
-      <input type="text" class="field-input" id="iSet" autocomplete="off">
-      <div class="combo-menu" id="iSetMenu"></div>
+    <div class="field-with-picker">
+      <input type="text" class="field-input" id="iSet" placeholder="Typ of kies rechts...">
+      <div class="dropdown mini-picker" id="iSetPicker">
+        <button type="button" class="dropdown-btn picker-btn" id="iSetPickerBtn">▾</button>
+        <div class="dropdown-menu" id="iSetMenu"></div>
+      </div>
     </div>
     <label class="field-label">Versie</label>
-    <div class="combo-wrap">
-      <input type="text" class="field-input" id="iVersie" autocomplete="off">
-      <div class="combo-menu" id="iVersieMenu"></div>
+    <div class="field-with-picker">
+      <input type="text" class="field-input" id="iVersie" placeholder="Typ of kies rechts...">
+      <div class="dropdown mini-picker" id="iVersiePicker">
+        <button type="button" class="dropdown-btn picker-btn" id="iVersiePickerBtn">▾</button>
+        <div class="dropdown-menu" id="iVersieMenu"></div>
+      </div>
     </div>
     <label class="field-label">Waarde (per stuk)</label>
     <div class="value-row" id="instanceValueRow">
@@ -951,38 +956,26 @@
   };
   const CARD_VERSIES = ['Normaal', 'Holo', 'Reverse Holo', '1st Edition', 'Shadowless', 'Full Art', 'Alternate Art', 'Rainbow Rare', 'Gold / Secret Rare', 'Promo'];
 
-  let openComboMenu = null;
-
-  function setupCombo(input, menu, getOptions) {
-    function renderOptions() {
-      const q = input.value.toLowerCase();
-      const opts = getOptions().filter(o => o.toLowerCase().includes(q));
-      if (opts.length === 0) {
-        menu.classList.remove('open');
-        if (openComboMenu === menu) openComboMenu = null;
-        return;
-      }
-      menu.innerHTML = opts.slice(0, 60).map(o => `<div class="combo-option">${o}</div>`).join('');
-      menu.querySelectorAll('.combo-option').forEach(opt => {
-        opt.addEventListener('click', () => {
-          input.value = opt.textContent;
-          menu.classList.remove('open');
-          openComboMenu = null;
+  function setupFieldPicker(pickerId, btnId, menuId, inputEl, getOptions) {
+    const dropdown = document.getElementById(pickerId);
+    const btn = document.getElementById(btnId);
+    const menu = document.getElementById(menuId);
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const wasOpen = dropdown.classList.contains('open');
+      document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
+      if (wasOpen) return;
+      const opts = getOptions();
+      menu.innerHTML = opts.map(o => `<button type="button" class="dropdown-item">${o}</button>`).join('');
+      menu.querySelectorAll('.dropdown-item').forEach(item => {
+        item.addEventListener('click', () => {
+          inputEl.value = item.textContent;
+          dropdown.classList.remove('open');
         });
       });
-      menu.classList.add('open');
-      openComboMenu = menu;
-    }
-    input.addEventListener('focus', renderOptions);
-    input.addEventListener('input', renderOptions);
+      dropdown.classList.add('open');
+    });
   }
-
-  document.addEventListener('click', (e) => {
-    if (openComboMenu && !openComboMenu.closest('.combo-wrap').contains(e.target)) {
-      openComboMenu.classList.remove('open');
-      openComboMenu = null;
-    }
-  });
 
   const iSerieInput = document.getElementById('iSerie');
   const iSetInput = document.getElementById('iSet');
@@ -990,12 +983,12 @@
   const allSetsFlat = [];
   Object.values(CARD_SERIES).forEach(sets => [...sets].reverse().forEach(s => { if (!allSetsFlat.includes(s)) allSetsFlat.push(s); }));
 
-  setupCombo(iSerieInput, document.getElementById('iSerieMenu'), () => [...Object.keys(CARD_SERIES)].reverse());
-  setupCombo(iSetInput, document.getElementById('iSetMenu'), () => {
+  setupFieldPicker('iSeriePicker', 'iSeriePickerBtn', 'iSerieMenu', iSerieInput, () => [...Object.keys(CARD_SERIES)].reverse());
+  setupFieldPicker('iSetPicker', 'iSetPickerBtn', 'iSetMenu', iSetInput, () => {
     const sets = CARD_SERIES[iSerieInput.value];
     return sets ? [...sets].reverse() : allSetsFlat;
   });
-  setupCombo(iVersieInput, document.getElementById('iVersieMenu'), () => CARD_VERSIES);
+  setupFieldPicker('iVersiePicker', 'iVersiePickerBtn', 'iVersieMenu', iVersieInput, () => CARD_VERSIES);
 
   let config = null; // { url, table, key }
   let records = []; // flat rows: { id, nummer, naam, afbeelding, inbezit, waarde, notitie }
