@@ -589,15 +589,16 @@
   #instanceValueRow { display: flex; align-items: center; justify-content: center; margin: 4px 0; gap: 6px; }
   #instanceValueRow .euro { font-weight: 700; font-size: 15px; }
   #iWaarde { width: 74px; font-size: 15px; padding: 6px 8px; border: 1px solid #b8860b; border-radius: 6px; text-align: right; }
-  #instanceValueRow .stepper { flex-direction: row; }
-  #instanceValueRow .stepper .step-btn { width: 24px; height: 26px; font-size: 14px; border: 1px solid #b8860b; background: #fff4d6; color: #5a3d00; cursor: pointer; }
-  #instanceValueRow .stepper .step-btn:first-child { border-radius: 6px 0 0 6px; border-right: none; }
-  #instanceValueRow .stepper .step-btn:last-child { border-radius: 0 6px 6px 0; }
+  #instanceValueRow .stepper { flex-direction: column; }
+  #instanceValueRow .stepper .step-btn { width: 22px; height: 16px; font-size: 11px; border: 1px solid #b8860b; background: #fff4d6; color: #5a3d00; cursor: pointer; }
+  #instanceValueRow .stepper .step-btn:first-child { border-radius: 4px 4px 0 0; border-bottom: none; }
+  #instanceValueRow .stepper .step-btn:last-child { border-radius: 0 0 4px 4px; }
 
-  #instanceAantalRow { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 4px; }
-  #instanceAantalRow button {
-    width: 32px; height: 32px; border-radius: 50%; border: 1px solid #ccc; background: #f4f4f4; font-size: 16px; cursor: pointer; color: #444;
-  }
+  #instanceAantalRow { display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 4px; }
+  #instanceAantalRow .stepper { flex-direction: column; }
+  #instanceAantalRow .stepper .step-btn { width: 22px; height: 16px; font-size: 11px; border: 1px solid #b8860b; background: #fff4d6; color: #5a3d00; cursor: pointer; }
+  #instanceAantalRow .stepper .step-btn:first-child { border-radius: 4px 4px 0 0; border-bottom: none; }
+  #instanceAantalRow .stepper .step-btn:last-child { border-radius: 0 0 4px 4px; }
   #iAantal { width: 50px; text-align: center; font-size: 15px; padding: 6px 4px; border: 1px solid #ccc; border-radius: 6px; }
 
   .field-with-picker { display: flex; gap: 6px; align-items: stretch; }
@@ -863,20 +864,22 @@
     <label class="field-label">Waarde (per stuk)</label>
     <div class="value-row" id="instanceValueRow">
       <span class="stepper euro-stepper">
-        <button type="button" class="step-btn" data-delta="-1">−</button>
-        <button type="button" class="step-btn" data-delta="1">+</button>
+        <button type="button" class="step-btn" data-delta="1">▲</button>
+        <button type="button" class="step-btn" data-delta="-1">▼</button>
       </span>
       <span class="euro">&euro;</span><input type="text" inputmode="decimal" id="iWaarde" placeholder="0,00">
       <span class="stepper cent-stepper">
-        <button type="button" class="step-btn" data-delta="-0.01">−</button>
-        <button type="button" class="step-btn" data-delta="0.01">+</button>
+        <button type="button" class="step-btn" data-delta="0.01">▲</button>
+        <button type="button" class="step-btn" data-delta="-0.01">▼</button>
       </span>
     </div>
     <label class="field-label">Aantal</label>
     <div id="instanceAantalRow">
-      <button type="button" id="iAantalMin">−</button>
       <input type="text" inputmode="numeric" id="iAantal" value="1">
-      <button type="button" id="iAantalPlus">+</button>
+      <span class="stepper aantal-stepper">
+        <button type="button" class="step-btn" id="iAantalPlus">▲</button>
+        <button type="button" class="step-btn" id="iAantalMin">▼</button>
+      </span>
     </div>
     <div class="modal-actions">
       <button type="button" class="btn-danger" id="instanceDeleteBtn" style="display:none;">Verwijderen</button>
