@@ -241,6 +241,7 @@
     color: white;
   }
   #detailUploadBtn { background: #457b9d; }
+  #detailEditCurrentBtn { background: #6a4c93; }
   #detailResetImgBtn { background: #e63946; }
   .detail-label { display: block; text-align: left; font-size: 13px; color: #555; margin: 10px 0 4px 0; font-weight: 600; }
   #detailNotitie {
@@ -580,7 +581,8 @@
       <button type="button" id="detailValueDoneBtn">Gereed</button>
     </div>
     <div id="detailImgActions">
-      <button type="button" id="detailUploadBtn">📷 Foto wijzigen</button>
+      <button type="button" id="detailUploadBtn">📷 Nieuwe foto</button>
+      <button type="button" id="detailEditCurrentBtn">✂️ Bewerk huidige foto</button>
       <button type="button" id="detailResetImgBtn">Standaardafbeelding</button>
     </div>
     <p class="crop-hint">Tip: plak een gekopieerde afbeelding met Ctrl+V / Cmd+V terwijl dit venster open staat.</p>
@@ -955,6 +957,13 @@
     pendingImgTarget = currentDetailId;
     globalImgFileInput.click();
   });
+  document.getElementById('detailEditCurrentBtn').addEventListener('click', () => {
+    const rec = getRec(currentDetailId);
+    if (!rec) return;
+    const num = String(rec.nummer || '');
+    const url = rec.afbeelding || defaultArtUrl(num);
+    openCropModalFromUrl(url, currentDetailId);
+  });
   document.getElementById('detailResetImgBtn').addEventListener('click', async () => {
     await resetImage(currentDetailId);
     refreshDetailModal();
@@ -1124,26 +1133,36 @@
   let cropPinchDist = null;
   let cropPinchStartScale = 1;
 
+  function initCropWithImage(img, targetId) {
+    cropImg = img;
+    cropTargetId = targetId;
+    cropRotation = 0;
+    const fw = cropCanvas.width, fh = cropCanvas.height;
+    cropMinScale = Math.max(fw / img.width, fh / img.height);
+    cropScale = cropMinScale;
+    cropOffsetX = 0;
+    cropOffsetY = 0;
+    cropZoomSlider.value = 0;
+    drawCrop();
+    cropModal.classList.add('open');
+  }
+
   function openCropModal(fileOrBlob, targetId) {
     const reader = new FileReader();
     reader.onload = (e) => {
       const img = new Image();
-      img.onload = () => {
-        cropImg = img;
-        cropTargetId = targetId;
-        cropRotation = 0;
-        const fw = cropCanvas.width, fh = cropCanvas.height;
-        cropMinScale = Math.max(fw / img.width, fh / img.height);
-        cropScale = cropMinScale;
-        cropOffsetX = 0;
-        cropOffsetY = 0;
-        cropZoomSlider.value = 0;
-        drawCrop();
-        cropModal.classList.add('open');
-      };
+      img.onload = () => initCropWithImage(img, targetId);
       img.src = e.target.result;
     };
     reader.readAsDataURL(fileOrBlob);
+  }
+
+  function openCropModalFromUrl(url, targetId) {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => initCropWithImage(img, targetId);
+    img.onerror = () => alert('Kon de huidige foto niet laden om te bewerken (mogelijk een tijdelijk netwerkprobleem).');
+    img.src = url;
   }
 
   function drawCrop() {
