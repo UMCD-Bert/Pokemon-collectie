@@ -88,7 +88,7 @@
     position: fixed;
     inset: 0;
     background: rgba(0,0,0,0.65);
-    z-index: 1000;
+    z-index: 1100;
     align-items: center;
     justify-content: center;
   }
@@ -125,6 +125,11 @@
     font-size: 14px;
   }
   #cropZoomRow input[type="range"] { flex: 1; }
+  #cropRotateRow { display: flex; gap: 8px; justify-content: center; margin-bottom: 10px; }
+  #cropRotateRow button {
+    padding: 8px 14px; border-radius: 8px; border: 1px solid #b8860b; background: #fff4d6;
+    color: #5a3d00; font-weight: 600; font-size: 13px; cursor: pointer;
+  }
   .crop-hint { font-size: 12px; color: #777; margin: 0 0 14px 0; }
   .crop-actions { display: flex; gap: 8px; justify-content: center; }
   .crop-actions button {
@@ -219,6 +224,12 @@
   #detailValueRow .stepper .step-btn { width: 24px; height: 18px; font-size: 12px; border: 1px solid #b8860b; background: #fff4d6; color: #5a3d00; cursor: pointer; }
   #detailValueRow .stepper .step-btn:first-child { border-radius: 5px 5px 0 0; border-bottom: none; }
   #detailValueRow .stepper .step-btn:last-child { border-radius: 0 0 5px 5px; }
+  #detailValueDoneBtn {
+    display: none;
+    background: #1d7a4c; color: white; border: none; border-radius: 6px;
+    padding: 7px 12px; font-size: 13px; font-weight: 600; cursor: pointer; margin-left: 4px;
+  }
+  #detailValueDoneBtn.visible { display: inline-block; }
   #detailImgActions { display: flex; gap: 8px; justify-content: center; margin-bottom: 6px; flex-wrap: wrap; }
   #detailImgActions button {
     padding: 8px 12px;
@@ -419,7 +430,8 @@
     @page { size: A4; margin: 5mm; }
 
     body.manco-mode .check-row .row-value,
-    body.manco-mode .check-row .row-num { display: none; }
+    body.manco-mode .check-row .row-value .stepper,
+    body.manco-mode .check-row .row-num { display: none !important; }
     body.manco-mode #checklistTable {
       display: grid; grid-auto-flow: column;
       grid-template-columns: repeat(var(--manco-cols, 7), 1fr);
@@ -530,6 +542,10 @@
       <input type="range" id="cropZoomSlider" min="0" max="100" value="0">
       <span>🔍+</span>
     </div>
+    <div id="cropRotateRow">
+      <button type="button" id="cropRotateLeftBtn" title="Draai linksom">⟲ Links</button>
+      <button type="button" id="cropRotateRightBtn" title="Draai rechtsom">⟳ Rechts</button>
+    </div>
     <p class="crop-hint">Sleep om te verschuiven, gebruik de schuifbalk om in/uit te zoomen.</p>
     <div class="crop-actions">
       <button type="button" id="cropCancelBtn">Annuleren</button>
@@ -561,6 +577,7 @@
         <button type="button" class="step-btn" data-delta="0.01">▲</button>
         <button type="button" class="step-btn" data-delta="-0.01">▼</button>
       </span>
+      <button type="button" id="detailValueDoneBtn">Gereed</button>
     </div>
     <div id="detailImgActions">
       <button type="button" id="detailUploadBtn">📷 Foto wijzigen</button>
@@ -915,7 +932,19 @@
     await setValue(currentDetailId, e.target.value);
     detailValueInput.value = formatValue(getRec(currentDetailId).waarde);
   });
-  detailValueInput.addEventListener('focus', (e) => e.target.select());
+  detailValueInput.addEventListener('focus', (e) => {
+    e.target.select();
+    document.getElementById('detailValueDoneBtn').classList.add('visible');
+    setTimeout(() => {
+      e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 300); // wait for the keyboard animation so the field ends up visible above it
+  });
+  detailValueInput.addEventListener('blur', () => {
+    document.getElementById('detailValueDoneBtn').classList.remove('visible');
+  });
+  document.getElementById('detailValueDoneBtn').addEventListener('click', () => {
+    detailValueInput.blur();
+  });
   document.getElementById('detailValueRow').addEventListener('click', async (e) => {
     const btn = e.target.closest('.step-btn');
     if (!btn || !currentDetailId) return;
@@ -1089,6 +1118,7 @@
   let cropScale = 1;
   let cropOffsetX = 0;
   let cropOffsetY = 0;
+  let cropRotation = 0;
   let cropDragging = false;
   let cropLastX = 0, cropLastY = 0;
   let cropPinchDist = null;
@@ -1101,6 +1131,7 @@
       img.onload = () => {
         cropImg = img;
         cropTargetId = targetId;
+        cropRotation = 0;
         const fw = cropCanvas.width, fh = cropCanvas.height;
         cropMinScale = Math.max(fw / img.width, fh / img.height);
         cropScale = cropMinScale;
@@ -1120,20 +1151,43 @@
     cropCtx.clearRect(0, 0, fw, fh);
     cropCtx.save();
     cropCtx.translate(fw / 2 + cropOffsetX, fh / 2 + cropOffsetY);
+    cropCtx.rotate(cropRotation * Math.PI / 180);
     cropCtx.scale(cropScale, cropScale);
     cropCtx.drawImage(cropImg, -cropImg.width / 2, -cropImg.height / 2);
     cropCtx.restore();
   }
 
+  function rotatedDims() {
+    return (cropRotation % 180 === 0)
+      ? { w: cropImg.width, h: cropImg.height }
+      : { w: cropImg.height, h: cropImg.width };
+  }
+
   function clampCropOffsets() {
     const fw = cropCanvas.width, fh = cropCanvas.height;
-    const halfW = (cropImg.width * cropScale) / 2;
-    const halfH = (cropImg.height * cropScale) / 2;
+    const dims = rotatedDims();
+    const halfW = (dims.w * cropScale) / 2;
+    const halfH = (dims.h * cropScale) / 2;
     const maxOffX = Math.max(0, halfW - fw / 2);
     const maxOffY = Math.max(0, halfH - fh / 2);
     cropOffsetX = Math.min(maxOffX, Math.max(-maxOffX, cropOffsetX));
     cropOffsetY = Math.min(maxOffY, Math.max(-maxOffY, cropOffsetY));
   }
+
+  function rotateCrop(delta) {
+    cropRotation = (cropRotation + delta + 360) % 360;
+    const fw = cropCanvas.width, fh = cropCanvas.height;
+    const dims = rotatedDims();
+    cropMinScale = Math.max(fw / dims.w, fh / dims.h);
+    cropScale = cropMinScale;
+    cropOffsetX = 0;
+    cropOffsetY = 0;
+    cropZoomSlider.value = 0;
+    clampCropOffsets();
+    drawCrop();
+  }
+  document.getElementById('cropRotateLeftBtn').addEventListener('click', () => rotateCrop(-90));
+  document.getElementById('cropRotateRightBtn').addEventListener('click', () => rotateCrop(90));
 
   cropZoomSlider.addEventListener('input', () => {
     const t = parseFloat(cropZoomSlider.value) / 100; // 0..1
@@ -1226,6 +1280,7 @@
     const outCtx = outCanvas.getContext('2d');
     outCtx.save();
     outCtx.translate(outW / 2 + cropOffsetX * ratio, outH / 2 + cropOffsetY * ratio);
+    outCtx.rotate(cropRotation * Math.PI / 180);
     outCtx.scale(cropScale * ratio, cropScale * ratio);
     outCtx.drawImage(cropImg, -cropImg.width / 2, -cropImg.height / 2);
     outCtx.restore();
@@ -1320,7 +1375,7 @@
     applyFilter();
   }
   viewToggleBtn.addEventListener('click', () => setView(currentView === 'cards' ? 'checklist' : 'cards'));
-  sortMode.addEventListener('change', () => { if (currentView === 'cards') reorderGrid(); else renderChecklist(); });
+  sortMode.addEventListener('change', () => { if (currentView === 'cards') reorderGrid(); else { renderChecklist(); applyFilter(); } });
 
   function updateProgress() {
     const total = records.length;
