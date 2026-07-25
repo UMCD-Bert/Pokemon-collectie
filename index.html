@@ -59,7 +59,7 @@
     color: white;
   }
   #printBtn { background: #457b9d; }
-  #printMancoBtn { background: #6a4c93; }
+  #printMancoBtn { background: none; }
   #resetOwnedBtn { background: #6c757d; }
   #viewToggleBtn { background: #2a9d8f; }
   #settingsBtn {
@@ -129,6 +129,13 @@
   #cropRotateRow button {
     padding: 8px 14px; border-radius: 8px; border: 1px solid #b8860b; background: #fff4d6;
     color: #5a3d00; font-weight: 600; font-size: 13px; cursor: pointer;
+  }
+  .crop-fine-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 13px; color: #555; }
+  .crop-fine-row label { width: 70px; text-align: left; flex-shrink: 0; }
+  .crop-fine-row input[type="range"] { flex: 1; }
+  .crop-fine-row button {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid #ccc; background: #f4f4f4;
+    color: #666; font-size: 13px; cursor: pointer; flex-shrink: 0;
   }
   .crop-hint { font-size: 12px; color: #777; margin: 0 0 14px 0; }
   .crop-actions { display: flex; gap: 8px; justify-content: center; }
@@ -303,10 +310,8 @@
   }
   .art-frame img { max-width: 90%; max-height: 90%; width: auto; height: auto; object-fit: contain; }
   .card-footer { text-align: center; font-size: 1.6mm; color: #5a3d00; min-height: 4mm; }
-  .card-footer .value-row { display: none; align-items: center; justify-content: center; gap: 0.8mm; }
-  .card.is-owned .card-footer .value-row { display: flex; }
-  .value-row .euro { font-weight: 700; font-size: 2.6mm; }
-  .value-row input.value-input { width: 15mm; font-size: 2.6mm; border: 0.3mm solid #b8860b; border-radius: 0.6mm; padding: 0.3mm 0.5mm; text-align: right; }
+  .card-footer .value-row-readonly { display: block; font-weight: 700; font-size: 2.4mm; color: #1d7a4c; }
+  .card-footer .card-count { font-weight: 600; font-size: 2mm; color: #5a3d00; }
   .stepper { display: flex; flex-direction: column; }
   .stepper .step-btn {
     width: 3mm; height: 2.3mm; padding: 0; font-size: 1.6mm; line-height: 1;
@@ -416,9 +421,7 @@
   .check-row .row-num { color: #888; width: 42px; flex-shrink: 0; }
   .check-row .row-name { flex: 1; }
   .check-row input[type="checkbox"] { width: 15px; height: 15px; flex-shrink: 0; cursor: pointer; }
-  .check-row .row-value { display: flex; align-items: center; gap: 3px; flex-shrink: 0; }
-  .check-row input.value-input { width: 62px; font-size: 13px; border: 1px solid #ccc; border-radius: 4px; padding: 3px 5px; text-align: right; }
-  .check-row .stepper .step-btn { width: 16px; height: 12px; font-size: 9px; border: 1px solid #ccc; background: #f4f6f8; color: #444; }
+  .check-row .row-value-readonly { color: #1d7a4c; font-weight: 700; font-size: 12px; flex-shrink: 0; }
 
   @media print {
     body { background: white; padding: 0; }
@@ -430,8 +433,7 @@
     .check-row { font-size: 11px; }
     @page { size: A4; margin: 5mm; }
 
-    body.manco-mode .check-row .row-value,
-    body.manco-mode .check-row .row-value .stepper,
+    body.manco-mode .check-row .row-value-readonly,
     body.manco-mode .check-row .row-num { display: none !important; }
     body.manco-mode #checklistTable {
       display: grid; grid-auto-flow: column;
@@ -447,10 +449,159 @@
       width: var(--manco-checkbox, 3mm); height: var(--manco-checkbox, 3mm); accent-color: #2c3e50; flex-shrink: 0;
     }
   }
+  /* ---------- Tabs ---------- */
+  #tabBar { display: flex; justify-content: center; gap: 8px; margin: 0 0 14px 0; flex-wrap: wrap; }
+  .tab-btn {
+    background: #eef1f4; color: #2c3e50; border: 1px solid #ccc; padding: 8px 16px;
+    border-radius: 20px; font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+  .tab-btn.active { background: #2c3e50; color: white; border-color: #2c3e50; }
+  @media print { #tabBar { display: none; } }
+  #totalsBar { text-align: center; font-size: 13px; color: #444; margin-bottom: 12px; }
+  @media print { #totalsBar { display: none; } }
+
+  /* ---------- Item tab (generic TCG-extra section) ---------- */
+  #extraCountStatus { text-align: center; font-size: 13px; color: #666; margin-bottom: 8px; }
+  #extraGrid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px;
+    max-width: 1100px; margin: 0 auto;
+  }
+  .extra-card {
+    background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 5px rgba(0,0,0,0.15); cursor: pointer;
+  }
+  .extra-card.hidden { display: none; }
+  .extra-thumb {
+    width: 100%; aspect-ratio: 1 / 1; background: #f4f6f8; display: flex; align-items: center; justify-content: center; overflow: hidden;
+  }
+  .extra-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .extra-thumb .placeholder-mark { font-size: 30px; color: #ccc; }
+  .extra-info { padding: 8px 10px 10px 10px; }
+  .extra-naam { font-weight: 700; color: #2c3e50; font-size: 14px; }
+  .extra-set { color: #888; font-size: 11px; margin-top: 1px; }
+  .extra-waarde { color: #1d7a4c; font-weight: 700; font-size: 13px; margin-top: 4px; }
+
+  #extraFab {
+    position: fixed; bottom: 22px; right: 22px; width: 54px; height: 54px; border-radius: 50%;
+    background: #2c3e50; color: white; font-size: 28px; border: none; box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    display: flex; align-items: center; justify-content: center; z-index: 40; cursor: pointer;
+  }
+  @media print { #extraFab { display: none; } }
+
+  /* ---------- Generic modal (reused for the item detail/add modal) ---------- */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000;
+    align-items: flex-start; justify-content: center; padding: 24px 16px; overflow-y: auto;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: white; border-radius: 14px; padding: 20px; max-width: 380px; width: 100%;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.3); position: relative; margin: auto;
+  }
+  .modal-close {
+    position: absolute; top: 8px; right: 8px; width: 30px; height: 30px; border-radius: 50%;
+    border: none; background: #eef1f4; color: #2c3e50; font-size: 18px; cursor: pointer; line-height: 1;
+  }
+  .modal-box h3 { margin: 0 0 14px 0; color: #2c3e50; text-align: center; }
+  .field-label { display: block; text-align: left; font-size: 13px; color: #555; margin: 10px 0 3px 0; font-weight: 600; }
+  .field-input, .field-textarea {
+    width: 100%; border: 1px solid #ccc; border-radius: 6px; padding: 9px 10px;
+    font-size: 14px; font-family: inherit; box-sizing: border-box;
+  }
+  .field-textarea { resize: vertical; }
+  .modal-actions { display: flex; gap: 8px; justify-content: center; margin-top: 16px; }
+  .modal-actions button { padding: 10px 16px; border-radius: 8px; border: none; color: white; font-size: 14px; cursor: pointer; font-weight: 600; }
+  .btn-primary { background: #1d7a4c; }
+  .btn-secondary { background: #6c757d; }
+  .btn-danger { background: #e63946; }
+
+  #extraArtFrame {
+    width: 160px; aspect-ratio: 1 / 1; background: #f4f6f8; border: 2px solid #b8860b; border-radius: 8px;
+    margin: 0 auto 10px auto; display: flex; align-items: center; justify-content: center; overflow: hidden;
+  }
+  #extraArtFrame img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  #extraImgActions { display: flex; gap: 8px; justify-content: center; margin-bottom: 6px; flex-wrap: wrap; }
+  #extraImgActions button { padding: 8px 12px; border-radius: 8px; border: none; font-weight: 600; font-size: 12px; cursor: pointer; color: white; }
+  #extraUploadBtn { background: #457b9d; }
+  #extraEditCurrentBtn { background: #6a4c93; }
+
+  #extraValueRow { justify-content: center; margin: 6px 0 4px 0; gap: 6px; }
+  #extraValueRow .euro { font-weight: 700; font-size: 16px; }
+  #eWaarde { width: 80px; font-size: 16px; padding: 6px 8px; border: 1px solid #b8860b; border-radius: 6px; text-align: right; }
+  #extraValueRow .stepper .step-btn { width: 24px; height: 18px; font-size: 12px; border: 1px solid #b8860b; background: #fff4d6; color: #5a3d00; cursor: pointer; }
+  #extraValueRow .stepper .step-btn:first-child { border-radius: 5px 5px 0 0; border-bottom: none; }
+  #extraValueRow .stepper .step-btn:last-child { border-radius: 0 0 5px 5px; }
+  /* ---------- Kaartexemplaren (instances) ---------- */
+  #detailOwnedHint { font-size: 12px; color: #999; text-align: center; margin: -6px 0 8px 0; min-height: 14px; }
+  #detailTotalValueLine, #extraTotalValueLine {
+    text-align: center; font-weight: 700; color: #1d7a4c; font-size: 14px; margin: 4px 0 12px 0;
+  }
+  .add-instance-btn {
+    display: block; width: 100%; margin: 6px 0 12px 0; padding: 9px; border-radius: 8px;
+    border: 1.5px dashed #b8860b; background: #fffaf0; color: #8a5a1a; font-weight: 600; font-size: 13px; cursor: pointer;
+  }
+  #detailInstancesList, #extraInstancesList { display: flex; flex-direction: column; gap: 6px; }
+  .instance-row {
+    display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: #f7f7f7;
+    border-radius: 8px; cursor: pointer; text-align: left;
+  }
+  .instance-row .inst-thumb {
+    width: 34px; height: 34px; border-radius: 6px; background: #e8e8e8; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; overflow: hidden; font-size: 16px; color: #bbb;
+  }
+  .instance-row .inst-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .instance-row .inst-info { flex: 1; min-width: 0; }
+  .instance-row .inst-title { font-size: 12.5px; font-weight: 600; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .instance-row .inst-sub { font-size: 11px; color: #888; }
+  .instance-row .inst-value { font-size: 12.5px; font-weight: 700; color: #1d7a4c; flex-shrink: 0; }
+  .placeholder-mark { font-size: 30px; color: #ccc; }
+
+  #instanceArtFrame {
+    width: 130px; aspect-ratio: 1/1; background: #f4f6f8; border: 2px solid #b8860b; border-radius: 8px;
+    margin: 0 auto 8px auto; display: flex; align-items: center; justify-content: center; overflow: hidden;
+  }
+  #instanceArtFrame img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  #instanceImgActions { display: flex; gap: 8px; justify-content: center; margin-bottom: 4px; }
+  #instanceImgActions button { padding: 7px 12px; border-radius: 8px; border: none; font-weight: 600; font-size: 12px; cursor: pointer; color: white; background: #457b9d; }
+  #instanceEditCurrentBtn { background: #6a4c93; }
+
+  #instanceValueRow { justify-content: center; margin: 4px 0; gap: 6px; }
+  #instanceValueRow .euro { font-weight: 700; font-size: 15px; }
+  #iWaarde { width: 74px; font-size: 15px; padding: 6px 8px; border: 1px solid #b8860b; border-radius: 6px; text-align: right; }
+  #instanceValueRow .stepper { flex-direction: row; }
+  #instanceValueRow .stepper .step-btn { width: 24px; height: 26px; font-size: 14px; border: 1px solid #b8860b; background: #fff4d6; color: #5a3d00; cursor: pointer; }
+  #instanceValueRow .stepper .step-btn:first-child { border-radius: 6px 0 0 6px; border-right: none; }
+  #instanceValueRow .stepper .step-btn:last-child { border-radius: 0 6px 6px 0; }
+
+  #instanceAantalRow { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 4px; }
+  #instanceAantalRow button {
+    width: 32px; height: 32px; border-radius: 50%; border: 1px solid #ccc; background: #f4f4f4; font-size: 16px; cursor: pointer; color: #444;
+  }
+  #iAantal { width: 50px; text-align: center; font-size: 15px; padding: 6px 4px; border: 1px solid #ccc; border-radius: 6px; }
+
+  .combo-wrap { position: relative; }
+  .combo-menu {
+    display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 60;
+    background: white; border: 1px solid #ccc; border-radius: 6px; max-height: 170px; overflow-y: auto;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.18); margin-top: 2px;
+  }
+  .combo-menu.open { display: block; }
+  .combo-menu .combo-option { padding: 9px 12px; font-size: 13px; color: #333; cursor: pointer; }
+  .combo-menu .combo-option:hover, .combo-menu .combo-option:active { background: #f0f0f0; }
 </style>
 </head>
 <body>
 <h1>Pokemon collectie van Bert &amp; Ellen</h1>
+
+<div id="tabBar">
+  <button type="button" class="tab-btn active" data-tab="pokemon">Pokémon</button>
+  <button type="button" class="tab-btn" data-tab="item">Item</button>
+  <button type="button" class="tab-btn" data-tab="tool">Tool</button>
+  <button type="button" class="tab-btn" data-tab="supporter">Supporter</button>
+  <button type="button" class="tab-btn" data-tab="stadium">Stadium</button>
+  <button type="button" class="tab-btn" data-tab="energy">Energy</button>
+</div>
+
+<div id="totalsBar">Pokémon: &euro; 0,00 &nbsp;·&nbsp; Item: &euro; 0,00 &nbsp;·&nbsp; <strong>Totaal: &euro; 0,00</strong></div>
 
 <button id="settingsBtn" title="Supabase-instellingen">⚙️</button>
 
@@ -468,6 +619,7 @@
   </div>
 </div>
 
+<div id="pokemonSection">
 <div class="toolbar toolbar-browse">
   <span class="search-wrap">
     <input type="text" id="search" placeholder="Zoek op naam of nummer...">
@@ -486,6 +638,15 @@
       <button type="button" class="dropdown-item" data-value="bezit">Alleen in bezit</button>
       <button type="button" class="dropdown-item" data-value="mis">Alleen ontbrekend</button>
     </div>
+  </div>
+
+  <div class="dropdown" id="pokemonSerieDropdown">
+    <button type="button" class="dropdown-btn" id="pokemonSerieDropdownBtn">Serie: Alle <span class="caret">▾</span></button>
+    <div class="dropdown-menu" id="pokemonSerieMenu"></div>
+  </div>
+  <div class="dropdown" id="pokemonSetDropdown">
+    <button type="button" class="dropdown-btn" id="pokemonSetDropdownBtn">Set: Alle <span class="caret">▾</span></button>
+    <div class="dropdown-menu" id="pokemonSetMenu"></div>
   </div>
 
   <select id="sortMode" class="visually-hidden-select">
@@ -528,8 +689,7 @@
   <div id="gaugeLabel">Verzameld: 0 / 0</div>
   <div id="valueLabel">Totale waarde verzameling: &euro; 0,00</div>
 </div>
-<div id="countStatus"></div>
-<div id="imgHint">Tip: klik op het camera-icoontje op een kaart die je in bezit hebt om een eigen foto te uploaden, of klik op de kaart en plak een gekopieerde afbeelding met Ctrl+V / Cmd+V.</div>
+<div id="countStatus" style="display:none;"></div>
 <input type="file" id="globalImgFileInput" accept="image/*" style="display:none">
 
 <div id="cropModal">
@@ -546,6 +706,16 @@
     <div id="cropRotateRow">
       <button type="button" id="cropRotateLeftBtn" title="Draai linksom">⟲ Links</button>
       <button type="button" id="cropRotateRightBtn" title="Draai rechtsom">⟳ Rechts</button>
+    </div>
+    <div class="crop-fine-row">
+      <label>Kantelen</label>
+      <input type="range" id="cropTiltSlider" min="-45" max="45" value="0" step="0.5">
+      <button type="button" id="cropTiltResetBtn" title="Terugzetten">↺</button>
+    </div>
+    <div class="crop-fine-row">
+      <label>Perspectief</label>
+      <input type="range" id="cropSkewSlider" min="-30" max="30" value="0" step="0.5">
+      <button type="button" id="cropSkewResetBtn" title="Terugzetten">↺</button>
     </div>
     <p class="crop-hint">Sleep om te verschuiven, gebruik de schuifbalk om in/uit te zoomen.</p>
     <div class="crop-actions">
@@ -568,24 +738,19 @@
     <label class="detail-owned-row">
       <input type="checkbox" id="detailOwnedCheck"> In bezit
     </label>
-    <div id="detailValueRow" class="value-row">
-      <span class="stepper euro-stepper">
-        <button type="button" class="step-btn" data-delta="1">▲</button>
-        <button type="button" class="step-btn" data-delta="-1">▼</button>
-      </span>
-      <span class="euro">&euro;</span><input type="text" inputmode="decimal" id="detailValueInput" placeholder="0,00">
-      <span class="stepper cent-stepper">
-        <button type="button" class="step-btn" data-delta="0.01">▲</button>
-        <button type="button" class="step-btn" data-delta="-0.01">▼</button>
-      </span>
-      <button type="button" id="detailValueDoneBtn">Gereed</button>
-    </div>
+    <div id="detailOwnedHint"></div>
+    <div id="detailTotalValueLine">Totale waarde: &euro; 0,00</div>
     <div id="detailImgActions">
       <button type="button" id="detailUploadBtn">📷 Nieuwe foto</button>
       <button type="button" id="detailEditCurrentBtn">✂️ Bewerk huidige foto</button>
       <button type="button" id="detailResetImgBtn">Standaardafbeelding</button>
     </div>
     <p class="crop-hint">Tip: plak een gekopieerde afbeelding met Ctrl+V / Cmd+V terwijl dit venster open staat.</p>
+
+    <label class="field-label">Kaartexemplaren</label>
+    <div id="detailInstancesList"></div>
+    <button type="button" class="add-instance-btn" id="detailAddInstanceBtn">+ Exemplaar toevoegen</button>
+
     <label for="detailNotitie" class="detail-label">Notitie</label>
     <textarea id="detailNotitie" rows="3" placeholder="Bijv. conditie, aankoopdatum, opmerkingen..."></textarea>
   </div>
@@ -594,6 +759,113 @@
 
 <div class="grid active" id="grid"></div>
 <div id="checklistView"><div id="checklistTable"></div></div>
+</div>
+
+<div id="extraSection" style="display:none;">
+  <div class="toolbar toolbar-browse">
+    <span class="search-wrap">
+      <input type="text" id="extraSearch" placeholder="Zoek op naam...">
+      <button type="button" id="extraSearchClearBtn" title="Wis zoekopdracht">&times;</button>
+    </span>
+    <div class="dropdown" id="extraSortDropdown">
+      <button type="button" class="dropdown-btn" id="extraSortDropdownBtn">Sorteer: Nieuwste <span class="caret">▾</span></button>
+      <div class="dropdown-menu">
+        <button type="button" class="dropdown-item" data-value="nieuw">Nieuwste eerst</button>
+        <button type="button" class="dropdown-item" data-value="naam">Op naam</button>
+        <button type="button" class="dropdown-item" data-value="waarde">Op waarde</button>
+      </div>
+    </div>
+    <div class="dropdown" id="extraSerieDropdown">
+      <button type="button" class="dropdown-btn" id="extraSerieDropdownBtn">Serie: Alle <span class="caret">▾</span></button>
+      <div class="dropdown-menu" id="extraSerieMenu"></div>
+    </div>
+    <div class="dropdown" id="extraSetDropdown">
+      <button type="button" class="dropdown-btn" id="extraSetDropdownBtn">Set: Alle <span class="caret">▾</span></button>
+      <div class="dropdown-menu" id="extraSetMenu"></div>
+    </div>
+  </div>
+  <div id="extraCountStatus"></div>
+  <div class="grid" id="extraGrid"></div>
+  <button id="extraFab" title="Nieuw item toevoegen">+</button>
+</div>
+
+<div class="modal-overlay" id="extraDetailModal">
+  <div class="modal-box">
+    <button type="button" class="modal-close" id="extraDetailCloseBtn">&times;</button>
+    <h3 id="extraDetailTitle">Item</h3>
+    <div id="extraArtFrame">
+      <img id="extraDetailImg" src="" alt="" style="display:none;">
+      <span id="extraDetailImgPlaceholder" class="placeholder-mark">🎴</span>
+    </div>
+    <label class="field-label">Naam</label>
+    <input type="text" class="field-input" id="eNaam" placeholder="Bijv. Poké Ball">
+    <div id="extraTotalValueLine">Totale waarde: &euro; 0,00</div>
+
+    <label class="field-label">Kaartexemplaren</label>
+    <div id="extraInstancesList"></div>
+    <button type="button" class="add-instance-btn" id="extraAddInstanceBtn">+ Exemplaar toevoegen</button>
+
+    <label class="field-label">Notitie</label>
+    <textarea class="field-textarea" id="eNotitie" rows="3" placeholder="Bijv. conditie, set, opmerkingen..."></textarea>
+    <div class="modal-actions">
+      <button type="button" class="btn-danger" id="extraDeleteBtn">Verwijderen</button>
+      <button type="button" class="btn-secondary" id="extraDoneBtn">Sluiten</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="instanceModal">
+  <div class="modal-box">
+    <button type="button" class="modal-close" id="instanceCloseBtn">&times;</button>
+    <h3 id="instanceModalTitle">Kaartexemplaar</h3>
+    <div id="instanceArtFrame">
+      <img id="instanceImg" src="" alt="" style="display:none;">
+      <span id="instanceImgPlaceholder" class="placeholder-mark">🎴</span>
+    </div>
+    <div id="instanceImgActions">
+      <button type="button" id="instanceUploadBtn">📷 Foto toevoegen</button>
+      <button type="button" id="instanceEditCurrentBtn" style="display:none;">✂️ Bewerk foto</button>
+    </div>
+    <label class="field-label">Serie</label>
+    <div class="combo-wrap">
+      <input type="text" class="field-input" id="iSerie" autocomplete="off">
+      <div class="combo-menu" id="iSerieMenu"></div>
+    </div>
+    <label class="field-label">Set</label>
+    <div class="combo-wrap">
+      <input type="text" class="field-input" id="iSet" autocomplete="off">
+      <div class="combo-menu" id="iSetMenu"></div>
+    </div>
+    <label class="field-label">Versie</label>
+    <div class="combo-wrap">
+      <input type="text" class="field-input" id="iVersie" autocomplete="off">
+      <div class="combo-menu" id="iVersieMenu"></div>
+    </div>
+    <label class="field-label">Waarde (per stuk)</label>
+    <div class="value-row" id="instanceValueRow">
+      <span class="stepper euro-stepper">
+        <button type="button" class="step-btn" data-delta="-1">−</button>
+        <button type="button" class="step-btn" data-delta="1">+</button>
+      </span>
+      <span class="euro">&euro;</span><input type="text" inputmode="decimal" id="iWaarde" placeholder="0,00">
+      <span class="stepper cent-stepper">
+        <button type="button" class="step-btn" data-delta="-0.01">−</button>
+        <button type="button" class="step-btn" data-delta="0.01">+</button>
+      </span>
+    </div>
+    <label class="field-label">Aantal</label>
+    <div id="instanceAantalRow">
+      <button type="button" id="iAantalMin">−</button>
+      <input type="text" inputmode="numeric" id="iAantal" value="1">
+      <button type="button" id="iAantalPlus">+</button>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn-danger" id="instanceDeleteBtn" style="display:none;">Verwijderen</button>
+      <button type="button" class="btn-primary" id="instanceSaveBtn">Opslaan</button>
+    </div>
+  </div>
+</div>
+
 
 <script>
   const search = document.getElementById('search');
@@ -658,6 +930,73 @@
   const valueLabel = document.getElementById('valueLabel');
 
   const CONFIG_KEY = 'supabase_pokemon_config_v1';
+
+  // ---------- Series / set / versie reference data ----------
+  const CARD_SERIES = {
+    'Base Series': ['Base Set', 'Jungle', 'Fossil', 'Base Set 2', 'Team Rocket', 'Gym Heroes', 'Gym Challenge'],
+    'Neo Series': ['Neo Genesis', 'Neo Discovery', 'Neo Revelation', 'Neo Destiny'],
+    'Legendary Collection': ['Legendary Collection'],
+    'e-Card Series': ['Expedition Base Set', 'Aquapolis', 'Skyridge'],
+    'EX Series': ['EX Ruby & Sapphire', 'EX Sandstorm', 'EX Dragon', 'EX Team Magma vs Team Aqua', 'EX Hidden Legends', 'EX FireRed & LeafGreen', 'EX Team Rocket Returns', 'EX Deoxys', 'EX Emerald', 'EX Unseen Forces', 'EX Delta Species', 'EX Legend Maker', 'EX Holon Phantoms', 'EX Crystal Guardians', 'EX Dragon Frontiers', 'EX Power Keepers'],
+    'Diamond & Pearl Series': ['Diamond & Pearl', 'Mysterious Treasures', 'Secret Wonders', 'Great Encounters', 'Majestic Dawn', 'Legends Awakened', 'Stormfront'],
+    'Platinum Series': ['Platinum', 'Rising Rivals', 'Supreme Victors', 'Arceus'],
+    'HeartGold & SoulSilver Series': ['HeartGold & SoulSilver', 'Unleashed', 'Undaunted', 'Triumphant', 'Call of Legends'],
+    'Black & White Series': ['Black & White', 'Emerging Powers', 'Noble Victories', 'Next Destinies', 'Dark Explorers', 'Dragons Exalted', 'Boundaries Crossed', 'Plasma Storm', 'Plasma Freeze', 'Plasma Blast', 'Legendary Treasures'],
+    'XY Series': ['XY', 'Flashfire', 'Furious Fists', 'Phantom Forces', 'Primal Clash', 'Roaring Skies', 'Ancient Origins', 'BREAKthrough', 'BREAKpoint', 'Generations', 'Fates Collide', 'Steam Siege', 'Evolutions'],
+    'Sun & Moon Series': ['Sun & Moon', 'Guardians Rising', 'Burning Shadows', 'Shining Legends', 'Crimson Invasion', 'Ultra Prism', 'Forbidden Light', 'Celestial Storm', 'Dragon Majesty', 'Lost Thunder', 'Team Up', 'Detective Pikachu', 'Unbroken Bonds', 'Unified Minds', 'Hidden Fates', 'Cosmic Eclipse'],
+    'Sword & Shield Series': ['Sword & Shield', 'Rebel Clash', 'Darkness Ablaze', "Champion's Path", 'Vivid Voltage', 'Shining Fates', 'Battle Styles', 'Chilling Reign', 'Evolving Skies', 'Celebrations', 'Fusion Strike', 'Brilliant Stars', 'Astral Radiance', 'Pokémon GO', 'Lost Origin', 'Silver Tempest', 'Crown Zenith'],
+    'Scarlet & Violet Series': ['Scarlet & Violet', 'Paldea Evolved', 'Obsidian Flames', 'Scarlet & Violet 151', 'Paradox Rift', 'Paldean Fates', 'Temporal Forces', 'Twilight Masquerade', 'Shrouded Fable', 'Stellar Crown', 'Surging Sparks', 'Prismatic Evolutions', 'Journey Together', 'Destined Rivals'],
+    'Mega Evolution Series': ['Mega Evolution', 'Mega Evolution 3 - Perfect Order', 'Mega Evolution 4 - Chaos Rising', 'Mega Evolution 5 - Pitch Black', 'Mega Evolution 5.5 - 30th Celebration'],
+    "Overig / promo's": ["McDonald's Collection", '25th Anniversary Celebrations: Classic Collection', 'Trainer Gallery', 'Pokémon TCG Classic', 'Black Star Promo', 'Overig promo']
+  };
+  const CARD_VERSIES = ['Normaal', 'Holo', 'Reverse Holo', '1st Edition', 'Shadowless', 'Full Art', 'Alternate Art', 'Rainbow Rare', 'Gold / Secret Rare', 'Promo'];
+
+  let openComboMenu = null;
+
+  function setupCombo(input, menu, getOptions) {
+    function renderOptions() {
+      const q = input.value.toLowerCase();
+      const opts = getOptions().filter(o => o.toLowerCase().includes(q));
+      if (opts.length === 0) {
+        menu.classList.remove('open');
+        if (openComboMenu === menu) openComboMenu = null;
+        return;
+      }
+      menu.innerHTML = opts.slice(0, 60).map(o => `<div class="combo-option">${o}</div>`).join('');
+      menu.querySelectorAll('.combo-option').forEach(opt => {
+        opt.addEventListener('click', () => {
+          input.value = opt.textContent;
+          menu.classList.remove('open');
+          openComboMenu = null;
+        });
+      });
+      menu.classList.add('open');
+      openComboMenu = menu;
+    }
+    input.addEventListener('focus', renderOptions);
+    input.addEventListener('input', renderOptions);
+  }
+
+  document.addEventListener('click', (e) => {
+    if (openComboMenu && !openComboMenu.closest('.combo-wrap').contains(e.target)) {
+      openComboMenu.classList.remove('open');
+      openComboMenu = null;
+    }
+  });
+
+  const iSerieInput = document.getElementById('iSerie');
+  const iSetInput = document.getElementById('iSet');
+  const iVersieInput = document.getElementById('iVersie');
+  const allSetsFlat = [];
+  Object.values(CARD_SERIES).forEach(sets => [...sets].reverse().forEach(s => { if (!allSetsFlat.includes(s)) allSetsFlat.push(s); }));
+
+  setupCombo(iSerieInput, document.getElementById('iSerieMenu'), () => [...Object.keys(CARD_SERIES)].reverse());
+  setupCombo(iSetInput, document.getElementById('iSetMenu'), () => {
+    const sets = CARD_SERIES[iSerieInput.value];
+    return sets ? [...sets].reverse() : allSetsFlat;
+  });
+  setupCombo(iVersieInput, document.getElementById('iVersieMenu'), () => CARD_VERSIES);
+
   let config = null; // { url, table, key }
   let records = []; // flat rows: { id, nummer, naam, afbeelding, inbezit, waarde, notitie }
   let currentView = 'cards';
@@ -670,6 +1009,20 @@
   function formatValue(v) {
     if (v === '' || v === null || v === undefined || isNaN(parseFloat(v))) return '';
     return parseFloat(v).toFixed(2);
+  }
+
+  // Typing "10" (no separator) means 10 cent (most cards are under €1).
+  // Typing "1,50" or "1.50" is read as a full amount, i.e. €1,50.
+  function parseMoneyInput(raw) {
+    const trimmed = String(raw).trim();
+    if (trimmed === '') return null;
+    const normalized = trimmed.replace(',', '.');
+    if (!normalized.includes('.')) {
+      const cents = parseInt(normalized, 10);
+      return isNaN(cents) ? null : cents / 100;
+    }
+    const val = parseFloat(normalized);
+    return isNaN(val) ? null : val;
   }
 
   const DEFAULT_CONFIG = {
@@ -746,6 +1099,7 @@
       applyFilter();
       updateProgress();
       backfillMissingImages();
+      await loadAllInstances();
     } catch (err) {
       statusEl.style.display = 'block';
       statusEl.textContent = 'Kon niet laden: ' + err.message + ' — controleer Project URL, tabelnaam en key in de instellingen.';
@@ -802,7 +1156,7 @@
     const naam = rec.naam || '(onbekend)';
     const owned = !!rec.inbezit;
     const value = (rec.waarde !== undefined && rec.waarde !== null) ? rec.waarde : '';
-    const imgUrl = rec.afbeelding || defaultArtUrl(num);
+    const imgUrl = mainImageFor('pokemon', rec.id, rec.afbeelding || defaultArtUrl(num));
     const fallbackUrl = defaultSpriteUrl(num);
     const artBlock = imgUrl
       ? `<img src="${imgUrl}" alt="${naam}" onerror="this.onerror=null; this.src='${fallbackUrl}'; this.onerror=function(){this.replaceWith(Object.assign(document.createElement('div'),{className:'placeholder-mark',textContent:'?'}))};">`
@@ -819,17 +1173,7 @@
         </div>
         <div class="art-frame">${artBlock}</div>
         <div class="card-footer">
-          <span class="value-row">
-            <span class="stepper euro-stepper">
-              <button type="button" class="step-btn" data-delta="1">▲</button>
-              <button type="button" class="step-btn" data-delta="-1">▼</button>
-            </span>
-            <span class="euro">&euro;</span><input type="text" inputmode="decimal" class="value-input" value="${formatValue(value)}" placeholder="0,00">
-            <span class="stepper cent-stepper">
-              <button type="button" class="step-btn" data-delta="0.01">▲</button>
-              <button type="button" class="step-btn" data-delta="-0.01">▼</button>
-            </span>
-          </span>
+          <span class="value-row-readonly" id="cardValue-${rec.id}">&euro; 0,00</span>
         </div>
       </div>`;
   }
@@ -839,10 +1183,21 @@
     grid.querySelectorAll('.card').forEach(card => {
       const id = card.dataset.id;
       card.querySelector('.owned-check').addEventListener('change', (e) => setOwned(id, e.target.checked));
-      card.querySelector('.value-input').addEventListener('change', (e) => setValue(id, e.target.value));
-      card.querySelector('.value-input').addEventListener('focus', (e) => e.target.select());
       setupImageControls(card, id);
+      updateCardValueDisplay(id);
     });
+  }
+
+  function updateCardValueDisplay(id) {
+    const el = document.getElementById(`cardValue-${id}`);
+    if (!el) return;
+    const list = instancesFor('pokemon', id);
+    const total = totalForInstanceList(list);
+    const countTotal = list.reduce((sum, i) => sum + (parseInt(i.aantal) || 1), 0);
+    if (countTotal === 0) { el.textContent = ''; return; }
+    el.innerHTML = total > 0
+      ? `€ ${fmtEuro(total)} <span class="card-count">(${countTotal}x)</span>`
+      : `<span class="card-count">${countTotal}x</span>`;
   }
 
   function setupImageControls(card, id) {
@@ -858,6 +1213,7 @@
     editBtn.textContent = '📷';
     editBtn.addEventListener('click', (e) => {
       e.stopPropagation();
+      cropContext = 'pokemon';
       pendingImgTarget = id;
       setActiveCard(card, id);
       globalImgFileInput.click();
@@ -887,7 +1243,6 @@
   const detailName = document.getElementById('detailName');
   const detailNum = document.getElementById('detailNum');
   const detailOwnedCheck = document.getElementById('detailOwnedCheck');
-  const detailValueInput = document.getElementById('detailValueInput');
   const detailNotitie = document.getElementById('detailNotitie');
   let currentDetailId = null;
 
@@ -895,13 +1250,21 @@
     const rec = getRec(currentDetailId);
     if (!rec) return;
     const num = String(rec.nummer || '');
-    detailImg.src = rec.afbeelding || defaultArtUrl(num);
+    detailImg.src = mainImageFor('pokemon', currentDetailId, rec.afbeelding || defaultArtUrl(num));
     detailImg.onerror = () => { detailImg.onerror = null; detailImg.src = defaultSpriteUrl(num); };
     detailName.textContent = rec.naam || '(onbekend)';
     detailNum.textContent = '#' + num.padStart(4, '0');
     detailOwnedCheck.checked = !!rec.inbezit;
-    detailValueInput.value = formatValue(rec.waarde);
     detailNotitie.value = rec.notitie || '';
+    const list = instancesFor('pokemon', currentDetailId);
+    document.getElementById('detailOwnedHint').textContent = list.length
+      ? 'Dit vinkje staat automatisch aan zolang er exemplaren onder hangen.' : '';
+    document.getElementById('detailTotalValueLine').innerHTML = `Totale waarde: &euro; ${fmtEuro(totalForInstanceList(list))}`;
+    renderInstancesInto(document.getElementById('detailInstancesList'), 'pokemon', currentDetailId);
+  }
+
+  function totalForInstanceList(list) {
+    return list.reduce((sum, i) => sum + instanceLineValue(i), 0);
   }
 
   function openDetailModal(id) {
@@ -930,30 +1293,8 @@
   detailOwnedCheck.addEventListener('change', async (e) => {
     await setOwned(currentDetailId, e.target.checked);
   });
-  detailValueInput.addEventListener('change', async (e) => {
-    await setValue(currentDetailId, e.target.value);
-    detailValueInput.value = formatValue(getRec(currentDetailId).waarde);
-  });
-  detailValueInput.addEventListener('focus', (e) => {
-    e.target.select();
-    document.getElementById('detailValueDoneBtn').classList.add('visible');
-    setTimeout(() => {
-      e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 300); // wait for the keyboard animation so the field ends up visible above it
-  });
-  detailValueInput.addEventListener('blur', () => {
-    document.getElementById('detailValueDoneBtn').classList.remove('visible');
-  });
-  document.getElementById('detailValueDoneBtn').addEventListener('click', () => {
-    detailValueInput.blur();
-  });
-  document.getElementById('detailValueRow').addEventListener('click', async (e) => {
-    const btn = e.target.closest('.step-btn');
-    if (!btn || !currentDetailId) return;
-    await stepValue(currentDetailId, parseFloat(btn.dataset.delta));
-    detailValueInput.value = formatValue(getRec(currentDetailId).waarde);
-  });
   document.getElementById('detailUploadBtn').addEventListener('click', () => {
+    cropContext = 'pokemon';
     pendingImgTarget = currentDetailId;
     globalImgFileInput.click();
   });
@@ -962,6 +1303,7 @@
     if (!rec) return;
     const num = String(rec.nummer || '');
     const url = rec.afbeelding || defaultArtUrl(num);
+    cropContext = 'pokemon';
     openCropModalFromUrl(url, currentDetailId);
   });
   document.getElementById('detailResetImgBtn').addEventListener('click', async () => {
@@ -1110,6 +1452,7 @@
     for (const item of items) {
       if (item.type.indexOf('image') !== -1) {
         const blob = item.getAsFile();
+        cropContext = 'pokemon';
         openCropModal(blob, activeCardNum);
         break;
       }
@@ -1123,11 +1466,14 @@
   const cropZoomSlider = document.getElementById('cropZoomSlider');
   let cropImg = null;
   let cropTargetId = null;
+  let cropContext = 'pokemon'; // 'pokemon' or 'extra'
   let cropMinScale = 1;
   let cropScale = 1;
   let cropOffsetX = 0;
   let cropOffsetY = 0;
   let cropRotation = 0;
+  let cropTilt = 0;
+  let cropSkew = 0;
   let cropDragging = false;
   let cropLastX = 0, cropLastY = 0;
   let cropPinchDist = null;
@@ -1137,6 +1483,10 @@
     cropImg = img;
     cropTargetId = targetId;
     cropRotation = 0;
+    cropTilt = 0;
+    cropSkew = 0;
+    document.getElementById('cropTiltSlider').value = 0;
+    document.getElementById('cropSkewSlider').value = 0;
     const fw = cropCanvas.width, fh = cropCanvas.height;
     cropMinScale = Math.max(fw / img.width, fh / img.height);
     cropScale = cropMinScale;
@@ -1170,7 +1520,8 @@
     cropCtx.clearRect(0, 0, fw, fh);
     cropCtx.save();
     cropCtx.translate(fw / 2 + cropOffsetX, fh / 2 + cropOffsetY);
-    cropCtx.rotate(cropRotation * Math.PI / 180);
+    cropCtx.rotate((cropRotation + cropTilt) * Math.PI / 180);
+    cropCtx.transform(1, 0, Math.tan(cropSkew * Math.PI / 180), 1, 0, 0);
     cropCtx.scale(cropScale, cropScale);
     cropCtx.drawImage(cropImg, -cropImg.width / 2, -cropImg.height / 2);
     cropCtx.restore();
@@ -1207,6 +1558,25 @@
   }
   document.getElementById('cropRotateLeftBtn').addEventListener('click', () => rotateCrop(-90));
   document.getElementById('cropRotateRightBtn').addEventListener('click', () => rotateCrop(90));
+
+  const cropTiltSlider = document.getElementById('cropTiltSlider');
+  const cropSkewSlider = document.getElementById('cropSkewSlider');
+  cropTiltSlider.addEventListener('input', () => {
+    cropTilt = parseFloat(cropTiltSlider.value);
+    clampCropOffsets();
+    drawCrop();
+  });
+  cropSkewSlider.addEventListener('input', () => {
+    cropSkew = parseFloat(cropSkewSlider.value);
+    clampCropOffsets();
+    drawCrop();
+  });
+  document.getElementById('cropTiltResetBtn').addEventListener('click', () => {
+    cropTilt = 0; cropTiltSlider.value = 0; clampCropOffsets(); drawCrop();
+  });
+  document.getElementById('cropSkewResetBtn').addEventListener('click', () => {
+    cropSkew = 0; cropSkewSlider.value = 0; clampCropOffsets(); drawCrop();
+  });
 
   cropZoomSlider.addEventListener('input', () => {
     const t = parseFloat(cropZoomSlider.value) / 100; // 0..1
@@ -1299,7 +1669,8 @@
     const outCtx = outCanvas.getContext('2d');
     outCtx.save();
     outCtx.translate(outW / 2 + cropOffsetX * ratio, outH / 2 + cropOffsetY * ratio);
-    outCtx.rotate(cropRotation * Math.PI / 180);
+    outCtx.rotate((cropRotation + cropTilt) * Math.PI / 180);
+    outCtx.transform(1, 0, Math.tan(cropSkew * Math.PI / 180), 1, 0, 0);
     outCtx.scale(cropScale * ratio, cropScale * ratio);
     outCtx.drawImage(cropImg, -cropImg.width / 2, -cropImg.height / 2);
     outCtx.restore();
@@ -1309,8 +1680,16 @@
     statusEl.textContent = 'Foto uploaden...';
     outCanvas.toBlob(async (blob) => {
       try {
-        const url = await uploadImageForRecord(targetId, blob);
-        await setImageUrl(targetId, url);
+        if (cropContext === 'extra') {
+          const url = await uploadImageForExtra(targetId, blob);
+          await setExtraImageUrl(targetId, url);
+        } else if (cropContext === 'instance') {
+          const url = await uploadImageForInstance(targetId, blob);
+          await setInstanceImageUrl(targetId, url);
+        } else {
+          const url = await uploadImageForRecord(targetId, blob);
+          await setImageUrl(targetId, url);
+        }
         statusEl.textContent = 'Foto geüpload en opgeslagen.';
         setTimeout(() => statusEl.style.display = 'none', 2000);
       } catch (err) {
@@ -1338,31 +1717,26 @@
       const num = String(rec.nummer || '');
       const naam = rec.naam || '(onbekend)';
       const owned = !!rec.inbezit;
-      const value = (rec.waarde !== undefined && rec.waarde !== null) ? rec.waarde : '';
       return `
         <div class="check-row" data-id="${rec.id}" data-name="${naam.toLowerCase()}" data-num="${num}">
           <input type="checkbox" ${owned ? 'checked' : ''}>
           <span class="row-num">#${num.padStart(4,'0')}</span>
           <span class="row-name">${naam}</span>
-          <span class="row-value">
-            <span class="stepper euro-stepper">
-              <button type="button" class="step-btn" data-delta="1">▲</button>
-              <button type="button" class="step-btn" data-delta="-1">▼</button>
-            </span>
-            &euro;<input type="text" inputmode="decimal" class="value-input" value="${formatValue(value)}" placeholder="0,00">
-            <span class="stepper cent-stepper">
-              <button type="button" class="step-btn" data-delta="0.01">▲</button>
-              <button type="button" class="step-btn" data-delta="-0.01">▼</button>
-            </span>
-          </span>
+          <span class="row-value-readonly" id="checkValue-${rec.id}">&euro; 0,00</span>
         </div>`;
     }).join('');
     checklistTable.querySelectorAll('.check-row').forEach(row => {
       const id = row.dataset.id;
       row.querySelector('input[type="checkbox"]').addEventListener('change', (e) => setOwned(id, e.target.checked));
-      row.querySelector('input.value-input').addEventListener('change', (e) => setValue(id, e.target.value));
-      row.querySelector('input.value-input').addEventListener('focus', (e) => e.target.select());
+      updateChecklistValueDisplay(id);
     });
+  }
+
+  function updateChecklistValueDisplay(id) {
+    const el = document.getElementById(`checkValue-${id}`);
+    if (!el) return;
+    const total = totalForInstanceList(instancesFor('pokemon', id));
+    el.textContent = total > 0 ? `€ ${fmtEuro(total)}` : '';
   }
 
   function reorderGrid() {
@@ -1403,9 +1777,14 @@
     gaugeLabel.textContent = `Verzameld: ${owned} / ${total}`;
     gaugePct.textContent = pct + '%';
     gaugeArc.setAttribute('stroke-dasharray', `${pct} 100`);
-    let totalValue = 0;
-    records.forEach(r => { if (r.inbezit && !isNaN(parseFloat(r.waarde))) totalValue += parseFloat(r.waarde); });
-    valueLabel.innerHTML = `Totale waarde verzameling: &euro; ${fmtEuro(totalValue)}`;
+    valueLabel.innerHTML = `Totale waarde verzameling: &euro; ${fmtEuro(totalForParentType('pokemon'))}`;
+  }
+
+  function matchesSerieSet(parentType, id, serieFilter, setFilter) {
+    if (!serieFilter && !setFilter) return true;
+    return instancesFor(parentType, id).some(i =>
+      (!serieFilter || i.serie === serieFilter) && (!setFilter || i.set_naam === setFilter)
+    );
   }
 
   function applyFilter() {
@@ -1421,7 +1800,8 @@
       let matchesOwned = true;
       if (mode === 'bezit') matchesOwned = owned;
       if (mode === 'mis') matchesOwned = !owned;
-      const show = matchesText && matchesOwned;
+      const matchesSerieSetFilter = matchesSerieSet('pokemon', el.dataset.id, pokemonSerieFilter, pokemonSetFilter);
+      const show = matchesText && matchesOwned && matchesSerieSetFilter;
       el.classList.toggle('hidden', !show);
       if (show) visible++;
     });
@@ -1525,6 +1905,715 @@
     window.addEventListener('afterprint', restore);
     window.print();
   });
+
+  // ---------- Tabs ----------
+  const EXTRA_TABLE = 'tcg_extra';
+  let currentMainTab = 'pokemon';
+  let extraItemsByCategory = {}; // { item: [...], tool: [...], ... }
+  let extraSortMode = 'nieuw';
+  let extraLoadedFor = {}; // { item: true } once loaded, to avoid refetching every tab switch
+
+  function extraRestUrl(path) { return `${config.url}/rest/v1/${EXTRA_TABLE}${path || ''}`; }
+
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.dataset.tab;
+      currentMainTab = tab;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+      document.getElementById('pokemonSection').style.display = (tab === 'pokemon') ? '' : 'none';
+      document.getElementById('extraSection').style.display = (tab === 'pokemon') ? 'none' : '';
+      document.getElementById('progressDashboard').style.display = (tab === 'pokemon') ? '' : 'none';
+      if (tab !== 'pokemon') {
+        currentExtraCategory = tab;
+        if (!extraLoadedFor[tab]) {
+          extraLoadedFor[tab] = true;
+          loadExtraItems(tab);
+        } else {
+          renderExtraGrid();
+          refreshSerieSetFilterDropdowns();
+        }
+      }
+    });
+  });
+
+  async function loadExtraItems(categorie) {
+    if (!config) return;
+    const statusEl2 = document.getElementById('extraCountStatus');
+    statusEl2.textContent = 'Bezig met laden...';
+    try {
+      const res = await fetch(extraRestUrl(`?categorie=eq.${categorie}&select=*&order=id.desc`), { headers: authHeaders() });
+      if (!res.ok) throw new Error(`status ${res.status}`);
+      extraItemsByCategory[categorie] = await res.json();
+      renderExtraGrid();
+      refreshSerieSetFilterDropdowns();
+    } catch (err) {
+      statusEl2.textContent = 'Kon niet laden: ' + err.message;
+    }
+  }
+
+  function currentExtraItems() { return extraItemsByCategory[currentExtraCategory] || []; }
+
+  function getExtra(id) { return currentExtraItems().find(i => String(i.id) === String(id)); }
+
+  function sortedExtraItems() {
+    const list = [...currentExtraItems()];
+    if (extraSortMode === 'naam') list.sort((a, b) => (a.naam || '').localeCompare(b.naam || '', 'nl'));
+    else if (extraSortMode === 'waarde') list.sort((a, b) => (parseFloat(b.waarde) || 0) - (parseFloat(a.waarde) || 0));
+    else list.sort((a, b) => b.id - a.id);
+    return list;
+  }
+
+  function extraCardHtml(item) {
+    const list = instancesFor(currentTabParentType(item.categorie), item.id);
+    const withPhoto = bestPhotoInstance(currentTabParentType(item.categorie), item.id);
+    const thumbHtml = withPhoto
+      ? `<img src="${withPhoto.afbeelding}" alt="${item.naam || ''}">`
+      : `<span class="placeholder-mark">🎴</span>`;
+    const total = totalForInstanceList(list);
+    const waardeHtml = total > 0 ? `<div class="extra-waarde">&euro; ${fmtEuro(total)}</div>` : '';
+    const countTotal = list.reduce((sum, i) => sum + (parseInt(i.aantal) || 1), 0);
+    const countHtml = countTotal ? `<div class="extra-set">${countTotal} ${countTotal === 1 ? 'exemplaar' : 'exemplaren'}</div>` : '';
+    return `
+      <div class="extra-card" data-id="${item.id}" data-naam="${(item.naam || '').toLowerCase()}" data-set="">
+        <div class="extra-thumb">${thumbHtml}</div>
+        <div class="extra-info">
+          <div class="extra-naam">${item.naam || '(naamloos)'}</div>
+          ${countHtml}
+          ${waardeHtml}
+        </div>
+      </div>`;
+  }
+  function currentTabParentType(categorie) { return categorie; }
+
+  function renderExtraGrid() {
+    const list = sortedExtraItems();
+    const grid2 = document.getElementById('extraGrid');
+    grid2.innerHTML = list.map(extraCardHtml).join('');
+    grid2.querySelectorAll('.extra-card').forEach(card => {
+      card.addEventListener('click', () => openExtraDetailModal(card.dataset.id));
+    });
+    applyExtraFilter();
+  }
+
+  function applyExtraFilter() {
+    const q = document.getElementById('extraSearch').value.toLowerCase();
+    let visible = 0, total = 0;
+    document.querySelectorAll('.extra-card').forEach(card => {
+      total++;
+      const matchesText = card.dataset.naam.includes(q);
+      const matchesSerieSetFilter = matchesSerieSet(currentExtraCategory, card.dataset.id, extraSerieFilter, extraSetFilter);
+      const show = matchesText && matchesSerieSetFilter;
+      card.classList.toggle('hidden', !show);
+      if (show) visible++;
+    });
+    document.getElementById('extraCountStatus').textContent = total ? `${visible} van ${total} zichtbaar` : 'Nog geen items toegevoegd.';
+  }
+
+  const extraSearch = document.getElementById('extraSearch');
+  const extraSearchWrap = document.querySelector('#extraSection .search-wrap');
+  extraSearch.addEventListener('input', () => {
+    applyExtraFilter();
+    extraSearchWrap.classList.toggle('has-text', extraSearch.value.length > 0);
+  });
+  document.getElementById('extraSearchClearBtn').addEventListener('click', () => {
+    extraSearch.value = ''; applyExtraFilter(); extraSearchWrap.classList.remove('has-text');
+  });
+
+  // Sort dropdown for the Item tab (same generic pattern as elsewhere)
+  const extraSortDropdown = document.getElementById('extraSortDropdown');
+  const extraSortLabels = { nieuw: 'Nieuwste', naam: 'Naam', waarde: 'Waarde' };
+  function refreshExtraSortLabel() {
+    document.getElementById('extraSortDropdownBtn').innerHTML = `Sorteer: ${extraSortLabels[extraSortMode]} <span class="caret">▾</span>`;
+  }
+  document.getElementById('extraSortDropdownBtn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
+    extraSortDropdown.classList.toggle('open');
+  });
+  extraSortDropdown.querySelectorAll('.dropdown-item').forEach(item => {
+    item.addEventListener('click', () => {
+      extraSortMode = item.dataset.value;
+      refreshExtraSortLabel();
+      extraSortDropdown.classList.remove('open');
+      renderExtraGrid();
+    });
+  });
+  refreshExtraSortLabel();
+
+  // ---------- Item add/edit modal ----------
+  const extraDetailModal = document.getElementById('extraDetailModal');
+  const extraDetailTitle = document.getElementById('extraDetailTitle');
+  const extraDetailImg = document.getElementById('extraDetailImg');
+  const extraDetailImgPlaceholder = document.getElementById('extraDetailImgPlaceholder');
+  const eNaam = document.getElementById('eNaam');
+  const eNotitie = document.getElementById('eNotitie');
+  const extraDeleteBtn = document.getElementById('extraDeleteBtn');
+  let currentExtraId = null; // null = adding a new item
+  let currentExtraCategory = 'item';
+
+  function refreshExtraDetailPreview() {
+    if (currentExtraId === null) return;
+    const list = instancesFor(currentExtraCategory, currentExtraId);
+    const withPhoto = bestPhotoInstance(currentExtraCategory, currentExtraId);
+    if (withPhoto) {
+      extraDetailImg.src = withPhoto.afbeelding; extraDetailImg.style.display = '';
+      extraDetailImgPlaceholder.style.display = 'none';
+    } else {
+      extraDetailImg.style.display = 'none';
+      extraDetailImgPlaceholder.style.display = '';
+    }
+    document.getElementById('extraTotalValueLine').innerHTML = `Totale waarde: &euro; ${fmtEuro(totalForInstanceList(list))}`;
+    renderInstancesInto(document.getElementById('extraInstancesList'), currentExtraCategory, currentExtraId);
+  }
+
+  function fillExtraFields(item) {
+    eNaam.value = item.naam || '';
+    eNotitie.value = item.notitie || '';
+  }
+
+  function openExtraDetailModal(id) {
+    currentExtraId = id;
+    const item = getExtra(id);
+    if (!item) return;
+    extraDetailTitle.textContent = item.naam || 'Item';
+    extraDeleteBtn.style.display = 'inline-block';
+    fillExtraFields(item);
+    refreshExtraDetailPreview();
+    extraDetailModal.classList.add('open');
+  }
+
+  function openExtraAddModal() {
+    currentExtraId = null;
+    extraDetailTitle.textContent = 'Nieuw item';
+    extraDeleteBtn.style.display = 'none';
+    fillExtraFields({});
+    extraDetailImg.style.display = 'none';
+    extraDetailImgPlaceholder.style.display = '';
+    document.getElementById('extraTotalValueLine').innerHTML = 'Totale waarde: &euro; 0,00';
+    document.getElementById('extraInstancesList').innerHTML = `<p style="font-size:12px;color:#999;text-align:center;">Sla eerst een naam op voordat je exemplaren toevoegt.</p>`;
+    extraDetailModal.classList.add('open');
+  }
+
+  document.getElementById('extraFab').addEventListener('click', openExtraAddModal);
+  document.getElementById('extraDetailCloseBtn').addEventListener('click', () => extraDetailModal.classList.remove('open'));
+  document.getElementById('extraDoneBtn').addEventListener('click', () => extraDetailModal.classList.remove('open'));
+  extraDetailModal.addEventListener('click', (e) => { if (e.target === extraDetailModal) extraDetailModal.classList.remove('open'); });
+
+  function collectExtraPayload() {
+    return {
+      categorie: currentExtraCategory,
+      naam: eNaam.value.trim() || null,
+      notitie: eNotitie.value.trim() || null
+    };
+  }
+
+  let extraSaveTimer = null;
+  async function saveExtraField() {
+    const payload = collectExtraPayload();
+    if (currentExtraId === null) {
+      try {
+        const res = await fetch(extraRestUrl(), {
+          method: 'POST',
+          headers: authHeaders({ 'Prefer': 'return=representation' }),
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error(`status ${res.status}: ${await res.text()}`);
+        const created = await res.json();
+        const newItem = created[0];
+        if (!extraItemsByCategory[currentExtraCategory]) extraItemsByCategory[currentExtraCategory] = [];
+        extraItemsByCategory[currentExtraCategory].unshift(newItem);
+        currentExtraId = newItem.id;
+        extraDetailTitle.textContent = newItem.naam || 'Item';
+        extraDeleteBtn.style.display = 'inline-block';
+        document.getElementById('extraInstancesList').innerHTML = `<p style="font-size:12px;color:#999;text-align:center;">Nog geen exemplaren toegevoegd.</p>`;
+        renderExtraGrid();
+      } catch (err) {
+        alert('Kon nieuw item niet opslaan: ' + err.message);
+      }
+    } else {
+      const item = getExtra(currentExtraId);
+      if (!item) return;
+      Object.assign(item, payload);
+      try {
+        const res = await fetch(extraRestUrl(`?id=eq.${currentExtraId}`), {
+          method: 'PATCH',
+          headers: authHeaders({ 'Prefer': 'return=minimal' }),
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error(`status ${res.status}: ${await res.text()}`);
+        renderExtraGrid();
+      } catch (err) {
+        alert('Kon wijziging niet opslaan: ' + err.message);
+      }
+    }
+  }
+  [eNaam, eNotitie].forEach(el => {
+    el.addEventListener('change', () => { clearTimeout(extraSaveTimer); extraSaveTimer = setTimeout(saveExtraField, 300); });
+  });
+
+  extraDeleteBtn.addEventListener('click', async () => {
+    if (currentExtraId === null) return;
+    const item = getExtra(currentExtraId);
+    if (!confirm(`"${item.naam || 'Dit item'}" definitief verwijderen?`)) return;
+    try {
+      const res = await fetch(extraRestUrl(`?id=eq.${currentExtraId}`), { method: 'DELETE', headers: authHeaders() });
+      if (!res.ok) throw new Error(`status ${res.status}`);
+      extraItemsByCategory[currentExtraCategory] = currentExtraItems().filter(i => String(i.id) !== String(currentExtraId));
+      extraDetailModal.classList.remove('open');
+      renderExtraGrid();
+    } catch (err) {
+      alert('Verwijderen mislukt: ' + err.message);
+    }
+  });
+
+  // ---------- Item photo upload (reuses the shared crop modal) ----------
+  async function uploadImageForExtra(id, blob) {
+    const path = `${EXTRA_TABLE}/${id}.jpg`;
+    const uploadUrl = `${config.url}/storage/v1/object/${STORAGE_BUCKET}/${path}`;
+    const res = await fetch(uploadUrl, {
+      method: 'POST',
+      headers: { 'apikey': config.key, 'Authorization': `Bearer ${config.key}`, 'Content-Type': 'image/jpeg', 'x-upsert': 'true' },
+      body: blob
+    });
+    if (!res.ok) throw new Error(`Upload mislukt (status ${res.status}): ${await res.text()}`);
+    return `${config.url}/storage/v1/object/public/${STORAGE_BUCKET}/${path}?t=${Date.now()}`;
+  }
+
+  async function setExtraImageUrl(id, url) {
+    const item = getExtra(id);
+    if (!item) return;
+    item.afbeelding = url;
+    if (currentExtraId === id) { extraDetailImg.src = url; extraDetailImg.style.display = ''; }
+    renderExtraGrid();
+    try {
+      const res = await fetch(extraRestUrl(`?id=eq.${id}`), {
+        method: 'PATCH',
+        headers: authHeaders({ 'Prefer': 'return=minimal' }),
+        body: JSON.stringify({ afbeelding: url })
+      });
+      if (!res.ok) throw new Error(`status ${res.status}`);
+    } catch (err) {
+      alert('Kon foto-link niet opslaan: ' + err.message);
+    }
+  }
+
+  // ---------- Kaartexemplaren (multiple physical cards per Pokemon/item) ----------
+  let allInstances = [];
+
+  function instRestUrl(path) { return `${config.url}/rest/v1/kaart_exemplaren${path || ''}`; }
+
+  async function loadAllInstances() {
+    try {
+      const res = await fetch(instRestUrl('?select=*&order=id.asc'), { headers: authHeaders() });
+      if (!res.ok) throw new Error(`status ${res.status}`);
+      allInstances = await res.json();
+      await migrateLegacyOwnedToInstances();
+      updateTotalsBar();
+      updateProgress();
+      renderGrid();
+      if (currentView === 'checklist') renderChecklist();
+      if (extraLoadedFor[currentExtraCategory]) renderExtraGrid();
+      refreshSerieSetFilterDropdowns();
+      applyFilter();
+      if (extraLoadedFor[currentExtraCategory]) applyExtraFilter();
+    } catch (err) {
+      console.error('Kon kaartexemplaren niet laden:', err);
+    }
+  }
+
+  // One-time (idempotent) migration: every already-owned Pokemon without any
+  // instance yet gets exactly one default instance, carrying over its old
+  // single "waarde" value (if any), so nothing gets lost by this upgrade.
+  async function migrateLegacyOwnedToInstances() {
+    const ownedWithoutInstances = records.filter(r => r.inbezit && instancesFor('pokemon', r.id).length === 0);
+    if (ownedWithoutInstances.length === 0) return;
+    statusEl.style.display = 'block';
+    statusEl.textContent = `Bestaande waardes en foto's omzetten naar exemplaren (${ownedWithoutInstances.length} kaarten)...`;
+    const payload = ownedWithoutInstances.map(r => {
+      const num = String(r.nummer || '');
+      const isCustomPhoto = r.afbeelding && r.afbeelding !== defaultArtUrl(num);
+      return {
+        parent_type: 'pokemon',
+        parent_id: r.id,
+        serie: null,
+        set_naam: null,
+        versie: null,
+        afbeelding: isCustomPhoto ? r.afbeelding : null,
+        waarde: (r.waarde !== undefined && r.waarde !== null && !isNaN(parseFloat(r.waarde))) ? parseFloat(r.waarde) : null,
+        aantal: 1
+      };
+    });
+    try {
+      const res = await fetch(instRestUrl(), {
+        method: 'POST',
+        headers: authHeaders({ 'Prefer': 'return=representation' }),
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const created = await res.json();
+      allInstances = allInstances.concat(created);
+      statusEl.textContent = `${created.length} exemplaren aangemaakt vanuit bestaande waardes.`;
+      setTimeout(() => statusEl.style.display = 'none', 3000);
+    } catch (err) {
+      statusEl.textContent = 'Kon oude waardes niet omzetten: ' + err.message;
+      console.error(err);
+    }
+  }
+
+  // ---------- Serie/set filter dropdowns ----------
+  let pokemonSerieFilter = '', pokemonSetFilter = '';
+  let extraSerieFilter = '', extraSetFilter = '';
+
+  const SERIE_ORDER_INDEX = {};
+  Object.keys(CARD_SERIES).forEach((serie, i) => { SERIE_ORDER_INDEX[serie] = i; });
+  const SET_ORDER_INDEX = {};
+  Object.values(CARD_SERIES).forEach(sets => sets.forEach((s, i) => { if (!(s in SET_ORDER_INDEX)) SET_ORDER_INDEX[s] = Object.keys(SET_ORDER_INDEX).length; }));
+
+  function distinctValues(parentType, field) {
+    const set = new Set();
+    allInstances.filter(i => i.parent_type === parentType).forEach(i => { if (i[field]) set.add(i[field]); });
+    const orderIndex = field === 'serie' ? SERIE_ORDER_INDEX : SET_ORDER_INDEX;
+    return Array.from(set).sort((a, b) => {
+      const ia = orderIndex[a], ib = orderIndex[b];
+      if (ia !== undefined && ib !== undefined) return ib - ia; // newest (highest index) first
+      if (ia !== undefined) return -1; // known values before unknown/custom ones
+      if (ib !== undefined) return 1;
+      return a.localeCompare(b, 'nl');
+    });
+  }
+
+  function populateFilterDropdown(menuId, btnId, values, currentVal, label, onSelect) {
+    const menu = document.getElementById(menuId);
+    const btn = document.getElementById(btnId);
+    menu.innerHTML = `<button type="button" class="dropdown-item${currentVal === '' ? ' active' : ''}" data-value="">Alle</button>` +
+      values.map(v => `<button type="button" class="dropdown-item${v === currentVal ? ' active' : ''}" data-value="${v}">${v}</button>`).join('');
+    btn.innerHTML = `${label}: ${currentVal || 'Alle'} <span class="caret">▾</span>`;
+    menu.querySelectorAll('.dropdown-item').forEach(item => {
+      item.addEventListener('click', () => {
+        menu.closest('.dropdown').classList.remove('open');
+        onSelect(item.dataset.value);
+      });
+    });
+  }
+
+  function refreshSerieSetFilterDropdowns() {
+    populateFilterDropdown('pokemonSerieMenu', 'pokemonSerieDropdownBtn', distinctValues('pokemon', 'serie'), pokemonSerieFilter, 'Serie', (v) => {
+      pokemonSerieFilter = v;
+      refreshSerieSetFilterDropdowns();
+      applyFilter();
+    });
+    populateFilterDropdown('pokemonSetMenu', 'pokemonSetDropdownBtn', distinctValues('pokemon', 'set_naam'), pokemonSetFilter, 'Set', (v) => {
+      pokemonSetFilter = v;
+      refreshSerieSetFilterDropdowns();
+      applyFilter();
+    });
+    populateFilterDropdown('extraSerieMenu', 'extraSerieDropdownBtn', distinctValues(currentExtraCategory, 'serie'), extraSerieFilter, 'Serie', (v) => {
+      extraSerieFilter = v;
+      refreshSerieSetFilterDropdowns();
+      applyExtraFilter();
+    });
+    populateFilterDropdown('extraSetMenu', 'extraSetDropdownBtn', distinctValues(currentExtraCategory, 'set_naam'), extraSetFilter, 'Set', (v) => {
+      extraSetFilter = v;
+      refreshSerieSetFilterDropdowns();
+      applyExtraFilter();
+    });
+  }
+
+  ['pokemonSerieDropdown', 'pokemonSetDropdown', 'extraSerieDropdown', 'extraSetDropdown'].forEach(id => {
+    const dropdown = document.getElementById(id);
+    dropdown.querySelector('.dropdown-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const wasOpen = dropdown.classList.contains('open');
+      document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
+      if (!wasOpen) dropdown.classList.add('open');
+    });
+  });
+
+  function instancesFor(parentType, parentId) {
+    return allInstances.filter(i => i.parent_type === parentType && String(i.parent_id) === String(parentId));
+  }
+
+  function bestPhotoInstance(parentType, parentId) {
+    const withPhoto = instancesFor(parentType, parentId).filter(i => i.afbeelding);
+    if (withPhoto.length === 0) return null;
+    return withPhoto.reduce((best, cur) => (parseFloat(cur.waarde) || 0) > (parseFloat(best.waarde) || 0) ? cur : best);
+  }
+
+  function mainImageFor(parentType, parentId, fallbackUrl) {
+    const best = bestPhotoInstance(parentType, parentId);
+    return best ? best.afbeelding : fallbackUrl;
+  }
+
+  function instanceLineValue(inst) {
+    const w = parseFloat(inst.waarde) || 0;
+    const a = parseInt(inst.aantal) || 1;
+    return w * a;
+  }
+
+  function totalForParentType(parentType) {
+    return allInstances.filter(i => i.parent_type === parentType).reduce((sum, i) => sum + instanceLineValue(i), 0);
+  }
+
+  const TAB_LABELS = { pokemon: 'Pokémon', item: 'Item', tool: 'Tool', supporter: 'Supporter', stadium: 'Stadium', energy: 'Energy' };
+
+  function updateTotalsBar() {
+    const parts = Object.keys(TAB_LABELS).map(tab => {
+      const total = totalForParentType(tab);
+      return `${TAB_LABELS[tab]}: &euro; ${fmtEuro(total)}`;
+    });
+    const grandTotal = allInstances.reduce((sum, i) => sum + instanceLineValue(i), 0);
+    document.getElementById('totalsBar').innerHTML =
+      parts.join(' &nbsp;&middot;&nbsp; ') + ` &nbsp;&middot;&nbsp; <strong>Totaal: &euro; ${fmtEuro(grandTotal)}</strong>`;
+  }
+
+  function instanceRowHtml(inst) {
+    const thumb = inst.afbeelding ? `<img src="${inst.afbeelding}" alt="">` : '🎴';
+    const titleParts = [inst.serie, inst.set_naam].filter(Boolean).join(' · ') || '(geen serie/set)';
+    const subParts = [inst.versie, `${inst.aantal || 1}x`].filter(Boolean).join(' · ');
+    return `
+      <div class="instance-row" data-inst-id="${inst.id}">
+        <div class="inst-thumb">${thumb}</div>
+        <div class="inst-info">
+          <div class="inst-title">${titleParts}</div>
+          <div class="inst-sub">${subParts}</div>
+        </div>
+        <div class="inst-value">&euro; ${fmtEuro(instanceLineValue(inst))}</div>
+      </div>`;
+  }
+
+  function renderInstancesInto(containerEl, parentType, parentId) {
+    const list = instancesFor(parentType, parentId);
+    containerEl.innerHTML = list.length
+      ? list.map(instanceRowHtml).join('')
+      : `<p style="font-size:12px;color:#999;text-align:center;">Nog geen exemplaren toegevoegd.</p>`;
+    containerEl.querySelectorAll('.instance-row').forEach(row => {
+      row.addEventListener('click', () => openInstanceModal(parentType, parentId, row.dataset.instId));
+    });
+  }
+
+  // ---------- Instance add/edit modal ----------
+  const instanceModal = document.getElementById('instanceModal');
+  const instanceImg = document.getElementById('instanceImg');
+  const instanceImgPlaceholder = document.getElementById('instanceImgPlaceholder');
+  const iSerie = document.getElementById('iSerie');
+  const iSet = document.getElementById('iSet');
+  const iVersie = document.getElementById('iVersie');
+  const iWaarde = document.getElementById('iWaarde');
+  const iAantal = document.getElementById('iAantal');
+  const instanceDeleteBtn = document.getElementById('instanceDeleteBtn');
+  const instanceEditCurrentBtn = document.getElementById('instanceEditCurrentBtn');
+  let currentInstanceParentType = null;
+  let currentInstanceParentId = null;
+  let currentInstanceId = null; // null = new
+
+  function getInstance(id) { return allInstances.find(i => String(i.id) === String(id)); }
+
+  function refreshParentUI(parentType, parentId) {
+    if (parentType === 'pokemon') {
+      const rec = getRec(parentId);
+      if (rec) {
+        applyPokemonOwnedDerivation(parentId);
+        if (currentDetailId === parentId) refreshDetailModal();
+      }
+      renderGrid();
+      if (currentView === 'checklist') renderChecklist();
+    } else {
+      renderExtraGrid();
+      if (currentExtraId === parentId) refreshExtraDetailPreview();
+    }
+    updateTotalsBar();
+  }
+
+  function openInstanceModal(parentType, parentId, instanceId) {
+    currentInstanceParentType = parentType;
+    currentInstanceParentId = parentId;
+    currentInstanceId = instanceId || null;
+    const inst = instanceId ? getInstance(instanceId) : null;
+    document.getElementById('instanceModalTitle').textContent = inst ? 'Kaartexemplaar bewerken' : 'Nieuw kaartexemplaar';
+    iSerie.value = inst ? (inst.serie || '') : '';
+    iSet.value = inst ? (inst.set_naam || '') : '';
+    iVersie.value = inst ? (inst.versie || '') : '';
+    iWaarde.value = inst ? formatValue(inst.waarde) : '';
+    iAantal.value = inst ? (inst.aantal || 1) : 1;
+    if (inst && inst.afbeelding) {
+      instanceImg.src = inst.afbeelding; instanceImg.style.display = '';
+      instanceImgPlaceholder.style.display = 'none';
+      instanceEditCurrentBtn.style.display = 'inline-block';
+    } else {
+      instanceImg.style.display = 'none';
+      instanceImgPlaceholder.style.display = '';
+      instanceEditCurrentBtn.style.display = 'none';
+    }
+    instanceDeleteBtn.style.display = inst ? 'inline-block' : 'none';
+    instanceModal.classList.add('open');
+  }
+  function closeInstanceModal() { instanceModal.classList.remove('open'); }
+  document.getElementById('instanceCloseBtn').addEventListener('click', closeInstanceModal);
+  instanceModal.addEventListener('click', (e) => { if (e.target === instanceModal) closeInstanceModal(); });
+
+  document.getElementById('detailAddInstanceBtn').addEventListener('click', () => {
+    if (!currentDetailId) return;
+    openInstanceModal('pokemon', currentDetailId, null);
+  });
+  document.getElementById('extraAddInstanceBtn').addEventListener('click', () => {
+    if (currentExtraId === null) { alert('Sla het item eerst op (vul een naam in) voordat je exemplaren toevoegt.'); return; }
+    openInstanceModal(currentExtraCategory, currentExtraId, null);
+  });
+
+  function collectInstancePayload() {
+    const waardeNum = parseMoneyInput(iWaarde.value);
+    return {
+      parent_type: currentInstanceParentType,
+      parent_id: currentInstanceParentId,
+      serie: iSerie.value.trim() || null,
+      set_naam: iSet.value.trim() || null,
+      versie: iVersie.value.trim() || null,
+      waarde: waardeNum,
+      aantal: Math.max(1, parseInt(iAantal.value) || 1)
+    };
+  }
+
+  async function saveInstance(closeAfter) {
+    const payload = collectInstancePayload();
+    try {
+      if (currentInstanceId === null) {
+        const res = await fetch(instRestUrl(), {
+          method: 'POST',
+          headers: authHeaders({ 'Prefer': 'return=representation' }),
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error(await res.text());
+        const created = await res.json();
+        allInstances.push(created[0]);
+        currentInstanceId = created[0].id;
+      } else {
+        const res = await fetch(instRestUrl(`?id=eq.${currentInstanceId}`), {
+          method: 'PATCH',
+          headers: authHeaders({ 'Prefer': 'return=minimal' }),
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error(await res.text());
+        Object.assign(getInstance(currentInstanceId), payload);
+      }
+      refreshParentUI(currentInstanceParentType, currentInstanceParentId);
+      if (closeAfter) closeInstanceModal();
+    } catch (err) {
+      alert('Kon exemplaar niet opslaan: ' + err.message);
+    }
+  }
+  document.getElementById('instanceSaveBtn').addEventListener('click', () => saveInstance(true));
+
+  instanceDeleteBtn.addEventListener('click', async () => {
+    if (currentInstanceId === null) return;
+    if (!confirm('Dit kaartexemplaar definitief verwijderen?')) return;
+    try {
+      const res = await fetch(instRestUrl(`?id=eq.${currentInstanceId}`), { method: 'DELETE', headers: authHeaders() });
+      if (!res.ok) throw new Error(`status ${res.status}`);
+      allInstances = allInstances.filter(i => String(i.id) !== String(currentInstanceId));
+      const pt = currentInstanceParentType, pid = currentInstanceParentId;
+      closeInstanceModal();
+      refreshParentUI(pt, pid);
+    } catch (err) {
+      alert('Verwijderen mislukt: ' + err.message);
+    }
+  });
+
+  iWaarde.addEventListener('focus', (e) => e.target.select());
+  iWaarde.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); iWaarde.blur(); }
+  });
+  iWaarde.addEventListener('blur', (e) => {
+    const parsed = parseMoneyInput(e.target.value);
+    e.target.value = parsed === null ? '' : formatValue(parsed);
+  });
+  document.getElementById('instanceValueRow').addEventListener('click', (e) => {
+    const btn = e.target.closest('.step-btn');
+    if (!btn) return;
+    const current = parseMoneyInput(iWaarde.value) || 0;
+    const next = Math.max(0, Math.round((current + parseFloat(btn.dataset.delta)) * 100) / 100);
+    iWaarde.value = next.toFixed(2);
+  });
+  document.getElementById('iAantalMin').addEventListener('click', () => {
+    iAantal.value = Math.max(1, (parseInt(iAantal.value) || 1) - 1);
+  });
+  document.getElementById('iAantalPlus').addEventListener('click', () => {
+    iAantal.value = (parseInt(iAantal.value) || 1) + 1;
+  });
+
+  document.getElementById('instanceUploadBtn').addEventListener('click', async () => {
+    if (currentInstanceId === null) {
+      await saveInstance(false); // need an id before we can upload a photo for it
+    }
+    cropContext = 'instance';
+    pendingImgTarget = currentInstanceId;
+    globalImgFileInput.click();
+  });
+  document.getElementById('instanceEditCurrentBtn').addEventListener('click', () => {
+    const inst = getInstance(currentInstanceId);
+    if (!inst || !inst.afbeelding) return;
+    cropContext = 'instance';
+    openCropModalFromUrl(inst.afbeelding, currentInstanceId);
+  });
+
+  async function uploadImageForInstance(id, blob) {
+    const path = `kaart_exemplaren/${id}.jpg`;
+    const uploadUrl = `${config.url}/storage/v1/object/${STORAGE_BUCKET}/${path}`;
+    const res = await fetch(uploadUrl, {
+      method: 'POST',
+      headers: { 'apikey': config.key, 'Authorization': `Bearer ${config.key}`, 'Content-Type': 'image/jpeg', 'x-upsert': 'true' },
+      body: blob
+    });
+    if (!res.ok) throw new Error(`Upload mislukt (status ${res.status}): ${await res.text()}`);
+    return `${config.url}/storage/v1/object/public/${STORAGE_BUCKET}/${path}?t=${Date.now()}`;
+  }
+
+  async function setInstanceImageUrl(id, url) {
+    const inst = getInstance(id);
+    if (!inst) return;
+    inst.afbeelding = url;
+    instanceImg.src = url; instanceImg.style.display = '';
+    instanceImgPlaceholder.style.display = 'none';
+    instanceEditCurrentBtn.style.display = 'inline-block';
+    try {
+      const res = await fetch(instRestUrl(`?id=eq.${id}`), {
+        method: 'PATCH', headers: authHeaders({ 'Prefer': 'return=minimal' }),
+        body: JSON.stringify({ afbeelding: url })
+      });
+      if (!res.ok) throw new Error(`status ${res.status}`);
+      refreshParentUI(currentInstanceParentType, currentInstanceParentId);
+    } catch (err) {
+      alert('Kon foto-link niet opslaan: ' + err.message);
+    }
+  }
+
+  // ---------- Derived "in bezit" logic for Pokemon ----------
+  async function applyPokemonOwnedDerivation(pokemonId) {
+    const rec = getRec(pokemonId);
+    if (!rec) return;
+    const hasInstances = instancesFor('pokemon', pokemonId).length > 0;
+    if (hasInstances && !rec.inbezit) {
+      rec.inbezit = true;
+      document.querySelectorAll(`.card[data-id="${pokemonId}"]`).forEach(c => {
+        c.classList.add('is-owned');
+        const cb = c.querySelector('.owned-check'); if (cb) cb.checked = true;
+      });
+      try { await patchRecord(pokemonId, { inbezit: true }); } catch (e) {}
+    }
+  }
+
+  (function overrideDetailOwnedCheck() {
+    const cb = document.getElementById('detailOwnedCheck');
+    cb.addEventListener('click', (e) => {
+      if (!e.target.checked) {
+        const hasInstances = instancesFor('pokemon', currentDetailId).length > 0;
+        if (hasInstances) {
+          e.preventDefault();
+          e.target.checked = true;
+          alert("Dit vinkje volgt automatisch uit de toegevoegde kaartexemplaren. Verwijder eerst alle exemplaren van deze Pokémon om 'm uit te kunnen vinken.");
+        }
+      }
+    });
+  })();
 
   (function init() {
     config = loadConfig();
