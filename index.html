@@ -1454,7 +1454,11 @@
 
   globalImgFileInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
-    if (!file || !pendingImgTarget) return;
+    if (!file) return;
+    // Group-photo uploads (item/tool/supporter/stadium/energy) route via
+    // cropGroupTarget instead of pendingImgTarget, so they must be allowed
+    // through even when pendingImgTarget is empty.
+    if (cropContext !== 'group' && !pendingImgTarget) return;
     openCropModal(file, pendingImgTarget);
     globalImgFileInput.value = '';
   });
