@@ -516,6 +516,16 @@
   #highValuePrintArea .hv-print-sub { text-align: center; color: #555; margin-bottom: 14px; font-size: 13px; }
   #highValuePrintArea table { width: 100%; border-collapse: collapse; font-size: 12px; }
   #highValuePrintArea th, #highValuePrintArea td { padding: 5px 6px; border-bottom: 1px solid #ccc; text-align: left; }
+
+  /* ---------- Foto-lightbox (grote weergave bij tikken op een kaartfoto) ---------- */
+  #photoLightbox { z-index: 1150; }
+  #photoLightboxBox { max-width: 520px; text-align: center; }
+  #photoLightboxImg { max-width: 100%; max-height: 70vh; object-fit: contain; border-radius: 8px; cursor: default; }
+  #photoLightboxInfo { margin-top: 12px; text-align: left; font-size: 14px; color: #333; }
+  #photoLightboxInfo .pl-row { display: flex; justify-content: space-between; gap: 10px; padding: 4px 0; border-bottom: 1px solid #eee; }
+  #photoLightboxInfo .pl-label { color: #888; }
+  #photoLightboxInfo .pl-value { font-weight: 600; text-align: right; }
+  .art-frame-clickable, #detailArtFrame, #extraArtFrame { cursor: pointer; }
   #highValuePrintArea td.hv-num { text-align: right; white-space: nowrap; }
 
   /* ---------- Item tab (generic TCG-extra section) ---------- */
@@ -609,7 +619,7 @@
   }
   #detailInstancesList, #extraInstancesList { display: flex; flex-direction: column; gap: 6px; }
   .instance-group { margin-bottom: 10px; }
-  .instance-group-photo { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+  .instance-group-photo { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; flex-wrap: wrap; }
   .group-thumb {
     width: 32px; height: 32px; border-radius: 6px; background: #e8e8e8; flex-shrink: 0;
     display: flex; align-items: center; justify-content: center; overflow: hidden; font-size: 15px; color: #bbb;
@@ -623,6 +633,11 @@
     flex-shrink: 0; width: 28px; height: 28px; border-radius: 6px; border: none;
     background: #6a4c93; color: white; font-size: 12px; cursor: pointer;
   }
+  .group-photo-tcgdex {
+    flex-basis: 100%; text-align: center; padding: 5px 8px; border-radius: 6px; border: 1px solid #457b9d;
+    background: #eef5fa; color: #2c5d7a; font-size: 11px; font-weight: 600; cursor: pointer;
+  }
+  .group-photo-tcgdex:disabled { opacity: 0.6; cursor: default; }
   .instance-group-header {
     display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
     padding: 4px 2px; border-bottom: 1.5px solid #ddd; margin-bottom: 5px;
@@ -1022,11 +1037,19 @@
 
 <div id="highValuePrintArea"></div>
 
+<div class="modal-overlay" id="photoLightbox">
+  <div class="modal-box" id="photoLightboxBox">
+    <button type="button" class="modal-close" id="photoLightboxCloseBtn">&times;</button>
+    <img id="photoLightboxImg" src="" alt="">
+    <div id="photoLightboxInfo"></div>
+  </div>
+</div>
+
 <script>
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '2.4';
+  const APP_VERSION = '2.6';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -1438,6 +1461,36 @@
   document.getElementById('detailCloseBtn').addEventListener('click', closeDetailModal);
   detailModal.addEventListener('click', (e) => {
     if (e.target === detailModal) closeDetailModal();
+  });
+
+  // ---------- Foto-lightbox: grote weergave + gegevens bij tikken op de foto ----------
+  const photoLightbox = document.getElementById('photoLightbox');
+  const photoLightboxImg = document.getElementById('photoLightboxImg');
+  const photoLightboxInfo = document.getElementById('photoLightboxInfo');
+
+  function plRow(label, value) {
+    return `<div class="pl-row"><span class="pl-label">${label}</span><span class="pl-value">${value}</span></div>`;
+  }
+
+  function openPhotoLightbox(imgUrl, rowsHtml) {
+    if (!imgUrl) return; // geen (placeholder-)foto om te vergroten
+    photoLightboxImg.src = imgUrl;
+    photoLightboxInfo.innerHTML = rowsHtml;
+    document.body.appendChild(photoLightbox); // gegarandeerd bovenop, zelfde truc als bij de crop-modal
+    photoLightbox.classList.add('open');
+  }
+  document.getElementById('photoLightboxCloseBtn').addEventListener('click', () => photoLightbox.classList.remove('open'));
+  photoLightbox.addEventListener('click', (e) => { if (e.target === photoLightbox) photoLightbox.classList.remove('open'); });
+
+  document.getElementById('detailArtFrame').addEventListener('click', () => {
+    const rec = getRec(currentDetailId);
+    if (!rec) return;
+    const list = instancesFor('pokemon', currentDetailId);
+    const rows = plRow('Naam', rec.naam || '(onbekend)') +
+      plRow('Nummer', '#' + String(rec.nummer || '').padStart(4, '0')) +
+      plRow('In bezit', rec.inbezit ? 'Ja' : 'Nee') +
+      plRow('Totale waarde', `&euro; ${fmtEuro(totalForInstanceList(list))}`);
+    openPhotoLightbox(detailImg.src, rows);
   });
 
   grid.addEventListener('click', (e) => {
@@ -2315,6 +2368,16 @@
     renderInstancesInto(document.getElementById('extraInstancesList'), EXTRA_PARENT_TYPE, currentExtraId);
   }
 
+  document.getElementById('extraArtFrame').addEventListener('click', () => {
+    const item = getExtra(currentExtraId);
+    if (!item) return;
+    const list = instancesFor(EXTRA_PARENT_TYPE, currentExtraId);
+    const rows = plRow('Naam', item.naam || '(naamloos)') +
+      plRow('Type', EXTRA_TYPE_LABELS[item.categorie] || item.categorie || '') +
+      plRow('Totale waarde', `&euro; ${fmtEuro(totalForInstanceList(list))}`);
+    openPhotoLightbox(mainImageForExtra(item), rows);
+  });
+
   function currentExtraIsEnergy() {
     if (currentExtraId !== null) {
       const item = getExtra(currentExtraId);
@@ -2832,12 +2895,14 @@
       const countLabel = `${groupCount} ${groupCount === 1 ? 'exemplaar' : 'exemplaren'}`;
       const photoUrl = (group.items.find(i => i.afbeelding) || {}).afbeelding;
       const thumbHtml = photoUrl ? `<img src="${photoUrl}" alt="">` : '🎴';
+      const canTryTcgdex = !!(group.set_naam && group.kaartnummer);
       return `
         <div class="instance-group">
           <div class="instance-group-photo">
             <div class="group-thumb">${thumbHtml}</div>
             <button type="button" class="group-photo-upload">📷 ${photoUrl ? 'Vervang groepsfoto' : 'Groepsfoto toevoegen'}</button>
             ${photoUrl ? `<button type="button" class="group-photo-edit">✂️</button>` : ''}
+            ${canTryTcgdex ? `<button type="button" class="group-photo-tcgdex">🔍 Foto ophalen (TCGdex)</button>` : ''}
           </div>
           <div class="instance-group-header">
             <span class="instance-group-title">${title}</span>
@@ -2867,6 +2932,24 @@
           cropGroupTarget = target;
           const photoUrl = (group.items.find(i => i.afbeelding) || {}).afbeelding;
           if (photoUrl) openCropModalFromUrl(photoUrl, null);
+        });
+      }
+      const tcgdexBtn = groupEl.querySelector('.group-photo-tcgdex');
+      if (tcgdexBtn) {
+        tcgdexBtn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const originalLabel = tcgdexBtn.textContent;
+          tcgdexBtn.disabled = true;
+          tcgdexBtn.textContent = '🔍 Bezig met zoeken...';
+          const result = await tryAutoFetchGroupPhoto(target, true);
+          if (result === 'found') {
+            tcgdexBtn.textContent = '✓ Foto gevonden';
+          } else if (result === 'not-found') {
+            tcgdexBtn.textContent = '✗ Niets gevonden bij TCGdex';
+          } else {
+            tcgdexBtn.textContent = '✗ Mislukt, probeer opnieuw';
+          }
+          setTimeout(() => { tcgdexBtn.disabled = false; tcgdexBtn.textContent = originalLabel; }, 3000);
         });
       }
     });
@@ -3017,11 +3100,23 @@
     const setId = await findTcgdexSetId(setName);
     if (!setId) return null;
     try {
+      // Eerste poging: direct op exact ingevoerd nummer (werkt als de
+      // schrijfwijze toevallig overeenkomt met hoe TCGdex het opslaat).
       const res = await fetch(`https://api.tcgdex.net/v2/en/sets/${encodeURIComponent(setId)}/${encodeURIComponent(kaartnummer)}`);
-      if (!res.ok) return null;
-      const card = await res.json();
-      if (!card || !card.image) return null;
-      return `${card.image}/high.png`;
+      if (res.ok) {
+        const card = await res.json();
+        if (card && card.image) return `${card.image}/high.png`;
+      }
+      // Tweede poging: voorloopnullen maken niet uit. Haal de hele kaartenlijst
+      // van de set op en zoek een kaart met hetzelfde nummer, genegeerd de
+      // voorloopnullen (zo maakt het niet uit of je "2", "02" of "002" typt).
+      const setRes = await fetch(`https://api.tcgdex.net/v2/en/sets/${encodeURIComponent(setId)}`);
+      if (!setRes.ok) return null;
+      const setData = await setRes.json();
+      const target = String(kaartnummer).trim().replace(/^0+(?=\d)/, '');
+      const match = (setData.cards || []).find(c => String(c.localId).trim().replace(/^0+(?=\d)/, '') === target);
+      if (!match || !match.image) return null;
+      return `${match.image}/high.png`;
     } catch (err) {
       console.error('TCGdex-opzoeking mislukt:', err);
       return null;
@@ -3031,25 +3126,29 @@
   // Probeert automatisch een foto op te halen voor een groep (serie+set+
   // kaartnummer), maar alleen als die groep nog geen eigen foto heeft — een
   // handmatig toegevoegde/bewerkte foto wordt dus nooit overschreven.
-  async function tryAutoFetchGroupPhoto(groupTarget) {
-    if (!groupTarget.set_naam || !groupTarget.kaartnummer) return;
-    const existing = allInstances.some(i =>
-      i.parent_type === groupTarget.parentType && String(i.parent_id) === String(groupTarget.parentId) &&
-      (i.serie || null) === (groupTarget.serie || null) && (i.set_naam || null) === (groupTarget.set_naam || null) &&
-      (i.kaartnummer || null) === (groupTarget.kaartnummer || null) && i.afbeelding
-    );
-    if (existing) return;
+  async function tryAutoFetchGroupPhoto(groupTarget, force) {
+    if (!groupTarget.set_naam || !groupTarget.kaartnummer) return 'missing-data';
+    if (!force) {
+      const existing = allInstances.some(i =>
+        i.parent_type === groupTarget.parentType && String(i.parent_id) === String(groupTarget.parentId) &&
+        (i.serie || null) === (groupTarget.serie || null) && (i.set_naam || null) === (groupTarget.set_naam || null) &&
+        (i.kaartnummer || null) === (groupTarget.kaartnummer || null) && i.afbeelding
+      );
+      if (existing) return 'already-has-photo';
+    }
     if (iKaartnummerStatus) { iKaartnummerStatus.textContent = 'Bezig met zoeken bij TCGdex...'; iKaartnummerStatus.className = ''; }
     const url = await fetchTcgdexCardImage(groupTarget.set_naam, groupTarget.kaartnummer);
     if (!url) {
       if (iKaartnummerStatus) { iKaartnummerStatus.textContent = 'Geen foto gevonden bij TCGdex voor deze set/kaartnummer — je kunt zelf een foto toevoegen.'; iKaartnummerStatus.className = 'tcgdex-notfound'; }
-      return;
+      return 'not-found';
     }
     try {
       await applyGroupPhotoUrl(groupTarget, url);
       if (iKaartnummerStatus) { iKaartnummerStatus.textContent = 'Foto automatisch gevonden bij TCGdex ✓'; iKaartnummerStatus.className = 'tcgdex-found'; }
+      return 'found';
     } catch (err) {
       if (iKaartnummerStatus) { iKaartnummerStatus.textContent = 'Foto gevonden, maar kon niet koppelen: ' + err.message; iKaartnummerStatus.className = 'tcgdex-notfound'; }
+      return 'error';
     }
   }
 
