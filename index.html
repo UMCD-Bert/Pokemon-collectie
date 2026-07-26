@@ -936,7 +936,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '1.10';
+  const APP_VERSION = '1.12';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -1250,6 +1250,9 @@
     // chosen sort (naam/waarde/nummer) must be re-applied every time this runs,
     // regardless of which code path triggered the rebuild.
     reorderGrid();
+    // Likewise, a fresh set of card elements has no "hidden" classes yet, so
+    // the active zoek/filter (bijv. "In bezit") must be re-applied too.
+    applyFilter();
   }
 
   function updateCardValueDisplay(id) {
@@ -2399,7 +2402,16 @@
   // instance yet gets exactly one default instance, carrying over its old
   // single "waarde" value (if any), so nothing gets lost by this upgrade.
   async function migrateLegacyOwnedToInstances() {
-    const ownedWithoutInstances = records.filter(r => r.inbezit && instancesFor('pokemon', r.id).length === 0);
+    const ownedWithoutInstances = records.filter(r => {
+      if (!r.inbezit || instancesFor('pokemon', r.id).length > 0) return false;
+      // Only worth migrating if there's actually a photo or a value to carry
+      // over — a card that's simply checked "in bezit" by hand shouldn't get
+      // an empty placeholder exemplaar out of nowhere.
+      const num = String(r.nummer || '');
+      const hasPhoto = r.afbeelding && r.afbeelding !== defaultArtUrl(num);
+      const hasValue = r.waarde !== undefined && r.waarde !== null && !isNaN(parseFloat(r.waarde)) && parseFloat(r.waarde) > 0;
+      return hasPhoto || hasValue;
+    });
     if (ownedWithoutInstances.length === 0) return;
     statusEl.style.display = 'block';
     statusEl.textContent = `Bestaande waardes en foto's omzetten naar exemplaren (${ownedWithoutInstances.length} kaarten)...`;
@@ -2744,6 +2756,28 @@
     };
   }
 
+  function isEmptyLegacyInstance(inst) {
+    const waardeNum = parseFloat(inst.waarde);
+    return !inst.serie && !inst.set_naam && !inst.versie && !inst.afbeelding &&
+      (inst.waarde === null || inst.waarde === undefined || isNaN(waardeNum) || waardeNum === 0) &&
+      (parseInt(inst.aantal) || 1) === 1;
+  }
+
+  async function cleanupEmptyLegacyInstance(parentType, parentId, exceptId) {
+    const stale = allInstances.find(i =>
+      i.parent_type === parentType && String(i.parent_id) === String(parentId) &&
+      String(i.id) !== String(exceptId) && isEmptyLegacyInstance(i)
+    );
+    if (!stale) return;
+    try {
+      const res = await fetch(instRestUrl(`?id=eq.${stale.id}`), { method: 'DELETE', headers: authHeaders() });
+      if (!res.ok) throw new Error(await res.text());
+      allInstances = allInstances.filter(i => String(i.id) !== String(stale.id));
+    } catch (err) {
+      console.error('Kon leeg placeholder-exemplaar niet opruimen:', err);
+    }
+  }
+
   async function saveInstance(closeAfter) {
     const payload = collectInstancePayload();
     try {
@@ -2762,6 +2796,9 @@
         const created = await res.json();
         allInstances.push(created[0]);
         currentInstanceId = created[0].id;
+        // A leftover empty placeholder exemplaar (from the legacy-value
+        // migration) is now redundant now that a real exemplaar exists.
+        await cleanupEmptyLegacyInstance(payload.parent_type, payload.parent_id, currentInstanceId);
       } else {
         const res = await fetch(instRestUrl(`?id=eq.${currentInstanceId}`), {
           method: 'PATCH',
