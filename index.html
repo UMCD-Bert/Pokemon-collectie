@@ -75,6 +75,7 @@
   .print-filter-toggle input { width: 16px; height: 16px; cursor: pointer; }
 
   #progressDashboard { max-width: 260px; margin: 0 auto 10px auto; text-align: center; }
+  #appVersion { text-align: center; font-size: 11px; color: #b0b6bd; margin: -4px 0 4px 0; letter-spacing: 0.3px; }
   #gaugePct { font-size: 22px; font-weight: 800; fill: #2c3e50; }
   #gaugeLabel { font-weight: 700; color: #2c3e50; margin-top: -6px; font-size: 14px; }
   #valueLabel { font-weight: 700; color: #1d7a4c; margin-top: 2px; font-size: 15px; }
@@ -699,6 +700,7 @@
   <button id="resetOwnedBtn" title="Wis alle vinkjes">🗑️</button>
 </div>
 
+<div id="appVersion"></div>
 <div id="progressDashboard">
   <svg viewBox="0 0 200 115" width="220">
     <path d="M 15 100 A 85 85 0 0 1 185 100" fill="none" stroke="#dfe4ea" stroke-width="16" stroke-linecap="round"/>
@@ -890,6 +892,12 @@
 
 
 <script>
+  // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
+  // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
+  // (handig bij twijfel over PWA-cache).
+  const APP_VERSION = '1.0';
+  document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
+
   const search = document.getElementById('search');
   const filterOwned = document.getElementById('filterOwned');
   const sortMode = document.getElementById('sortMode');
