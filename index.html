@@ -299,6 +299,13 @@
   #storageUsageBarTrack { width: 100%; height: 10px; border-radius: 6px; background: #eef1f4; overflow: hidden; margin-bottom: 6px; }
   #storageUsageBarFill { height: 100%; border-radius: 6px; transition: width 0.3s ease; }
   #storageUsageWarning { color: #e63946; font-weight: 600; margin-top: 4px; }
+  #bulkSyncSection { margin-top: 14px; padding-top: 12px; border-top: 1px solid #eee; }
+  #bulkSyncStartBtn { background: #457b9d; color: white; border: none; padding: 8px 12px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  #bulkSyncStartBtn:disabled { opacity: 0.6; cursor: default; }
+  #bulkSyncProgressWrap { margin-top: 10px; }
+  #bulkSyncBarTrack { width: 100%; height: 10px; border-radius: 6px; background: #eef1f4; overflow: hidden; margin-bottom: 6px; }
+  #bulkSyncBarFill { height: 100%; border-radius: 6px; background: #3ecf8e; width: 0%; transition: width 0.2s ease; }
+  #bulkSyncStatusText { font-size: 12px; color: #444; }
 
   .grid { display: grid; grid-template-columns: repeat(auto-fill, 36mm); gap: 4mm; justify-content: center; max-width: 1400px; margin: 0 auto; }
   .card {
@@ -580,6 +587,31 @@
   #iKaartnummerStatus { font-size: 11px; color: #888; margin: 2px 0 0 0; min-height: 14px; }
   #iKaartnummerStatus.tcgdex-found { color: #1d7a4c; }
   #iKaartnummerStatus.tcgdex-notfound { color: #b8860b; }
+  #iPriceFetchBtn {
+    margin-top: 6px; padding: 6px 10px; border-radius: 6px; border: 1px solid #457b9d;
+    background: #eef5fa; color: #2c5d7a; font-size: 12px; font-weight: 600; cursor: pointer;
+  }
+  #iPriceFetchBtn:disabled { opacity: 0.6; cursor: default; }
+  #iPriceFetchStatus { font-size: 11px; color: #888; margin: 3px 0 0 0; min-height: 14px; }
+  #iPriceFetchStatus.tcgdex-found { color: #1d7a4c; }
+  #iPriceFetchStatus.tcgdex-notfound { color: #b8860b; }
+  #iCardLookupBtn {
+    width: 100%; margin-bottom: 4px; padding: 8px 10px; border-radius: 8px; border: 1px solid #b8860b;
+    background: #fffaf0; color: #8a5a1a; font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  #iCardLookupBtn:disabled { opacity: 0.6; cursor: default; }
+  #iCardLookupStatus { font-size: 11px; color: #888; margin: 2px 0 4px 0; min-height: 14px; }
+  #iCardLookupResults {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 6px;
+    max-height: 220px; overflow-y: auto; margin-bottom: 8px;
+  }
+  .cardlookup-item {
+    cursor: pointer; text-align: center; border: 1px solid #eee; border-radius: 8px; padding: 4px;
+    background: #fafafa; font-size: 9.5px; color: #555; line-height: 1.2;
+  }
+  .cardlookup-item:hover { border-color: #b8860b; background: #fffaf0; }
+  .cardlookup-item img { width: 100%; border-radius: 4px; display: block; margin-bottom: 3px; }
+  .cardlookup-item .cardlookup-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .field-input, .field-textarea {
     width: 100%; border: 1px solid #ccc; border-radius: 6px; padding: 9px 10px;
     font-size: 14px; font-family: inherit; box-sizing: border-box;
@@ -622,9 +654,19 @@
   .instance-group-photo { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; flex-wrap: wrap; }
   .group-thumb {
     width: 32px; height: 32px; border-radius: 6px; background: #e8e8e8; flex-shrink: 0;
-    display: flex; align-items: center; justify-content: center; overflow: hidden; font-size: 15px; color: #bbb;
+    position: relative; cursor: zoom-in;
   }
-  .group-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .group-thumb-inner {
+    width: 100%; height: 100%; border-radius: 6px; overflow: hidden;
+    display: flex; align-items: center; justify-content: center; font-size: 15px; color: #bbb;
+  }
+  .group-thumb-inner img { width: 100%; height: 100%; object-fit: cover; }
+  .group-thumb-zoom {
+    display: none; position: fixed; z-index: 1200;
+    width: 200px; border: 2px solid #b8860b; border-radius: 8px; background: white; padding: 4px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.35);
+  }
+  .group-thumb-zoom img { width: 100%; height: auto; display: block; border-radius: 6px; object-fit: contain; }
   .group-photo-upload {
     flex: 1; text-align: left; padding: 6px 8px; border-radius: 6px; border: 1px dashed #b8860b;
     background: #fffaf0; color: #8a5a1a; font-size: 11px; font-weight: 600; cursor: pointer;
@@ -658,6 +700,12 @@
   .instance-row .inst-title { font-size: 12.5px; font-weight: 600; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .instance-row .inst-sub { font-size: 11px; color: #888; }
   .instance-row .inst-value { font-size: 12.5px; font-weight: 700; color: #1d7a4c; flex-shrink: 0; }
+  .inst-value-pending { color: #999; font-weight: 500; font-style: italic; }
+  .inst-price-refresh {
+    flex-shrink: 0; padding: 4px 8px; border-radius: 6px; border: none;
+    background: #eef5fa; color: #2c5d7a; font-size: 11px; font-weight: 600; cursor: pointer; white-space: nowrap;
+  }
+  .inst-price-refresh:disabled { opacity: 0.6; cursor: default; }
   .placeholder-mark { font-size: 30px; color: #ccc; }
 
   #instanceArtFrame {
@@ -727,6 +775,14 @@
   <div id="storageUsageSection">
     <button type="button" id="checkStorageBtn">📦 Opslaggebruik controleren</button>
     <div id="storageUsageResult"></div>
+  </div>
+  <div id="bulkSyncSection">
+    <button type="button" id="bulkSyncStartBtn">🔄 Foto's &amp; prijzen bijwerken voor hele verzameling</button>
+    <p style="font-size:11px;color:#999;margin:4px 0 0 0;">Zoekt voor alle kaartexemplaren met serie, set én kaartnummer: een foto via TCGdex (alleen waar die nog ontbreekt) en de actuele Cardmarket-prijs via pokemontcg.io (overschrijft altijd).</p>
+    <div id="bulkSyncProgressWrap" style="display:none;">
+      <div id="bulkSyncBarTrack"><div id="bulkSyncBarFill"></div></div>
+      <div id="bulkSyncStatusText"></div>
+    </div>
   </div>
   <div class="settings-actions">
     <button id="settingsCancelBtn">Annuleren</button>
@@ -958,6 +1014,9 @@
   <div class="modal-box">
     <button type="button" class="modal-close" id="instanceCloseBtn">&times;</button>
     <h3 id="instanceModalTitle">Kaartexemplaar</h3>
+    <button type="button" id="iCardLookupBtn" style="display:none;">🔍 Welke sets? (pokemontcg.io)</button>
+    <div id="iCardLookupStatus"></div>
+    <div id="iCardLookupResults"></div>
     <label class="field-label">Serie</label>
     <div class="field-with-picker">
       <input type="text" class="field-input" id="iSerie" placeholder="Typ of kies rechts...">
@@ -997,6 +1056,8 @@
         <button type="button" class="step-btn" data-delta="-0.01">▼</button>
       </span>
     </div>
+    <button type="button" id="iPriceFetchBtn" style="display:none;">💶 Marktprijs ophalen (Cardmarket)</button>
+    <div id="iPriceFetchStatus"></div>
     <label class="field-label">Aantal</label>
     <div id="instanceAantalRow">
       <input type="text" inputmode="numeric" id="iAantal" value="1">
@@ -1049,7 +1110,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '2.6';
+  const APP_VERSION = '2.22';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -1149,6 +1210,7 @@
       menu.querySelectorAll('.dropdown-item').forEach(item => {
         item.addEventListener('click', () => {
           inputEl.value = item.textContent;
+          inputEl.dispatchEvent(new Event('change'));
           dropdown.classList.remove('open');
         });
       });
@@ -1163,12 +1225,66 @@
   Object.values(CARD_SERIES).forEach(sets => sets.forEach(s => { if (!allSetsFlat.includes(s)) allSetsFlat.push(s); }));
   allSetsFlat.sort((a, b) => a.localeCompare(b, 'nl'));
 
-  setupFieldPicker('iSeriePicker', 'iSeriePickerBtn', 'iSerieMenu', iSerieInput, () => Object.keys(CARD_SERIES).slice().sort((a, b) => a.localeCompare(b, 'nl')));
+  // Automatisch nieuwe series/sets meenemen die TCGdex kent maar die nog niet
+  // in onze eigen (vaste) lijst staan — zo hoeft niemand dit handmatig bij te
+  // houden zodra er een nieuwe set uitkomt. Faalt dit onverhoopt (bijv. geen
+  // netwerk of onverwachte data), dan val je gewoon terug op de vaste lijst.
+  function normalizeSerieKey(name) {
+    return normalizeSetName(name).replace(/\bseries\b/g, '').trim();
+  }
+  let dynamicSerieToSets = {}; // { genormaliseerdeSerieNaam: Set(setnamen) }
+  let dynamicSerieNames = [];  // TCGdex-series die niet op een bestaande Serie-key matchen
+  async function discoverDynamicSeriesAndSets() {
+    try {
+      const sets = await loadTcgdexSets();
+      const knownKeys = Object.keys(CARD_SERIES).map(k => normalizeSerieKey(k));
+      sets.forEach(s => {
+        if (!s || !s.name) return;
+        const serieName = s.serie && s.serie.name;
+        if (!serieName) return;
+        const normSerie = normalizeSerieKey(serieName);
+        if (!dynamicSerieToSets[normSerie]) dynamicSerieToSets[normSerie] = new Set();
+        dynamicSerieToSets[normSerie].add(s.name);
+        if (!knownKeys.includes(normSerie) && !dynamicSerieNames.includes(serieName)) {
+          dynamicSerieNames.push(serieName);
+        }
+      });
+    } catch (err) {
+      console.error('Kon TCGdex niet gebruiken om nieuwe series/sets te vinden:', err);
+    }
+  }
+
+  setupFieldPicker('iSeriePicker', 'iSeriePickerBtn', 'iSerieMenu', iSerieInput, () =>
+    [...new Set([...Object.keys(CARD_SERIES), ...dynamicSerieNames])].sort((a, b) => a.localeCompare(b, 'nl'))
+  );
   setupFieldPicker('iSetPicker', 'iSetPickerBtn', 'iSetMenu', iSetInput, () => {
-    const sets = CARD_SERIES[iSerieInput.value];
-    return sets ? [...sets].sort((a, b) => a.localeCompare(b, 'nl')) : allSetsFlat;
+    const staticSets = CARD_SERIES[iSerieInput.value] || [];
+    const extraSets = dynamicSerieToSets[normalizeSerieKey(iSerieInput.value)];
+    const merged = [...new Set([...staticSets, ...(extraSets ? [...extraSets] : [])])];
+    if (merged.length > 0) return merged.sort((a, b) => a.localeCompare(b, 'nl'));
+    return allSetsFlat;
   });
   setupFieldPicker('iVersiePicker', 'iVersiePickerBtn', 'iVersieMenu', iVersieInput, () => [...CARD_VERSIES].sort((a, b) => a.localeCompare(b, 'nl')));
+
+  // Set bepaalt de Serie ondubbelzinnig, dus zodra een (h)erkende Set is
+  // ingevuld, vullen we de Serie er automatisch bij in — dat scheelt een stap.
+  function findSerieForSetName(setName) {
+    if (!setName) return null;
+    const target = setName.trim().toLowerCase();
+    for (const key of Object.keys(CARD_SERIES)) {
+      if (CARD_SERIES[key].some(s => s.trim().toLowerCase() === target)) return key;
+    }
+    for (const normKey of Object.keys(dynamicSerieToSets)) {
+      if ([...dynamicSerieToSets[normKey]].some(s => s.trim().toLowerCase() === target)) {
+        return dynamicSerieNames.find(n => normalizeSerieKey(n) === normKey) || normKey;
+      }
+    }
+    return null;
+  }
+  iSetInput.addEventListener('change', () => {
+    const serie = findSerieForSetName(iSetInput.value);
+    if (serie) iSerieInput.value = serie;
+  });
 
   let config = null; // { url, table, key }
   let records = []; // flat rows: { id, nummer, naam, afbeelding, inbezit, waarde, notitie }
@@ -1203,6 +1319,11 @@
     table: 'pokemon',
     key: 'sb_publishable_KELGR-EkKYZBF_knnwdNvg_vA966Yqr'
   };
+
+  // Gratis API-key van https://pokemontcg.io (zelf aan te vragen via hun site),
+  // gebruikt om Cardmarket-marktprijzen op te halen. Leeg = werkt nog steeds,
+  // maar met een veel lager aanvraaglimiet per dag.
+  const POKEMONTCG_API_KEY = 'd56d2bd1-7f5b-4ae5-8d74-cfb0abef1cbb';
 
   function loadConfig() {
     try {
@@ -1375,8 +1496,10 @@
     const total = totalForInstanceList(list);
     const countTotal = list.reduce((sum, i) => sum + (parseInt(i.aantal) || 1), 0);
     if (countTotal === 0) { el.textContent = ''; return; }
+    const freshDate = oldestFreshnessDate(list);
+    const dotHtml = freshDate ? priceFreshnessDotHtml(freshDate) : '';
     el.innerHTML = total > 0
-      ? `€ ${fmtEuro(total)} <span class="card-count">(${countTotal}x)</span>`
+      ? `${dotHtml}€ ${fmtEuro(total)} <span class="card-count">(${countTotal}x)</span>`
       : `<span class="card-count">${countTotal}x</span>`;
   }
 
@@ -2247,7 +2370,9 @@
       ? `<img src="${imgUrl}" alt="${item.naam || ''}">`
       : `<span class="placeholder-mark">🎴</span>`;
     const total = totalForInstanceList(list);
-    const waardeHtml = total > 0 ? `<div class="extra-waarde">&euro; ${fmtEuro(total)}</div>` : '';
+    const freshDate = oldestFreshnessDate(list);
+    const dotHtml = freshDate ? priceFreshnessDotHtml(freshDate) : '';
+    const waardeHtml = total > 0 ? `<div class="extra-waarde">${dotHtml}&euro; ${fmtEuro(total)}</div>` : '';
     const countTotal = list.reduce((sum, i) => sum + (parseInt(i.aantal) || 1), 0);
     const countHtml = countTotal ? `<div class="extra-set">${countTotal} ${countTotal === 1 ? 'exemplaar' : 'exemplaren'}</div>` : '';
     const typeLabel = currentMainTab === 'trainers' ? (EXTRA_TYPE_LABELS[item.categorie] || item.categorie || '') : '';
@@ -2854,12 +2979,19 @@
 
   function instanceRowHtml(inst) {
     const subParts = [inst.versie, `${inst.aantal || 1}x`].filter(Boolean).join(' · ') || `${inst.aantal || 1}x`;
+    const canTryPrice = !!(inst.set_naam && inst.kaartnummer);
+    const isPending = pendingPriceFetchIds.has(inst.id);
+    const dotHtml = (!isPending && inst.prijs_bron_datum) ? priceFreshnessDotHtml(inst.prijs_bron_datum) : '';
+    const valueHtml = isPending
+      ? `<span class="inst-value-pending">⏳ prijs ophalen...</span>`
+      : `${dotHtml}&euro; ${fmtEuro(instanceLineValue(inst))}`;
     return `
       <div class="instance-row" data-inst-id="${inst.id}">
         <div class="inst-info">
           <div class="inst-sub">${subParts}</div>
         </div>
-        <div class="inst-value">&euro; ${fmtEuro(instanceLineValue(inst))}</div>
+        <div class="inst-value">${valueHtml}</div>
+        ${canTryPrice ? `<button type="button" class="inst-price-refresh" title="Marktprijs ophalen (Cardmarket via pokemontcg.io)" data-inst-id="${inst.id}" ${isPending ? 'disabled' : ''}>💶 Prijs</button>` : ''}
       </div>`;
   }
 
@@ -2894,8 +3026,12 @@
       const groupValue = group.items.reduce((sum, i) => sum + instanceLineValue(i), 0);
       const countLabel = `${groupCount} ${groupCount === 1 ? 'exemplaar' : 'exemplaren'}`;
       const photoUrl = (group.items.find(i => i.afbeelding) || {}).afbeelding;
-      const thumbHtml = photoUrl ? `<img src="${photoUrl}" alt="">` : '🎴';
+      const thumbHtml = photoUrl
+        ? `<div class="group-thumb-inner"><img src="${photoUrl}" alt=""></div><div class="group-thumb-zoom"><img src="${photoUrl}" alt=""></div>`
+        : `<div class="group-thumb-inner">🎴</div>`;
       const canTryTcgdex = !!(group.set_naam && group.kaartnummer);
+      const groupFreshDate = oldestFreshnessDate(group.items);
+      const groupDotHtml = groupFreshDate ? priceFreshnessDotHtml(groupFreshDate) : '';
       return `
         <div class="instance-group">
           <div class="instance-group-photo">
@@ -2906,7 +3042,7 @@
           </div>
           <div class="instance-group-header">
             <span class="instance-group-title">${title}</span>
-            <span class="instance-group-total">${countLabel} &middot; &euro; ${fmtEuro(groupValue)}</span>
+            <span class="instance-group-total">${countLabel} &middot; ${groupDotHtml}&euro; ${fmtEuro(groupValue)}</span>
           </div>
           <div class="instance-group-rows">${group.items.map(instanceRowHtml).join('')}</div>
         </div>`;
@@ -2914,9 +3050,49 @@
     containerEl.querySelectorAll('.instance-row').forEach(row => {
       row.addEventListener('click', () => openInstanceModal(parentType, parentId, row.dataset.instId));
     });
+    containerEl.querySelectorAll('.inst-price-refresh').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const originalLabel = btn.textContent;
+        const originalTitle = btn.title;
+        btn.disabled = true;
+        btn.textContent = '…';
+        const result = await tryAutoFetchInstancePrice(btn.dataset.instId);
+        if (result.status === 'found') {
+          btn.innerHTML = priceFreshnessDotHtml(result.updatedAt) + '✓';
+          btn.title = priceFreshnessLabel(result.updatedAt);
+        } else {
+          btn.textContent = result.status === 'not-found' ? '✗' : '⚠️';
+        }
+        setTimeout(() => { btn.disabled = false; btn.textContent = originalLabel; btn.title = originalTitle; }, 4000);
+      });
+    });
     containerEl.querySelectorAll('.instance-group').forEach((groupEl, idx) => {
       const group = groups[idx];
       const target = { parentType, parentId, serie: group.serie, set_naam: group.set_naam, kaartnummer: group.kaartnummer };
+      const thumb = groupEl.querySelector('.group-thumb');
+      const zoom = groupEl.querySelector('.group-thumb-zoom');
+      if (thumb && zoom) {
+        thumb.addEventListener('mouseenter', () => {
+          const rect = thumb.getBoundingClientRect();
+          const margin = 10;
+          zoom.style.display = 'block';
+          // Rechts van de miniatuur, tenzij dat niet past — dan links ervan.
+          const popupWidth = 200;
+          let left = rect.right + 8;
+          if (left + popupWidth + margin > window.innerWidth) left = rect.left - popupWidth - 8;
+          zoom.style.left = Math.max(margin, left) + 'px';
+          // Verticaal begrenzen aan boven- en onderzijde van het scherm.
+          requestAnimationFrame(() => {
+            const zh = zoom.offsetHeight;
+            let top = rect.top;
+            if (top + zh + margin > window.innerHeight) top = window.innerHeight - zh - margin;
+            if (top < margin) top = margin;
+            zoom.style.top = top + 'px';
+          });
+        });
+        thumb.addEventListener('mouseleave', () => { zoom.style.display = 'none'; });
+      }
       const uploadBtn = groupEl.querySelector('.group-photo-upload');
       uploadBtn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -2968,6 +3144,7 @@
   let currentInstanceParentType = null;
   let currentInstanceParentId = null;
   let currentInstanceId = null; // null = new
+  let iWaardeAtOpen = null; // waarde bij openen van het scherm, om handmatige wijziging te detecteren
 
   function getInstance(id) { return allInstances.find(i => String(i.id) === String(id)); }
 
@@ -3000,8 +3177,19 @@
     iKaartnummerStatus.textContent = '';
     iKaartnummerStatus.className = '';
     iWaarde.value = inst ? formatValue(inst.waarde) : '';
+    iWaardeAtOpen = inst ? (parseFloat(inst.waarde) || null) : null;
     iAantal.value = inst ? (inst.aantal || 1) : 1;
     instanceDeleteBtn.style.display = inst ? 'inline-block' : 'none';
+    // Alleen tonen bij een al opgeslagen exemplaar met set + kaartnummer bekend
+    // (bij een nog niet opgeslagen nieuw exemplaar is er nog niets om bij te werken).
+    document.getElementById('iPriceFetchBtn').style.display = (inst && inst.set_naam && inst.kaartnummer) ? '' : 'none';
+    document.getElementById('iPriceFetchStatus').textContent = '';
+    document.getElementById('iPriceFetchStatus').className = '';
+    const cardName = currentInstanceCardName();
+    document.getElementById('iCardLookupBtn').style.display = cardName ? '' : 'none';
+    document.getElementById('iCardLookupBtn').textContent = `🔍 Welke sets? (${cardName || ''})`;
+    document.getElementById('iCardLookupStatus').textContent = '';
+    document.getElementById('iCardLookupResults').innerHTML = '';
     instanceModal.classList.add('open');
   }
   function closeInstanceModal() { instanceModal.classList.remove('open'); }
@@ -3026,7 +3214,7 @@
 
   function collectInstancePayload() {
     const waardeNum = parseMoneyInput(iWaarde.value);
-    return {
+    const payload = {
       parent_type: currentInstanceParentType,
       parent_id: currentInstanceParentId,
       serie: iSerie.value.trim() || null,
@@ -3036,6 +3224,12 @@
       waarde: waardeNum,
       aantal: Math.max(1, parseInt(iAantal.value) || 1)
     };
+    // Handmatige wijziging van de waarde betekent dat een eventuele eerder
+    // opgehaalde marktprijs-datum niet meer klopt voor dit (nieuwe) bedrag.
+    if (currentInstanceId !== null && waardeNum !== iWaardeAtOpen) {
+      payload.prijs_bron_datum = null;
+    }
+    return payload;
   }
 
   function isEmptyLegacyInstance(inst) {
@@ -3126,7 +3320,7 @@
   // Probeert automatisch een foto op te halen voor een groep (serie+set+
   // kaartnummer), maar alleen als die groep nog geen eigen foto heeft — een
   // handmatig toegevoegde/bewerkte foto wordt dus nooit overschreven.
-  async function tryAutoFetchGroupPhoto(groupTarget, force) {
+  async function tryAutoFetchGroupPhoto(groupTarget, force, skipRefresh) {
     if (!groupTarget.set_naam || !groupTarget.kaartnummer) return 'missing-data';
     if (!force) {
       const existing = allInstances.some(i =>
@@ -3136,20 +3330,271 @@
       );
       if (existing) return 'already-has-photo';
     }
-    if (iKaartnummerStatus) { iKaartnummerStatus.textContent = 'Bezig met zoeken bij TCGdex...'; iKaartnummerStatus.className = ''; }
+    if (iKaartnummerStatus && !skipRefresh) { iKaartnummerStatus.textContent = 'Bezig met zoeken bij TCGdex...'; iKaartnummerStatus.className = ''; }
     const url = await fetchTcgdexCardImage(groupTarget.set_naam, groupTarget.kaartnummer);
     if (!url) {
-      if (iKaartnummerStatus) { iKaartnummerStatus.textContent = 'Geen foto gevonden bij TCGdex voor deze set/kaartnummer — je kunt zelf een foto toevoegen.'; iKaartnummerStatus.className = 'tcgdex-notfound'; }
+      if (iKaartnummerStatus && !skipRefresh) { iKaartnummerStatus.textContent = 'Geen foto gevonden bij TCGdex voor deze set/kaartnummer — je kunt zelf een foto toevoegen.'; iKaartnummerStatus.className = 'tcgdex-notfound'; }
       return 'not-found';
     }
     try {
-      await applyGroupPhotoUrl(groupTarget, url);
-      if (iKaartnummerStatus) { iKaartnummerStatus.textContent = 'Foto automatisch gevonden bij TCGdex ✓'; iKaartnummerStatus.className = 'tcgdex-found'; }
+      await applyGroupPhotoUrl(groupTarget, url, skipRefresh);
+      if (iKaartnummerStatus && !skipRefresh) { iKaartnummerStatus.textContent = 'Foto automatisch gevonden bij TCGdex ✓'; iKaartnummerStatus.className = 'tcgdex-found'; }
       return 'found';
     } catch (err) {
-      if (iKaartnummerStatus) { iKaartnummerStatus.textContent = 'Foto gevonden, maar kon niet koppelen: ' + err.message; iKaartnummerStatus.className = 'tcgdex-notfound'; }
+      if (iKaartnummerStatus && !skipRefresh) { iKaartnummerStatus.textContent = 'Foto gevonden, maar kon niet koppelen: ' + err.message; iKaartnummerStatus.className = 'tcgdex-notfound'; }
       return 'error';
     }
+  }
+
+  // ---------- pokemontcg.io: automatisch Cardmarket-marktprijs ophalen ----------
+  let pokemonTcgSetsPromise = null;
+  function loadPokemonTcgSets() {
+    if (!pokemonTcgSetsPromise) {
+      pokemonTcgSetsPromise = fetch('https://api.pokemontcg.io/v2/sets', {
+        headers: POKEMONTCG_API_KEY ? { 'X-Api-Key': POKEMONTCG_API_KEY } : {}
+      })
+        .then(res => { if (!res.ok) throw new Error('status ' + res.status); return res.json(); })
+        .then(json => json.data || [])
+        .catch(err => { console.error('Kon pokemontcg.io-setlijst niet laden:', err); pokemonTcgSetsPromise = null; return []; });
+    }
+    return pokemonTcgSetsPromise;
+  }
+
+  const POKEMONTCG_NAME_OVERRIDES = {
+    'scarlet & violet 151': '151'
+  };
+
+  function currentInstanceCardName() {
+    if (currentInstanceParentType === 'pokemon') {
+      const rec = getRec(currentInstanceParentId);
+      return rec ? rec.naam : null;
+    }
+    const item = getExtra(currentInstanceParentId);
+    return item ? item.naam : null;
+  }
+
+  async function searchPokemonTcgCardsByName(name) {
+    const headers = POKEMONTCG_API_KEY ? { 'X-Api-Key': POKEMONTCG_API_KEY } : {};
+    const url = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(`name:"${name}"`)}&pageSize=250&orderBy=-set.releaseDate`;
+    let lastErr = null;
+    // pokemontcg.io hapert soms even (timeouts/rate-limit) — automatisch een
+    // paar keer opnieuw proberen voordat we het als "niets gevonden" melden.
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const res = await fetch(url, { headers });
+        if (res.ok) {
+          const json = await res.json();
+          return json.data || [];
+        }
+        lastErr = new Error(`status ${res.status}`);
+      } catch (err) {
+        lastErr = err;
+      }
+      if (attempt < 2) await new Promise(r => setTimeout(r, 500));
+    }
+    console.error('Kon pokemontcg.io niet doorzoeken op naam (na 3 pogingen):', lastErr);
+    throw lastErr || new Error('onbekende fout');
+  }
+
+  // Onze eigen Serie-labels eindigen op "Series" (bijv. "Sun & Moon Series"),
+  // pokemontcg.io geeft de kale naam (bijv. "Sun & Moon") — hier gekoppeld.
+  function resolveOurSerieKey(pokemonTcgSeriesName) {
+    if (!pokemonTcgSeriesName) return '';
+    const norm = normalizeSerieKey(pokemonTcgSeriesName);
+    const match = Object.keys(CARD_SERIES).find(k => normalizeSerieKey(k) === norm);
+    return match || pokemonTcgSeriesName;
+  }
+
+  document.getElementById('iCardLookupBtn').addEventListener('click', async () => {
+    const name = currentInstanceCardName();
+    if (!name) return;
+    const btn = document.getElementById('iCardLookupBtn');
+    const statusEl2 = document.getElementById('iCardLookupStatus');
+    const resultsEl = document.getElementById('iCardLookupResults');
+    btn.disabled = true;
+    statusEl2.textContent = `Bezig met zoeken naar "${name}" bij pokemontcg.io...`;
+    resultsEl.innerHTML = '';
+    let cards;
+    try {
+      cards = await searchPokemonTcgCardsByName(name);
+    } catch (err) {
+      btn.disabled = false;
+      statusEl2.textContent = `Opzoeken bij pokemontcg.io is nu niet gelukt (mogelijk tijdelijk overbelast) — probeer het nog eens.`;
+      return;
+    }
+    btn.disabled = false;
+    if (cards.length === 0) {
+      statusEl2.textContent = `Geen sets gevonden voor "${name}" — vul zelf in.`;
+      return;
+    }
+    statusEl2.textContent = `${cards.length} druk${cards.length === 1 ? '' : 'ken'} gevonden — kies er een om Serie/Set/Kaartnummer automatisch in te vullen:`;
+    resultsEl.innerHTML = cards.map((c, idx) => {
+      const img = c.images && (c.images.small || c.images.large);
+      const thumbHtml = img ? `<img src="${img}" alt="">` : '🎴';
+      const label = `${c.set ? c.set.name : ''} #${c.number}`;
+      return `<div class="cardlookup-item" data-idx="${idx}" title="${label}">${thumbHtml}<div class="cardlookup-label">${label}</div></div>`;
+    }).join('');
+    resultsEl.querySelectorAll('.cardlookup-item').forEach(el => {
+      el.addEventListener('click', () => {
+        const c = cards[parseInt(el.dataset.idx)];
+        if (!c || !c.set) return;
+        iSerie.value = resolveOurSerieKey(c.set.series);
+        iSet.value = c.set.name;
+        iKaartnummer.value = c.number;
+        statusEl2.textContent = `Ingevuld op basis van: ${c.set.name} #${c.number}.`;
+        resultsEl.innerHTML = '';
+      });
+    });
+  });
+
+  async function findPokemonTcgSetId(setName) {
+    if (!setName) return null;
+    const sets = await loadPokemonTcgSets();
+    const override = POKEMONTCG_NAME_OVERRIDES[setName.trim().toLowerCase()];
+    const norm = normalizeSetName(override || setName);
+    const match = sets.find(s => normalizeSetName(s.name) === norm);
+    return match ? match.id : null;
+  }
+
+  // Haalt het volledige cardmarket-prijzenblok op voor een serie+set+kaartnummer
+  // (één keer per groep — de prijzen per variant, bijv. reverse holo, zitten al
+  // in dit ene antwoord, dus dit wordt per-instantie verder verwerkt op basis
+  // van "versie").
+  async function fetchPokemonTcgCardmarketPrices(setName, kaartnummer) {
+    const setId = await findPokemonTcgSetId(setName);
+    if (!setId) return null;
+    const headers = POKEMONTCG_API_KEY ? { 'X-Api-Key': POKEMONTCG_API_KEY } : {};
+    try {
+      const direct = await fetch(`https://api.pokemontcg.io/v2/cards/${encodeURIComponent(setId)}-${encodeURIComponent(kaartnummer)}`, { headers });
+      if (direct.ok) {
+        const json = await direct.json();
+        if (json.data && json.data.cardmarket && json.data.cardmarket.prices) {
+          return { prices: json.data.cardmarket.prices, updatedAt: json.data.cardmarket.updatedAt || null };
+        }
+      }
+      // Voorloopnullen kunnen ook hier verschillen — zoek in de hele set op nummer.
+      const target = String(kaartnummer).trim().replace(/^0+(?=\d)/, '');
+      const listRes = await fetch(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(`set.id:${setId}`)}&pageSize=250`, { headers });
+      if (!listRes.ok) return null;
+      const listJson = await listRes.json();
+      const match = (listJson.data || []).find(c => String(c.number).trim().replace(/^0+(?=\d)/, '') === target);
+      if (!match || !match.cardmarket || !match.cardmarket.prices) return null;
+      return { prices: match.cardmarket.prices, updatedAt: match.cardmarket.updatedAt || null };
+    } catch (err) {
+      console.error('pokemontcg.io-opzoeking mislukt:', err);
+      return null;
+    }
+  }
+
+  // Cardmarket onderscheidt in de gratis data feitelijk alleen "normaal" en
+  // "reverse holo" — subtielere varianten (Holo zonder reverse, 1st Edition,
+  // Alternate Art, etc.) vallen terug op de normale trendprijs, bij gebrek aan
+  // fijnmaziger brondata.
+  // Zet de "updatedAt" van pokemontcg.io om in een grove, makkelijker te
+  // beoordelen leeftijdscategorie in plaats van een kale datum.
+  function priceFreshnessLabel(updatedAt) {
+    if (!updatedAt) return 'bijwerkdatum onbekend';
+    const d = new Date(String(updatedAt).replace(/\//g, '-'));
+    if (isNaN(d.getTime())) return 'bijwerkdatum onbekend';
+    const days = (Date.now() - d.getTime()) / (1000 * 60 * 60 * 24);
+    if (days < 7) return 'brondata < 1 week oud';
+    if (days < 31) return 'brondata < 1 maand oud';
+    if (days < 183) return 'brondata < 6 maanden oud';
+    return 'brondata > 6 maanden oud — extra reden om te checken';
+  }
+  function priceFreshnessShort(updatedAt) {
+    if (!updatedAt) return '?';
+    const d = new Date(String(updatedAt).replace(/\//g, '-'));
+    if (isNaN(d.getTime())) return '?';
+    const days = (Date.now() - d.getTime()) / (1000 * 60 * 60 * 24);
+    if (days < 7) return '<1wk';
+    if (days < 31) return '<1mnd';
+    if (days < 183) return '<6mnd';
+    return '>6mnd';
+  }
+  function priceFreshnessColor(updatedAt) {
+    if (!updatedAt) return '#999';
+    const d = new Date(String(updatedAt).replace(/\//g, '-'));
+    if (isNaN(d.getTime())) return '#999';
+    const days = (Date.now() - d.getTime()) / (1000 * 60 * 60 * 24);
+    if (days < 7) return '#3ecf8e';   // groen
+    if (days < 31) return '#f1c40f';  // geel
+    if (days < 183) return '#f5a623'; // oranje
+    return '#e63946';                 // rood
+  }
+  function priceFreshnessDotHtml(updatedAt) {
+    return `<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${priceFreshnessColor(updatedAt)};margin-right:5px;vertical-align:middle;" title="${priceFreshnessLabel(updatedAt)}"></span>`;
+  }
+  // Voor een totaal over meerdere exemplaren: de "zwakste schakel" (oudste
+  // brondatum) bepaalt de kleur, zodat je altijd weet dat er íéts verouderds
+  // in dat totaal zit als dat zo is.
+  function oldestFreshnessDate(instances) {
+    const dates = instances.map(i => i.prijs_bron_datum).filter(Boolean);
+    if (dates.length === 0) return null;
+    return dates.reduce((oldest, d) => {
+      const dOld = new Date(String(oldest).replace(/\//g, '-'));
+      const dCur = new Date(String(d).replace(/\//g, '-'));
+      if (isNaN(dCur.getTime())) return oldest;
+      if (isNaN(dOld.getTime())) return d;
+      return dCur < dOld ? d : oldest;
+    });
+  }
+
+  function pickPokemonTcgPrice(prices, versie) {
+    if (!prices) return null;
+    const v = (versie || '').toLowerCase();
+    if (v.includes('reverse')) {
+      const p = prices.reverseHoloTrend ?? prices.reverseHoloSell;
+      if (p != null) return p;
+    }
+    return prices.trendPrice ?? prices.averageSellPrice ?? null;
+  }
+
+  const pendingPriceFetchIds = new Set(); // instanceId's waarvoor nu een prijs wordt opgezocht (voor UI-indicatie)
+  const inFlightPriceFetches = new Map(); // instanceId -> lopende Promise, om dubbel werk te voorkomen
+
+  // Retourneert { status, price, updatedAt }. status is een van:
+  // 'missing-data' | 'not-found' | 'found' | 'error'.
+  function tryAutoFetchInstancePrice(instId, skipRefresh) {
+    // Loopt er al een opzoeking voor dit exemplaar (bijv. automatisch net na
+    // opslaan), geef dan dezelfde belofte terug in plaats van er nog een te
+    // starten — dat voorkomt een trage, overbodige dubbele aanvraag.
+    if (inFlightPriceFetches.has(instId)) return inFlightPriceFetches.get(instId);
+    const promise = (async () => {
+      const inst = getInstance(instId);
+      if (!inst || !inst.set_naam || !inst.kaartnummer) return { status: 'missing-data' };
+      pendingPriceFetchIds.add(instId);
+      try {
+        const result = await fetchPokemonTcgCardmarketPrices(inst.set_naam, inst.kaartnummer);
+        const price = result ? pickPokemonTcgPrice(result.prices, inst.versie) : null;
+        if (price == null) return { status: 'not-found' };
+        const res = await fetch(instRestUrl(`?id=eq.${instId}`), {
+          method: 'PATCH',
+          headers: authHeaders({ 'Prefer': 'return=minimal' }),
+          body: JSON.stringify({ waarde: price, prijs_bron_datum: result.updatedAt || null })
+        });
+        if (!res.ok) throw new Error(await res.text());
+        inst.waarde = price;
+        inst.prijs_bron_datum = result.updatedAt || null;
+        return { status: 'found', price, updatedAt: result.updatedAt };
+      } catch (err) {
+        console.error('Kon opgehaalde marktprijs niet opslaan:', err);
+        return { status: 'error' };
+      } finally {
+        pendingPriceFetchIds.delete(instId);
+        inFlightPriceFetches.delete(instId);
+      }
+    })();
+    inFlightPriceFetches.set(instId, promise);
+    promise.then(() => {
+      // Ongeacht de uitkomst (gevonden/niet gevonden/mislukt) de rij verversen,
+      // zodat de "bezig..."-indicator sowieso verdwijnt.
+      if (!skipRefresh) {
+        const inst = getInstance(instId);
+        if (inst) refreshParentUI(inst.parent_type, inst.parent_id);
+      }
+    });
+    return promise;
   }
 
   async function saveInstance(closeAfter) {
@@ -3183,6 +3628,9 @@
         if (!res.ok) throw new Error(await res.text());
         Object.assign(getInstance(currentInstanceId), payload);
       }
+      // Alvast starten vóór het verversen, zodat de "bezig met prijs
+      // ophalen..."-indicator meteen in de eerste weergave zichtbaar is.
+      tryAutoFetchInstancePrice(currentInstanceId);
       refreshParentUI(currentInstanceParentType, currentInstanceParentId);
       if (closeAfter) closeInstanceModal();
       // Niet wachten op dit netwerkverkeer voordat het venster sluit — de
@@ -3196,6 +3644,29 @@
     }
   }
   document.getElementById('instanceSaveBtn').addEventListener('click', () => saveInstance(true));
+
+  document.getElementById('iPriceFetchBtn').addEventListener('click', async () => {
+    if (currentInstanceId === null) return;
+    const btn = document.getElementById('iPriceFetchBtn');
+    const status = document.getElementById('iPriceFetchStatus');
+    btn.disabled = true;
+    status.textContent = 'Bezig met zoeken bij Cardmarket...';
+    status.className = '';
+    const result = await tryAutoFetchInstancePrice(currentInstanceId); // wél de rest van de UI verversen (totalen etc.)
+    if (result.status === 'found') {
+      const inst = getInstance(currentInstanceId);
+      iWaarde.value = formatValue(inst.waarde);
+      status.innerHTML = priceFreshnessDotHtml(result.updatedAt) + 'Marktprijs gevonden en ingevuld ✓ — check bij twijfel zelf even cardmarket.com.';
+      status.className = 'tcgdex-found';
+    } else if (result.status === 'not-found') {
+      status.textContent = 'Geen prijs gevonden voor deze set/kaartnummer/versie.';
+      status.className = 'tcgdex-notfound';
+    } else {
+      status.textContent = 'Opzoeken mislukt, probeer het later opnieuw.';
+      status.className = 'tcgdex-notfound';
+    }
+    btn.disabled = false;
+  });
 
   instanceDeleteBtn.addEventListener('click', async () => {
     if (currentInstanceId === null) return;
@@ -3234,7 +3705,7 @@
     iAantal.value = (parseInt(iAantal.value) || 1) + 1;
   });
 
-  async function applyGroupPhotoUrl(groupTarget, url) {
+  async function applyGroupPhotoUrl(groupTarget, url, skipRefresh) {
     const filters = [
       `parent_type=eq.${groupTarget.parentType}`,
       `parent_id=eq.${groupTarget.parentId}`,
@@ -3253,7 +3724,7 @@
       const idx = allInstances.findIndex(i => String(i.id) === String(u.id));
       if (idx !== -1) allInstances[idx] = u;
     });
-    refreshParentUI(groupTarget.parentType, groupTarget.parentId);
+    if (!skipRefresh) refreshParentUI(groupTarget.parentType, groupTarget.parentId);
   }
 
   async function uploadImageForGroup(groupTarget, blob) {
@@ -3494,6 +3965,59 @@
     }
   });
 
+  document.getElementById('bulkSyncStartBtn').addEventListener('click', async () => {
+    const startBtn = document.getElementById('bulkSyncStartBtn');
+    const progressWrap = document.getElementById('bulkSyncProgressWrap');
+    const barFill = document.getElementById('bulkSyncBarFill');
+    const statusText = document.getElementById('bulkSyncStatusText');
+    if (!config) { alert('Nog niet verbonden met Supabase.'); return; }
+
+    const eligible = allInstances.filter(i => i.serie && i.set_naam && i.kaartnummer);
+    const total = eligible.length;
+    if (total === 0) { alert('Geen kaartexemplaren gevonden met serie, set én kaartnummer ingevuld.'); return; }
+
+    startBtn.disabled = true;
+    startBtn.textContent = '🔄 Bezig...';
+    progressWrap.style.display = '';
+    barFill.style.width = '0%';
+
+    let processed = 0, photosFound = 0, pricesFound = 0;
+    const photoGroupsSeen = new Set(); // 1x per serie+set+kaartnummer-groep, niet per los exemplaar
+
+    for (const inst of eligible) {
+      const groupKey = `${inst.parent_type}|||${inst.parent_id}|||${inst.serie}|||${inst.set_naam}|||${inst.kaartnummer}`;
+      if (!photoGroupsSeen.has(groupKey)) {
+        photoGroupsSeen.add(groupKey);
+        const photoResult = await tryAutoFetchGroupPhoto({
+          parentType: inst.parent_type, parentId: inst.parent_id,
+          serie: inst.serie, set_naam: inst.set_naam, kaartnummer: inst.kaartnummer
+        }, false, true); // niet forceren (alleen waar nog geen foto is), stil (geen tussentijdse re-render)
+        if (photoResult === 'found') photosFound++;
+      }
+      const priceResult = await tryAutoFetchInstancePrice(inst.id, true); // altijd overschrijven, stil
+      if (priceResult.status === 'found') pricesFound++;
+
+      processed++;
+      const pct = Math.round((processed / total) * 100);
+      barFill.style.width = pct + '%';
+      statusText.textContent = `${processed} / ${total} verwerkt (${pct}%) — ${photosFound} ${photosFound === 1 ? 'foto' : "foto's"} gevonden, ${pricesFound} ${pricesFound === 1 ? 'prijs' : 'prijzen'} bijgewerkt`;
+    }
+
+    // Eén keer alles verversen na afloop, in plaats van bij elke losse match.
+    renderGrid();
+    renderExtraGrid();
+    refreshSerieSetFilterDropdowns();
+    applyFilter();
+    applyExtraFilter();
+    updateTotalsBar();
+    if (currentDetailId !== null) refreshDetailModal();
+    if (currentExtraId !== null) refreshExtraDetailPreview();
+
+    startBtn.disabled = false;
+    startBtn.textContent = "🔄 Foto's & prijzen bijwerken voor hele verzameling";
+    statusText.textContent += ' — Klaar!';
+  });
+
   (function init() {
     config = loadConfig();
     if (config) {
@@ -3501,6 +4025,7 @@
     } else {
       statusEl.textContent = 'Nog niet verbonden met Supabase. Klik op "⚙️ Supabase-instellingen" om te starten.';
     }
+    discoverDynamicSeriesAndSets(); // niet blokkerend; vult de dropdowns aan zodra bekend
   })();
 </script>
 </body>
