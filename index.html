@@ -1196,6 +1196,10 @@
       setupImageControls(card, id);
       updateCardValueDisplay(id);
     });
+    // renderGrid() always rebuilds cards in raw record order (id.asc), so the
+    // chosen sort (naam/waarde/nummer) must be re-applied every time this runs,
+    // regardless of which code path triggered the rebuild.
+    reorderGrid();
   }
 
   function updateCardValueDisplay(id) {
@@ -1770,6 +1774,7 @@
   function setView(view) {
     currentView = view;
     if (view === 'cards') {
+      reorderGrid();
       grid.classList.add('active');
       checklistView.classList.remove('active');
       viewToggleBtn.textContent = '☰ Checklist';
