@@ -566,6 +566,10 @@
   }
   .modal-box h3 { margin: 0 0 14px 0; color: #2c3e50; text-align: center; }
   .field-label { display: block; text-align: left; font-size: 13px; color: #555; margin: 10px 0 3px 0; font-weight: 600; }
+  .field-label-hint { font-weight: 400; color: #999; font-size: 11px; }
+  #iKaartnummerStatus { font-size: 11px; color: #888; margin: 2px 0 0 0; min-height: 14px; }
+  #iKaartnummerStatus.tcgdex-found { color: #1d7a4c; }
+  #iKaartnummerStatus.tcgdex-notfound { color: #b8860b; }
   .field-input, .field-textarea {
     width: 100%; border: 1px solid #ccc; border-radius: 6px; padding: 9px 10px;
     font-size: 14px; font-family: inherit; box-sizing: border-box;
@@ -963,6 +967,9 @@
         <div class="dropdown-menu" id="iVersieMenu"></div>
       </div>
     </div>
+    <label class="field-label">Kaartnummer <span class="field-label-hint">(binnen de set, bijv. "136" van "136/189")</span></label>
+    <input type="text" class="field-input" id="iKaartnummer" placeholder="bijv. 136">
+    <div id="iKaartnummerStatus"></div>
     <label class="field-label">Waarde (per stuk)</label>
     <div class="value-row" id="instanceValueRow">
       <span class="stepper euro-stepper">
@@ -1019,7 +1026,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '2.3';
+  const APP_VERSION = '2.4';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -2796,8 +2803,8 @@
   function groupInstances(list) {
     const groups = {};
     list.forEach(inst => {
-      const key = `${inst.serie || ''}|||${inst.set_naam || ''}`;
-      if (!groups[key]) groups[key] = { serie: inst.serie || '', set_naam: inst.set_naam || '', items: [] };
+      const key = `${inst.serie || ''}|||${inst.set_naam || ''}|||${inst.kaartnummer || ''}`;
+      if (!groups[key]) groups[key] = { serie: inst.serie || '', set_naam: inst.set_naam || '', kaartnummer: inst.kaartnummer || '', items: [] };
       groups[key].items.push(inst);
     });
     const groupList = Object.values(groups);
@@ -2819,7 +2826,7 @@
     }
     const groups = groupInstances(list);
     containerEl.innerHTML = groups.map(group => {
-      const title = [group.serie, group.set_naam].filter(Boolean).join(' · ') || '(geen serie/set)';
+      const title = [group.serie, group.set_naam, group.kaartnummer ? `#${group.kaartnummer}` : ''].filter(Boolean).join(' · ') || '(geen serie/set)';
       const groupCount = group.items.reduce((sum, i) => sum + (parseInt(i.aantal) || 1), 0);
       const groupValue = group.items.reduce((sum, i) => sum + instanceLineValue(i), 0);
       const countLabel = `${groupCount} ${groupCount === 1 ? 'exemplaar' : 'exemplaren'}`;
@@ -2844,7 +2851,7 @@
     });
     containerEl.querySelectorAll('.instance-group').forEach((groupEl, idx) => {
       const group = groups[idx];
-      const target = { parentType, parentId, serie: group.serie, set_naam: group.set_naam };
+      const target = { parentType, parentId, serie: group.serie, set_naam: group.set_naam, kaartnummer: group.kaartnummer };
       const uploadBtn = groupEl.querySelector('.group-photo-upload');
       uploadBtn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -2870,6 +2877,8 @@
   const iSerie = document.getElementById('iSerie');
   const iSet = document.getElementById('iSet');
   const iVersie = document.getElementById('iVersie');
+  const iKaartnummer = document.getElementById('iKaartnummer');
+  const iKaartnummerStatus = document.getElementById('iKaartnummerStatus');
   const iWaarde = document.getElementById('iWaarde');
   const iAantal = document.getElementById('iAantal');
   const instanceDeleteBtn = document.getElementById('instanceDeleteBtn');
@@ -2904,6 +2913,9 @@
     iSerie.value = inst ? (inst.serie || '') : '';
     iSet.value = inst ? (inst.set_naam || '') : '';
     iVersie.value = inst ? (inst.versie || '') : 'Normaal';
+    iKaartnummer.value = inst ? (inst.kaartnummer || '') : '';
+    iKaartnummerStatus.textContent = '';
+    iKaartnummerStatus.className = '';
     iWaarde.value = inst ? formatValue(inst.waarde) : '';
     iAantal.value = inst ? (inst.aantal || 1) : 1;
     instanceDeleteBtn.style.display = inst ? 'inline-block' : 'none';
@@ -2937,6 +2949,7 @@
       serie: iSerie.value.trim() || null,
       set_naam: iSet.value.trim() || null,
       versie: iVersie.value.trim() || null,
+      kaartnummer: iKaartnummer.value.trim() || null,
       waarde: waardeNum,
       aantal: Math.max(1, parseInt(iAantal.value) || 1)
     };
@@ -2944,7 +2957,7 @@
 
   function isEmptyLegacyInstance(inst) {
     const waardeNum = parseFloat(inst.waarde);
-    return !inst.serie && !inst.set_naam && !inst.versie && !inst.afbeelding &&
+    return !inst.serie && !inst.set_naam && !inst.versie && !inst.kaartnummer && !inst.afbeelding &&
       (inst.waarde === null || inst.waarde === undefined || isNaN(waardeNum) || waardeNum === 0) &&
       (parseInt(inst.aantal) || 1) === 1;
   }
@@ -2964,13 +2977,90 @@
     }
   }
 
+  // ---------- TCGdex: automatisch kaartafbeeldingen ophalen ----------
+  // Gratis, publieke Pokémon TCG-database (geen account nodig). We halen de
+  // setlijst eenmalig op en matchen onze eigen setnamen erop, zodat we per
+  // serie+set+kaartnummer de officiële scan kunnen ophalen.
+  let tcgdexSetsPromise = null;
+  function loadTcgdexSets() {
+    if (!tcgdexSetsPromise) {
+      tcgdexSetsPromise = fetch('https://api.tcgdex.net/v2/en/sets')
+        .then(res => { if (!res.ok) throw new Error('status ' + res.status); return res.json(); })
+        .catch(err => { console.error('Kon TCGdex-setlijst niet laden:', err); tcgdexSetsPromise = null; return []; });
+    }
+    return tcgdexSetsPromise;
+  }
+
+  function normalizeSetName(name) {
+    return (name || '')
+      .toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // accenten weg (é -> e)
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
+  }
+
+  // Bekende afwijkingen tussen onze setnamen en de officiële TCGdex-naam
+  const TCGDEX_NAME_OVERRIDES = {
+    'scarlet & violet 151': '151'
+  };
+
+  async function findTcgdexSetId(setName) {
+    if (!setName) return null;
+    const sets = await loadTcgdexSets();
+    const override = TCGDEX_NAME_OVERRIDES[setName.trim().toLowerCase()];
+    const norm = normalizeSetName(override || setName);
+    const match = sets.find(s => normalizeSetName(s.name) === norm);
+    return match ? match.id : null;
+  }
+
+  async function fetchTcgdexCardImage(setName, kaartnummer) {
+    const setId = await findTcgdexSetId(setName);
+    if (!setId) return null;
+    try {
+      const res = await fetch(`https://api.tcgdex.net/v2/en/sets/${encodeURIComponent(setId)}/${encodeURIComponent(kaartnummer)}`);
+      if (!res.ok) return null;
+      const card = await res.json();
+      if (!card || !card.image) return null;
+      return `${card.image}/high.png`;
+    } catch (err) {
+      console.error('TCGdex-opzoeking mislukt:', err);
+      return null;
+    }
+  }
+
+  // Probeert automatisch een foto op te halen voor een groep (serie+set+
+  // kaartnummer), maar alleen als die groep nog geen eigen foto heeft — een
+  // handmatig toegevoegde/bewerkte foto wordt dus nooit overschreven.
+  async function tryAutoFetchGroupPhoto(groupTarget) {
+    if (!groupTarget.set_naam || !groupTarget.kaartnummer) return;
+    const existing = allInstances.some(i =>
+      i.parent_type === groupTarget.parentType && String(i.parent_id) === String(groupTarget.parentId) &&
+      (i.serie || null) === (groupTarget.serie || null) && (i.set_naam || null) === (groupTarget.set_naam || null) &&
+      (i.kaartnummer || null) === (groupTarget.kaartnummer || null) && i.afbeelding
+    );
+    if (existing) return;
+    if (iKaartnummerStatus) { iKaartnummerStatus.textContent = 'Bezig met zoeken bij TCGdex...'; iKaartnummerStatus.className = ''; }
+    const url = await fetchTcgdexCardImage(groupTarget.set_naam, groupTarget.kaartnummer);
+    if (!url) {
+      if (iKaartnummerStatus) { iKaartnummerStatus.textContent = 'Geen foto gevonden bij TCGdex voor deze set/kaartnummer — je kunt zelf een foto toevoegen.'; iKaartnummerStatus.className = 'tcgdex-notfound'; }
+      return;
+    }
+    try {
+      await applyGroupPhotoUrl(groupTarget, url);
+      if (iKaartnummerStatus) { iKaartnummerStatus.textContent = 'Foto automatisch gevonden bij TCGdex ✓'; iKaartnummerStatus.className = 'tcgdex-found'; }
+    } catch (err) {
+      if (iKaartnummerStatus) { iKaartnummerStatus.textContent = 'Foto gevonden, maar kon niet koppelen: ' + err.message; iKaartnummerStatus.className = 'tcgdex-notfound'; }
+    }
+  }
+
   async function saveInstance(closeAfter) {
     const payload = collectInstancePayload();
     try {
       if (currentInstanceId === null) {
         const sibling = allInstances.find(i =>
           i.parent_type === payload.parent_type && String(i.parent_id) === String(payload.parent_id) &&
-          (i.serie || null) === payload.serie && (i.set_naam || null) === payload.set_naam && i.afbeelding
+          (i.serie || null) === payload.serie && (i.set_naam || null) === payload.set_naam &&
+          (i.kaartnummer || null) === payload.kaartnummer && i.afbeelding
         );
         if (sibling) payload.afbeelding = sibling.afbeelding;
         const res = await fetch(instRestUrl(), {
@@ -2996,6 +3086,12 @@
       }
       refreshParentUI(currentInstanceParentType, currentInstanceParentId);
       if (closeAfter) closeInstanceModal();
+      // Niet wachten op dit netwerkverkeer voordat het venster sluit — de
+      // status/foto ploppen vanzelf in zodra TCGdex heeft geantwoord.
+      tryAutoFetchGroupPhoto({
+        parentType: payload.parent_type, parentId: payload.parent_id,
+        serie: payload.serie, set_naam: payload.set_naam, kaartnummer: payload.kaartnummer
+      });
     } catch (err) {
       alert('Kon exemplaar niet opslaan: ' + err.message);
     }
@@ -3039,24 +3135,13 @@
     iAantal.value = (parseInt(iAantal.value) || 1) + 1;
   });
 
-  async function uploadImageForGroup(groupTarget, blob) {
-    const safeKey = `${groupTarget.parentType}_${groupTarget.parentId}_${groupTarget.serie || 'geen'}_${groupTarget.set_naam || 'geen'}`
-      .replace(/[^a-zA-Z0-9_-]/g, '_');
-    const path = `kaart_groepen/${safeKey}.jpg`;
-    const uploadUrl = `${config.url}/storage/v1/object/${STORAGE_BUCKET}/${path}`;
-    const res = await fetch(uploadUrl, {
-      method: 'POST',
-      headers: { 'apikey': config.key, 'Authorization': `Bearer ${config.key}`, 'Content-Type': 'image/jpeg', 'x-upsert': 'true' },
-      body: blob
-    });
-    if (!res.ok) throw new Error(`Upload mislukt (status ${res.status}): ${await res.text()}`);
-    const url = `${config.url}/storage/v1/object/public/${STORAGE_BUCKET}/${path}?t=${Date.now()}`;
-
+  async function applyGroupPhotoUrl(groupTarget, url) {
     const filters = [
       `parent_type=eq.${groupTarget.parentType}`,
       `parent_id=eq.${groupTarget.parentId}`,
       groupTarget.serie ? `serie=eq.${encodeURIComponent(groupTarget.serie)}` : 'serie=is.null',
-      groupTarget.set_naam ? `set_naam=eq.${encodeURIComponent(groupTarget.set_naam)}` : 'set_naam=is.null'
+      groupTarget.set_naam ? `set_naam=eq.${encodeURIComponent(groupTarget.set_naam)}` : 'set_naam=is.null',
+      groupTarget.kaartnummer ? `kaartnummer=eq.${encodeURIComponent(groupTarget.kaartnummer)}` : 'kaartnummer=is.null'
     ];
     const patchRes = await fetch(instRestUrl(`?${filters.join('&')}`), {
       method: 'PATCH',
@@ -3070,6 +3155,21 @@
       if (idx !== -1) allInstances[idx] = u;
     });
     refreshParentUI(groupTarget.parentType, groupTarget.parentId);
+  }
+
+  async function uploadImageForGroup(groupTarget, blob) {
+    const safeKey = `${groupTarget.parentType}_${groupTarget.parentId}_${groupTarget.serie || 'geen'}_${groupTarget.set_naam || 'geen'}_${groupTarget.kaartnummer || 'geen'}`
+      .replace(/[^a-zA-Z0-9_-]/g, '_');
+    const path = `kaart_groepen/${safeKey}.jpg`;
+    const uploadUrl = `${config.url}/storage/v1/object/${STORAGE_BUCKET}/${path}`;
+    const res = await fetch(uploadUrl, {
+      method: 'POST',
+      headers: { 'apikey': config.key, 'Authorization': `Bearer ${config.key}`, 'Content-Type': 'image/jpeg', 'x-upsert': 'true' },
+      body: blob
+    });
+    if (!res.ok) throw new Error(`Upload mislukt (status ${res.status}): ${await res.text()}`);
+    const url = `${config.url}/storage/v1/object/public/${STORAGE_BUCKET}/${path}?t=${Date.now()}`;
+    await applyGroupPhotoUrl(groupTarget, url);
   }
 
   async function uploadImageForInstance(id, blob) {
