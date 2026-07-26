@@ -895,7 +895,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '1.3';
+  const APP_VERSION = '1.5';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -1948,7 +1948,7 @@
   const EXTRA_TABLE = 'tcg_extra';
   let currentMainTab = 'pokemon';
   let extraItemsByCategory = {}; // { item: [...], tool: [...], ... }
-  let extraSortMode = 'nieuw';
+  let extraSortMode = 'naam';
   let extraLoadedFor = {}; // { item: true } once loaded, to avoid refetching every tab switch
 
   function extraRestUrl(path) { return `${config.url}/rest/v1/${EXTRA_TABLE}${path || ''}`; }
@@ -2539,8 +2539,15 @@
     if (!currentDetailId) return;
     openInstanceModal('pokemon', currentDetailId, null);
   });
-  document.getElementById('extraAddInstanceBtn').addEventListener('click', () => {
-    if (currentExtraId === null) { alert('Sla het item eerst op (vul een naam in) voordat je exemplaren toevoegt.'); return; }
+  document.getElementById('extraAddInstanceBtn').addEventListener('click', async () => {
+    if (currentExtraId === null) {
+      if (!eNaam.value.trim()) { alert('Vul eerst een naam in voordat je exemplaren toevoegt.'); return; }
+      // The name is normally saved with a short debounce after you leave the
+      // field; save it immediately here so you can add an instance in one go.
+      clearTimeout(extraSaveTimer);
+      await saveExtraField();
+      if (currentExtraId === null) return; // saving failed; saveExtraField already alerted
+    }
     openInstanceModal(currentExtraCategory, currentExtraId, null);
   });
 
