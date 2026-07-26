@@ -126,6 +126,9 @@
     font-size: 14px;
   }
   #cropZoomRow input[type="range"] { flex: 1; }
+  #cropZoomRow button {
+    border: none; background: none; font-size: 15px; cursor: pointer; padding: 4px 2px; line-height: 1;
+  }
   #cropRotateRow { display: flex; gap: 8px; justify-content: center; margin-bottom: 10px; }
   #cropRotateRow button {
     padding: 8px 14px; border-radius: 8px; border: 1px solid #b8860b; background: #fff4d6;
@@ -188,6 +191,10 @@
     font-size: 18px;
     cursor: pointer;
     line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
   }
   #detailArtFrame {
     background: #f4f6f8;
@@ -459,7 +466,23 @@
   .tab-btn.active { background: #2c3e50; color: white; border-color: #2c3e50; }
   @media print { #tabBar { display: none; } }
   #totalsBar { text-align: center; font-size: 13px; color: #444; margin-bottom: 12px; }
-  @media print { #totalsBar { display: none; } }
+  #totalsBarRow { display: flex; align-items: center; justify-content: center; gap: 8px; }
+  #totalsBarRow #totalsBar { margin-bottom: 0; }
+  #pieToggleBtn {
+    border: none; background: none; font-size: 16px; cursor: pointer; padding: 2px 4px; line-height: 1; margin-bottom: 12px;
+  }
+  #pieChartSection {
+    display: none; flex-direction: column; align-items: center; gap: 8px;
+    max-width: 260px; margin: -4px auto 14px auto; background: white; border-radius: 12px; padding: 14px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+  #pieChartSection.open { display: flex; }
+  #pieChartLegend { width: 100%; font-size: 12px; color: #444; }
+  #pieChartLegend .pie-legend-row { display: flex; align-items: center; gap: 6px; padding: 2px 0; }
+  #pieChartLegend .pie-legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  #pieChartLegend .pie-legend-label { flex: 1; }
+  #pieChartLegend .pie-legend-value { color: #888; white-space: nowrap; }
+  @media print { #totalsBarRow, #pieChartSection { display: none !important; } }
 
   /* ---------- Item tab (generic TCG-extra section) ---------- */
   #extraCountStatus { text-align: center; font-size: 13px; color: #666; margin-bottom: 8px; }
@@ -501,6 +524,7 @@
   .modal-close {
     position: absolute; top: 8px; right: 8px; width: 30px; height: 30px; border-radius: 50%;
     border: none; background: #eef1f4; color: #2c3e50; font-size: 18px; cursor: pointer; line-height: 1;
+    display: flex; align-items: center; justify-content: center; padding: 0;
   }
   .modal-box h3 { margin: 0 0 14px 0; color: #2c3e50; text-align: center; }
   .field-label { display: block; text-align: left; font-size: 13px; color: #555; margin: 10px 0 3px 0; font-weight: 600; }
@@ -524,6 +548,7 @@
   #extraImgActions button { padding: 8px 12px; border-radius: 8px; border: none; font-weight: 600; font-size: 12px; cursor: pointer; color: white; }
   #extraUploadBtn { background: #457b9d; }
   #extraEditCurrentBtn { background: #6a4c93; }
+  #extraResetImgBtn { background: #e63946; }
 
   #extraValueRow { justify-content: center; margin: 6px 0 4px 0; gap: 6px; }
   #extraValueRow .euro { font-weight: 700; font-size: 16px; }
@@ -621,7 +646,18 @@
   <button type="button" class="tab-btn" data-tab="energy">Energy</button>
 </div>
 
-<div id="totalsBar">Pokémon: &euro; 0,00 &nbsp;·&nbsp; Item: &euro; 0,00 &nbsp;·&nbsp; <strong>Totaal: &euro; 0,00</strong></div>
+<div id="totalsBarRow">
+  <div id="totalsBar">Pokémon: &euro; 0,00 &nbsp;·&nbsp; Item: &euro; 0,00 &nbsp;·&nbsp; <strong>Totaal: &euro; 0,00</strong></div>
+  <button type="button" id="pieToggleBtn" title="Verdeling van de waarde per categorie">🥧</button>
+</div>
+<div id="pieChartSection">
+  <svg id="pieChartSvg" viewBox="0 0 100 100" width="170" height="170">
+    <g id="pieChartGroup" transform="rotate(-90 50 50)">
+      <circle cx="50" cy="50" r="40" fill="none" stroke="#e4e8ec" stroke-width="18"/>
+    </g>
+  </svg>
+  <div id="pieChartLegend"></div>
+</div>
 
 <button id="settingsBtn" title="Supabase-instellingen">⚙️</button>
 
@@ -720,9 +756,9 @@
       <canvas id="cropCanvas" width="260" height="364"></canvas>
     </div>
     <div id="cropZoomRow">
-      <span>🔍−</span>
+      <button type="button" id="cropZoomOutBtn" title="Uitzoomen">🔍−</button>
       <input type="range" id="cropZoomSlider" min="0" max="100" value="0">
-      <span>🔍+</span>
+      <button type="button" id="cropZoomInBtn" title="Inzoomen">🔍+</button>
     </div>
     <div id="cropRotateRow">
       <button type="button" id="cropRotateLeftBtn" title="Draai linksom">⟲ Links</button>
@@ -734,7 +770,7 @@
       <button type="button" id="cropTiltResetBtn" title="Terugzetten">↺</button>
     </div>
     <div class="crop-fine-row">
-      <label>Perspectief</label>
+      <label>Trapezium</label>
       <input type="range" id="cropSkewSlider" min="-30" max="30" value="0" step="0.5">
       <button type="button" id="cropSkewResetBtn" title="Terugzetten">↺</button>
     </div>
@@ -818,6 +854,11 @@
       <img id="extraDetailImg" src="" alt="" style="display:none;">
       <span id="extraDetailImgPlaceholder" class="placeholder-mark">🎴</span>
     </div>
+    <div id="extraImgActions">
+      <button type="button" id="extraUploadBtn">📷 Nieuwe foto</button>
+      <button type="button" id="extraEditCurrentBtn" style="display:none;">✂️ Bewerk huidige foto</button>
+      <button type="button" id="extraResetImgBtn" style="display:none;">Foto verwijderen</button>
+    </div>
     <label class="field-label">Naam</label>
     <input type="text" class="field-input" id="eNaam" placeholder="Bijv. Poké Ball">
     <div id="extraTotalValueLine">Totale waarde: &euro; 0,00</div>
@@ -895,7 +936,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '1.5';
+  const APP_VERSION = '1.10';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -1006,14 +1047,15 @@
   const iSetInput = document.getElementById('iSet');
   const iVersieInput = document.getElementById('iVersie');
   const allSetsFlat = [];
-  Object.values(CARD_SERIES).forEach(sets => [...sets].reverse().forEach(s => { if (!allSetsFlat.includes(s)) allSetsFlat.push(s); }));
+  Object.values(CARD_SERIES).forEach(sets => sets.forEach(s => { if (!allSetsFlat.includes(s)) allSetsFlat.push(s); }));
+  allSetsFlat.sort((a, b) => a.localeCompare(b, 'nl'));
 
-  setupFieldPicker('iSeriePicker', 'iSeriePickerBtn', 'iSerieMenu', iSerieInput, () => [...Object.keys(CARD_SERIES)].reverse());
+  setupFieldPicker('iSeriePicker', 'iSeriePickerBtn', 'iSerieMenu', iSerieInput, () => Object.keys(CARD_SERIES).slice().sort((a, b) => a.localeCompare(b, 'nl')));
   setupFieldPicker('iSetPicker', 'iSetPickerBtn', 'iSetMenu', iSetInput, () => {
     const sets = CARD_SERIES[iSerieInput.value];
-    return sets ? [...sets].reverse() : allSetsFlat;
+    return sets ? [...sets].sort((a, b) => a.localeCompare(b, 'nl')) : allSetsFlat;
   });
-  setupFieldPicker('iVersiePicker', 'iVersiePickerBtn', 'iVersieMenu', iVersieInput, () => CARD_VERSIES);
+  setupFieldPicker('iVersiePicker', 'iVersiePickerBtn', 'iVersieMenu', iVersieInput, () => [...CARD_VERSIES].sort((a, b) => a.localeCompare(b, 'nl')));
 
   let config = null; // { url, table, key }
   let records = []; // flat rows: { id, nummer, naam, afbeelding, inbezit, waarde, notitie }
@@ -1549,16 +1591,48 @@
     img.src = url;
   }
 
+  function drawBaseCropImage(ctx, w, h) {
+    ctx.save();
+    ctx.translate(w / 2 + cropOffsetX * (w / cropCanvas.width), h / 2 + cropOffsetY * (h / cropCanvas.height));
+    ctx.rotate((cropRotation + cropTilt) * Math.PI / 180);
+    ctx.scale(cropScale * (w / cropCanvas.width), cropScale * (h / cropCanvas.height));
+    ctx.drawImage(cropImg, -cropImg.width / 2, -cropImg.height / 2);
+    ctx.restore();
+  }
+
+  // Trapezium/keystone-correctie: compenseert een boven- of onderrand die door
+  // de camerahoek breder oogt dan de andere rand (in plaats van de foto schuin
+  // te trekken, wordt de boven- en onderkant hier onafhankelijk breder/smaller
+  // gemaakt door de afbeelding in dunne horizontale stroken te tekenen).
+  function drawWithKeystone(destCtx, sourceCanvas, w, h, keystonePercent) {
+    if (!keystonePercent) {
+      destCtx.drawImage(sourceCanvas, 0, 0);
+      return;
+    }
+    const slices = 120;
+    for (let i = 0; i < slices; i++) {
+      const yTop = (i / slices) * h;
+      const yBot = ((i + 1) / slices) * h;
+      const midFrac = (i + 0.5) / slices; // 0 = bovenrand .. 1 = onderrand
+      const widthFactor = 1 - (keystonePercent / 100) * (midFrac - 0.5) * 2;
+      destCtx.save();
+      destCtx.beginPath();
+      destCtx.rect(0, Math.floor(yTop), w, Math.ceil(yBot - yTop) + 1);
+      destCtx.clip();
+      destCtx.translate(w / 2, 0);
+      destCtx.scale(widthFactor, 1);
+      destCtx.drawImage(sourceCanvas, -w / 2, 0);
+      destCtx.restore();
+    }
+  }
+
   function drawCrop() {
     const fw = cropCanvas.width, fh = cropCanvas.height;
     cropCtx.clearRect(0, 0, fw, fh);
-    cropCtx.save();
-    cropCtx.translate(fw / 2 + cropOffsetX, fh / 2 + cropOffsetY);
-    cropCtx.rotate((cropRotation + cropTilt) * Math.PI / 180);
-    cropCtx.transform(1, 0, Math.tan(cropSkew * Math.PI / 180), 1, 0, 0);
-    cropCtx.scale(cropScale, cropScale);
-    cropCtx.drawImage(cropImg, -cropImg.width / 2, -cropImg.height / 2);
-    cropCtx.restore();
+    const baseCanvas = document.createElement('canvas');
+    baseCanvas.width = fw; baseCanvas.height = fh;
+    drawBaseCropImage(baseCanvas.getContext('2d'), fw, fh);
+    drawWithKeystone(cropCtx, baseCanvas, fw, fh, cropSkew);
   }
 
   function rotatedDims() {
@@ -1612,11 +1686,20 @@
     cropSkew = 0; cropSkewSlider.value = 0; clampCropOffsets(); drawCrop();
   });
 
-  cropZoomSlider.addEventListener('input', () => {
+  function applyZoomFromSlider() {
     const t = parseFloat(cropZoomSlider.value) / 100; // 0..1
     cropScale = cropMinScale * (1 + t * 3); // up to 4x the "cover" scale
     clampCropOffsets();
     drawCrop();
+  }
+  cropZoomSlider.addEventListener('input', applyZoomFromSlider);
+  document.getElementById('cropZoomOutBtn').addEventListener('click', () => {
+    cropZoomSlider.value = Math.max(0, parseFloat(cropZoomSlider.value) - 10);
+    applyZoomFromSlider();
+  });
+  document.getElementById('cropZoomInBtn').addEventListener('click', () => {
+    cropZoomSlider.value = Math.min(100, parseFloat(cropZoomSlider.value) + 10);
+    applyZoomFromSlider();
   });
 
   function cropPointerDown(x, y) {
@@ -1698,17 +1781,13 @@
     const targetId = cropTargetId;
     // Render the same crop, but at a higher output resolution for good image quality
     const outW = 500, outH = 700;
-    const ratio = outW / cropCanvas.width;
+    const outBase = document.createElement('canvas');
+    outBase.width = outW; outBase.height = outH;
+    drawBaseCropImage(outBase.getContext('2d'), outW, outH);
     const outCanvas = document.createElement('canvas');
     outCanvas.width = outW; outCanvas.height = outH;
     const outCtx = outCanvas.getContext('2d');
-    outCtx.save();
-    outCtx.translate(outW / 2 + cropOffsetX * ratio, outH / 2 + cropOffsetY * ratio);
-    outCtx.rotate((cropRotation + cropTilt) * Math.PI / 180);
-    outCtx.transform(1, 0, Math.tan(cropSkew * Math.PI / 180), 1, 0, 0);
-    outCtx.scale(cropScale * ratio, cropScale * ratio);
-    outCtx.drawImage(cropImg, -cropImg.width / 2, -cropImg.height / 2);
-    outCtx.restore();
+    drawWithKeystone(outCtx, outBase, outW, outH, cropSkew);
 
     cropModal.classList.remove('open');
     statusEl.style.display = 'block';
@@ -2001,11 +2080,18 @@
     return list;
   }
 
+  function mainImageForExtra(item) {
+    if (!item) return null;
+    const best = bestPhotoInstance(item.categorie, item.id);
+    if (best) return best.afbeelding;
+    return item.afbeelding || null;
+  }
+
   function extraCardHtml(item) {
     const list = instancesFor(currentTabParentType(item.categorie), item.id);
-    const withPhoto = bestPhotoInstance(currentTabParentType(item.categorie), item.id);
-    const thumbHtml = withPhoto
-      ? `<img src="${withPhoto.afbeelding}" alt="${item.naam || ''}">`
+    const imgUrl = mainImageForExtra(item);
+    const thumbHtml = imgUrl
+      ? `<img src="${imgUrl}" alt="${item.naam || ''}">`
       : `<span class="placeholder-mark">🎴</span>`;
     const total = totalForInstanceList(list);
     const waardeHtml = total > 0 ? `<div class="extra-waarde">&euro; ${fmtEuro(total)}</div>` : '';
@@ -2091,15 +2177,22 @@
 
   function refreshExtraDetailPreview() {
     if (currentExtraId === null) return;
+    const item = getExtra(currentExtraId);
     const list = instancesFor(currentExtraCategory, currentExtraId);
-    const withPhoto = bestPhotoInstance(currentExtraCategory, currentExtraId);
-    if (withPhoto) {
-      extraDetailImg.src = withPhoto.afbeelding; extraDetailImg.style.display = '';
+    const imgUrl = mainImageForExtra(item);
+    if (imgUrl) {
+      extraDetailImg.src = imgUrl; extraDetailImg.style.display = '';
       extraDetailImgPlaceholder.style.display = 'none';
     } else {
       extraDetailImg.style.display = 'none';
       extraDetailImgPlaceholder.style.display = '';
     }
+    // "Bewerk huidige foto" en "Foto verwijderen" werken op de eigen foto van
+    // dit item (item.afbeelding), niet op een eventuele groepsfoto van een
+    // kaartexemplaar — daarom alleen tonen als het item zelf een foto heeft.
+    const hasOwnPhoto = !!(item && item.afbeelding);
+    document.getElementById('extraEditCurrentBtn').style.display = hasOwnPhoto ? '' : 'none';
+    document.getElementById('extraResetImgBtn').style.display = hasOwnPhoto ? '' : 'none';
     document.getElementById('extraTotalValueLine').innerHTML = `Totale waarde: &euro; ${fmtEuro(totalForInstanceList(list))}`;
     renderInstancesInto(document.getElementById('extraInstancesList'), currentExtraCategory, currentExtraId);
   }
@@ -2122,14 +2215,17 @@
 
   function openExtraAddModal() {
     currentExtraId = null;
-    extraDetailTitle.textContent = 'Nieuw item';
+    extraDetailTitle.textContent = EXTRA_NEW_TITLES[currentExtraCategory] || 'Nieuw item';
     extraDeleteBtn.style.display = 'none';
     fillExtraFields({});
     extraDetailImg.style.display = 'none';
     extraDetailImgPlaceholder.style.display = '';
+    document.getElementById('extraEditCurrentBtn').style.display = 'none';
+    document.getElementById('extraResetImgBtn').style.display = 'none';
     document.getElementById('extraTotalValueLine').innerHTML = 'Totale waarde: &euro; 0,00';
     document.getElementById('extraInstancesList').innerHTML = `<p style="font-size:12px;color:#999;text-align:center;">Sla eerst een naam op voordat je exemplaren toevoegt.</p>`;
     extraDetailModal.classList.add('open');
+    setTimeout(() => eNaam.focus(), 0);
   }
 
   document.getElementById('extraFab').addEventListener('click', openExtraAddModal);
@@ -2221,7 +2317,7 @@
     const item = getExtra(id);
     if (!item) return;
     item.afbeelding = url;
-    if (currentExtraId === id) { extraDetailImg.src = url; extraDetailImg.style.display = ''; }
+    if (currentExtraId === id) refreshExtraDetailPreview();
     renderExtraGrid();
     try {
       const res = await fetch(extraRestUrl(`?id=eq.${id}`), {
@@ -2234,6 +2330,46 @@
       alert('Kon foto-link niet opslaan: ' + err.message);
     }
   }
+
+  async function resetExtraImage(id) {
+    const item = getExtra(id);
+    if (!item) return;
+    item.afbeelding = null;
+    if (currentExtraId === id) refreshExtraDetailPreview();
+    renderExtraGrid();
+    try {
+      const res = await fetch(extraRestUrl(`?id=eq.${id}`), {
+        method: 'PATCH',
+        headers: authHeaders({ 'Prefer': 'return=minimal' }),
+        body: JSON.stringify({ afbeelding: null })
+      });
+      if (!res.ok) throw new Error(`status ${res.status}`);
+    } catch (err) {
+      alert('Kon foto niet verwijderen: ' + err.message);
+    }
+  }
+
+  document.getElementById('extraUploadBtn').addEventListener('click', async () => {
+    if (currentExtraId === null) {
+      if (!eNaam.value.trim()) { alert('Vul eerst een naam in voordat je een foto toevoegt.'); return; }
+      clearTimeout(extraSaveTimer);
+      await saveExtraField();
+      if (currentExtraId === null) return; // saving failed; saveExtraField already alerted
+    }
+    cropContext = 'extra';
+    pendingImgTarget = currentExtraId;
+    globalImgFileInput.click();
+  });
+  document.getElementById('extraEditCurrentBtn').addEventListener('click', () => {
+    const item = getExtra(currentExtraId);
+    if (!item || !item.afbeelding) return;
+    cropContext = 'extra';
+    openCropModalFromUrl(item.afbeelding, currentExtraId);
+  });
+  document.getElementById('extraResetImgBtn').addEventListener('click', async () => {
+    if (currentExtraId === null) return;
+    await resetExtraImage(currentExtraId);
+  });
 
   // ---------- Kaartexemplaren (multiple physical cards per Pokemon/item) ----------
   let allInstances = [];
@@ -2393,6 +2529,8 @@
   }
 
   const TAB_LABELS = { pokemon: 'Pokémon', item: 'Item', tool: 'Tool', supporter: 'Supporter', stadium: 'Stadium', energy: 'Energy' };
+  const EXTRA_NEW_TITLES = { item: 'Nieuw Item', tool: 'Nieuw Tool', supporter: 'Nieuwe Supporter', stadium: 'Nieuw Stadium', energy: 'Nieuwe Energy' };
+  const TAB_COLORS = { pokemon: '#3ecf8e', item: '#f5a623', tool: '#4a90d9', supporter: '#e94f64', stadium: '#9b59b6', energy: '#f1c40f' };
 
   function updateTotalsBar() {
     const parts = Object.keys(TAB_LABELS).map(tab => {
@@ -2402,7 +2540,49 @@
     const grandTotal = allInstances.reduce((sum, i) => sum + instanceLineValue(i), 0);
     document.getElementById('totalsBar').innerHTML =
       parts.join(' &nbsp;&middot;&nbsp; ') + ` &nbsp;&middot;&nbsp; <strong>Totaal: &euro; ${fmtEuro(grandTotal)}</strong>`;
+    renderPieChart(grandTotal);
   }
+
+  function renderPieChart(grandTotal) {
+    const group = document.getElementById('pieChartGroup');
+    const legend = document.getElementById('pieChartLegend');
+    // Keep the grey background track, drop any previously drawn category arcs
+    group.innerHTML = '<circle cx="50" cy="50" r="40" fill="none" stroke="#e4e8ec" stroke-width="18"/>';
+    if (!grandTotal || grandTotal <= 0) {
+      legend.innerHTML = '<div class="pie-legend-row" style="justify-content:center;color:#999;">Nog geen waarde geregistreerd.</div>';
+      return;
+    }
+    let cumulative = 0;
+    const legendRows = [];
+    Object.keys(TAB_LABELS).forEach(tab => {
+      const total = totalForParentType(tab);
+      if (total <= 0) return;
+      const pct = (total / grandTotal) * 100;
+      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      circle.setAttribute('cx', '50');
+      circle.setAttribute('cy', '50');
+      circle.setAttribute('r', '40');
+      circle.setAttribute('fill', 'none');
+      circle.setAttribute('stroke', TAB_COLORS[tab]);
+      circle.setAttribute('stroke-width', '18');
+      circle.setAttribute('pathLength', '100');
+      circle.setAttribute('stroke-dasharray', `${pct} ${100 - pct}`);
+      circle.setAttribute('stroke-dashoffset', `${-cumulative}`);
+      group.appendChild(circle);
+      legendRows.push(`
+        <div class="pie-legend-row">
+          <span class="pie-legend-dot" style="background:${TAB_COLORS[tab]}"></span>
+          <span class="pie-legend-label">${TAB_LABELS[tab]}</span>
+          <span class="pie-legend-value">${pct.toFixed(1)}% &middot; &euro; ${fmtEuro(total)}</span>
+        </div>`);
+      cumulative += pct;
+    });
+    legend.innerHTML = legendRows.join('');
+  }
+
+  document.getElementById('pieToggleBtn').addEventListener('click', () => {
+    document.getElementById('pieChartSection').classList.toggle('open');
+  });
 
   function instanceRowHtml(inst) {
     const subParts = [inst.versie, `${inst.aantal || 1}x`].filter(Boolean).join(' · ') || `${inst.aantal || 1}x`;
@@ -2525,7 +2705,7 @@
     document.getElementById('instanceModalTitle').textContent = inst ? 'Kaartexemplaar bewerken' : 'Nieuw kaartexemplaar';
     iSerie.value = inst ? (inst.serie || '') : '';
     iSet.value = inst ? (inst.set_naam || '') : '';
-    iVersie.value = inst ? (inst.versie || '') : '';
+    iVersie.value = inst ? (inst.versie || '') : 'Normaal';
     iWaarde.value = inst ? formatValue(inst.waarde) : '';
     iAantal.value = inst ? (inst.aantal || 1) : 1;
     instanceDeleteBtn.style.display = inst ? 'inline-block' : 'none';
