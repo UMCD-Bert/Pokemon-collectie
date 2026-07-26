@@ -1019,7 +1019,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '2.2';
+  const APP_VERSION = '2.3';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -2379,7 +2379,7 @@
         const duplicate = extraItems.find(i => (i.naam || '').trim().toLowerCase() === naamNorm);
         if (duplicate) {
           const wantsExisting = confirm(
-            `Er bestaat al een kaart met de naam "${duplicate.naam}". Wil je in plaats daarvan een exemplaar toevoegen aan die bestaande kaart?\n\nKlik op Annuleren om toch een nieuwe, aparte kaart met deze naam aan te maken.`
+            `Er bestaat al een kaart met de naam "${duplicate.naam}".\n\nKlik OK om over te schakelen naar die bestaande kaart (er wordt geen nieuwe aangemaakt) — je kunt daar dan zelf een exemplaar of foto aan toevoegen.\n\nKlik op Annuleren om toch een nieuwe, aparte kaart met deze naam aan te maken.`
           );
           if (wantsExisting) {
             // Switch to the existing card in-place, so whatever the user was
