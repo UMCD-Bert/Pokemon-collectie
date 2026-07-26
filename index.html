@@ -68,6 +68,12 @@
     display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 4px rgba(0,0,0,0.25);
   }
   @media print { #settingsBtn { display: none !important; } }
+  #highValueBtn {
+    background: #b8860b; position: fixed; top: 10px; left: 10px; z-index: 50;
+    width: 34px; height: 34px; padding: 0; border-radius: 50%; font-size: 15px; border: none; color: white; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+  }
+  @media print { #highValueBtn { display: none !important; } }
   .print-filter-toggle {
     display: flex; align-items: center; gap: 6px; font-size: 14px; color: #2c3e50;
     background: #f1f3f5; border: 1px solid #ccc; border-radius: 8px; padding: 9px 14px; cursor: pointer;
@@ -287,6 +293,12 @@
   #settingsCancelBtn { background: #6c757d; }
   #settingsPanel p { font-size: 12px; color: #777; margin: 4px 0 0 0; }
   @media print { #settingsPanel { display: none !important; } }
+  #storageUsageSection { margin-top: 14px; padding-top: 12px; border-top: 1px solid #eee; }
+  #checkStorageBtn { background: #457b9d; color: white; border: none; padding: 8px 12px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  #storageUsageResult { margin-top: 8px; font-size: 12px; color: #444; }
+  #storageUsageBarTrack { width: 100%; height: 10px; border-radius: 6px; background: #eef1f4; overflow: hidden; margin-bottom: 6px; }
+  #storageUsageBarFill { height: 100%; border-radius: 6px; transition: width 0.3s ease; }
+  #storageUsageWarning { color: #e63946; font-weight: 600; margin-top: 4px; }
 
   .grid { display: grid; grid-template-columns: repeat(auto-fill, 36mm); gap: 4mm; justify-content: center; max-width: 1400px; margin: 0 auto; }
   .card {
@@ -484,6 +496,28 @@
   #pieChartLegend .pie-legend-value { color: #888; white-space: nowrap; }
   @media print { #totalsBarRow, #pieChartSection { display: none !important; } }
 
+  /* ---------- Hoge-waarde lijst ---------- */
+  #highValueModal .modal-box { max-width: 480px; }
+  #highValueThresholdRow { display: flex; align-items: center; gap: 6px; margin: 6px 0 4px 0; }
+  #highValueThresholdRow .euro { font-weight: 700; }
+  #highValueThresholdRow input { width: 110px; }
+  #highValueSummary { font-size: 12px; color: #666; margin: 6px 0 10px 0; text-align: center; }
+  #highValueListWrap { max-height: 45vh; overflow-y: auto; }
+  #highValueTable { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  #highValueTable th, #highValueTable td { padding: 5px 6px; border-bottom: 1px solid #eee; text-align: left; }
+  #highValueTable th { color: #666; font-weight: 600; }
+  #highValueTable td.hv-num { text-align: right; white-space: nowrap; }
+  #highValuePrintArea { display: none; }
+  body.print-highvalue-mode > *:not(#highValuePrintArea) { display: none !important; }
+  body.print-highvalue-mode #highValuePrintArea {
+    display: block !important; padding: 20px; font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  }
+  #highValuePrintArea h2 { text-align: center; margin: 0 0 4px 0; }
+  #highValuePrintArea .hv-print-sub { text-align: center; color: #555; margin-bottom: 14px; font-size: 13px; }
+  #highValuePrintArea table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  #highValuePrintArea th, #highValuePrintArea td { padding: 5px 6px; border-bottom: 1px solid #ccc; text-align: left; }
+  #highValuePrintArea td.hv-num { text-align: right; white-space: nowrap; }
+
   /* ---------- Item tab (generic TCG-extra section) ---------- */
   #extraCountStatus { text-align: center; font-size: 13px; color: #666; margin-bottom: 8px; }
   #extraGrid {
@@ -503,6 +537,10 @@
   .extra-naam { font-weight: 700; color: #2c3e50; font-size: 14px; }
   .extra-set { color: #888; font-size: 11px; margin-top: 1px; }
   .extra-waarde { color: #1d7a4c; font-weight: 700; font-size: 13px; margin-top: 4px; }
+  .extra-type-badge {
+    display: inline-block; background: #eef1f4; color: #555; font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.3px; padding: 1px 6px; border-radius: 4px; margin-top: 3px;
+  }
 
   #extraFab {
     position: fixed; bottom: 22px; right: max(22px, calc(50vw - 550px + 22px)); width: 54px; height: 54px; border-radius: 50%;
@@ -639,10 +677,7 @@
 
 <div id="tabBar">
   <button type="button" class="tab-btn active" data-tab="pokemon">Pokémon</button>
-  <button type="button" class="tab-btn" data-tab="item">Item</button>
-  <button type="button" class="tab-btn" data-tab="tool">Tool</button>
-  <button type="button" class="tab-btn" data-tab="supporter">Supporter</button>
-  <button type="button" class="tab-btn" data-tab="stadium">Stadium</button>
+  <button type="button" class="tab-btn" data-tab="trainers">Trainers</button>
   <button type="button" class="tab-btn" data-tab="energy">Energy</button>
 </div>
 
@@ -660,6 +695,7 @@
 </div>
 
 <button id="settingsBtn" title="Supabase-instellingen">⚙️</button>
+<button id="highValueBtn" title="Lijst kaarten boven drempelwaarde">💎</button>
 
 <div id="settingsPanel">
   <label for="cfgUrl">Project URL</label>
@@ -669,6 +705,10 @@
   <label for="cfgKey">Publishable key (sb_publishable_...)</label>
   <input type="password" id="cfgKey" placeholder="sb_publishable_XXXXXXXXXXXXXX">
   <p>Deze gegevens worden alleen lokaal in je browser bewaard en rechtstreeks vanuit jouw apparaat naar Supabase gestuurd — ze gaan niet via Claude.</p>
+  <div id="storageUsageSection">
+    <button type="button" id="checkStorageBtn">📦 Opslaggebruik controleren</button>
+    <div id="storageUsageResult"></div>
+  </div>
   <div class="settings-actions">
     <button id="settingsCancelBtn">Annuleren</button>
     <button id="settingsSaveBtn">Opslaan &amp; laden</button>
@@ -832,6 +872,16 @@
         <button type="button" class="dropdown-item" data-value="waarde">Op waarde</button>
       </div>
     </div>
+    <div class="dropdown" id="extraTypeDropdown">
+      <button type="button" class="dropdown-btn" id="extraTypeDropdownBtn">Type: Alle <span class="caret">▾</span></button>
+      <div class="dropdown-menu">
+        <button type="button" class="dropdown-item" data-value="">Alle</button>
+        <button type="button" class="dropdown-item" data-value="item">Item</button>
+        <button type="button" class="dropdown-item" data-value="tool">Tool</button>
+        <button type="button" class="dropdown-item" data-value="supporter">Supporter</button>
+        <button type="button" class="dropdown-item" data-value="stadium">Stadium</button>
+      </div>
+    </div>
     <div class="dropdown" id="extraSerieDropdown">
       <button type="button" class="dropdown-btn" id="extraSerieDropdownBtn">Serie: Alle <span class="caret">▾</span></button>
       <div class="dropdown-menu" id="extraSerieMenu"></div>
@@ -843,7 +893,7 @@
   </div>
   <div id="extraCountStatus"></div>
   <div class="grid" id="extraGrid"></div>
-  <button id="extraFab" title="Nieuw item toevoegen">+</button>
+  <button id="extraFab" title="Nieuwe kaart toevoegen">+</button>
 </div>
 
 <div class="modal-overlay" id="extraDetailModal">
@@ -861,6 +911,15 @@
     </div>
     <label class="field-label">Naam</label>
     <input type="text" class="field-input" id="eNaam" placeholder="Bijv. Poké Ball">
+    <div id="eTypeRow">
+      <label class="field-label">Type</label>
+      <select class="field-input" id="eType">
+        <option value="item">Item</option>
+        <option value="tool">Tool</option>
+        <option value="supporter">Supporter</option>
+        <option value="stadium">Stadium</option>
+      </select>
+    </div>
     <div id="extraTotalValueLine">Totale waarde: &euro; 0,00</div>
 
     <label class="field-label">Kaartexemplaren</label>
@@ -931,12 +990,36 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="highValueModal">
+  <div class="modal-box">
+    <button type="button" class="modal-close" id="highValueCloseBtn">&times;</button>
+    <h3>Kaarten boven drempelwaarde</h3>
+    <label class="field-label">Minimale waarde</label>
+    <div id="highValueThresholdRow">
+      <span class="euro">&euro;</span>
+      <input type="text" class="field-input" inputmode="decimal" id="highValueThreshold" placeholder="bijv. 500 = &euro;5,00">
+    </div>
+    <div id="highValueSummary"></div>
+    <div id="highValueListWrap">
+      <table id="highValueTable">
+        <thead><tr><th>Naam</th><th>Categorie</th><th>Serie / Set / Versie</th><th>Aantal</th><th>Waarde (per stuk)</th></tr></thead>
+        <tbody id="highValueTbody"></tbody>
+      </table>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn-secondary" id="highValuePrintBtn">Printen</button>
+      <button type="button" class="btn-primary" id="highValueDoneBtn">Sluiten</button>
+    </div>
+  </div>
+</div>
+
+<div id="highValuePrintArea"></div>
 
 <script>
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '1.12';
+  const APP_VERSION = '2.2';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -1016,11 +1099,11 @@
     'XY Series': ['XY', 'Flashfire', 'Furious Fists', 'Phantom Forces', 'Primal Clash', 'Roaring Skies', 'Ancient Origins', 'BREAKthrough', 'BREAKpoint', 'Generations', 'Fates Collide', 'Steam Siege', 'Evolutions'],
     'Sun & Moon Series': ['Sun & Moon', 'Guardians Rising', 'Burning Shadows', 'Shining Legends', 'Crimson Invasion', 'Ultra Prism', 'Forbidden Light', 'Celestial Storm', 'Dragon Majesty', 'Lost Thunder', 'Team Up', 'Detective Pikachu', 'Unbroken Bonds', 'Unified Minds', 'Hidden Fates', 'Cosmic Eclipse'],
     'Sword & Shield Series': ['Sword & Shield', 'Rebel Clash', 'Darkness Ablaze', "Champion's Path", 'Vivid Voltage', 'Shining Fates', 'Battle Styles', 'Chilling Reign', 'Evolving Skies', 'Celebrations', 'Fusion Strike', 'Brilliant Stars', 'Astral Radiance', 'Pokémon GO', 'Lost Origin', 'Silver Tempest', 'Crown Zenith'],
-    'Scarlet & Violet Series': ['Scarlet & Violet', 'Paldea Evolved', 'Obsidian Flames', 'Scarlet & Violet 151', 'Paradox Rift', 'Paldean Fates', 'Temporal Forces', 'Twilight Masquerade', 'Shrouded Fable', 'Stellar Crown', 'Surging Sparks', 'Prismatic Evolutions', 'Journey Together', 'Destined Rivals'],
+    'Scarlet & Violet Series': ['Scarlet & Violet', 'Paldea Evolved', 'Obsidian Flames', 'Scarlet & Violet 151', 'Paradox Rift', 'Paldean Fates', 'Temporal Forces', 'Twilight Masquerade', 'Shrouded Fable', 'Stellar Crown', 'Surging Sparks', 'Prismatic Evolutions', 'Journey Together', 'Destined Rivals', 'Scarlet & Violet Promos'],
     'Mega Evolution Series': ['Mega Evolution', 'Mega Evolution 3 - Perfect Order', 'Mega Evolution 4 - Chaos Rising', 'Mega Evolution 5 - Pitch Black', 'Mega Evolution 5.5 - 30th Celebration'],
     "Overig / promo's": ["McDonald's Collection", '25th Anniversary Celebrations: Classic Collection', 'Trainer Gallery', 'Pokémon TCG Classic', 'Black Star Promo', 'Overig promo']
   };
-  const CARD_VERSIES = ['Normaal', 'Holo', 'Reverse Holo', '1st Edition', 'Shadowless', 'Full Art', 'Alternate Art', 'Rainbow Rare', 'Gold / Secret Rare', 'Promo'];
+  const CARD_VERSIES = ['Normaal', 'Holo', 'Reverse Holo', 'Cosmos Holo', '1st Edition', 'Shadowless', 'Full Art', 'Alternate Art', 'Rainbow Rare', 'Gold / Secret Rare', 'Promo'];
 
   function setupFieldPicker(pickerId, btnId, menuId, inputEl, getOptions) {
     const dropdown = document.getElementById(pickerId);
@@ -2028,10 +2111,14 @@
 
   // ---------- Tabs ----------
   const EXTRA_TABLE = 'tcg_extra';
+  const EXTRA_PARENT_TYPE = 'extra'; // constant parent_type for kaart_exemplaren linkage, independent of the (editable) Type field
+  const EXTRA_TYPE_LABELS = { item: 'Item', tool: 'Tool', supporter: 'Supporter', stadium: 'Stadium', energy: 'Energy' };
+  const TRAINER_TYPES = ['item', 'tool', 'supporter', 'stadium']; // vallen onder de "Trainers"-tab; Energy is een aparte tab
   let currentMainTab = 'pokemon';
-  let extraItemsByCategory = {}; // { item: [...], tool: [...], ... }
+  let extraItems = []; // alle Trainer- en Energy-kaarten samen, in 1 lijst
+  let extraLoaded = false; // eenmalig laden, niet opnieuw bij elke tabwissel
   let extraSortMode = 'naam';
-  let extraLoadedFor = {}; // { item: true } once loaded, to avoid refetching every tab switch
+  let extraTypeFilter = ''; // '' = alle Trainer-types (niet van toepassing op de Energy-tab)
 
   function extraRestUrl(path) { return `${config.url}/rest/v1/${EXTRA_TABLE}${path || ''}`; }
 
@@ -2043,11 +2130,13 @@
       document.getElementById('pokemonSection').style.display = (tab === 'pokemon') ? '' : 'none';
       document.getElementById('extraSection').style.display = (tab === 'pokemon') ? 'none' : '';
       document.getElementById('progressDashboard').style.display = (tab === 'pokemon') ? '' : 'none';
+      // De Type-filter (Item/Tool/Supporter/Stadium) is alleen relevant op de
+      // Trainers-tab; op Energy zijn alle kaarten toch al hetzelfde type.
+      document.getElementById('extraTypeDropdown').style.display = (tab === 'trainers') ? '' : 'none';
       if (tab !== 'pokemon') {
-        currentExtraCategory = tab;
-        if (!extraLoadedFor[tab]) {
-          extraLoadedFor[tab] = true;
-          loadExtraItems(tab);
+        if (!extraLoaded) {
+          extraLoaded = true;
+          loadAllExtraItems();
         } else {
           renderExtraGrid();
           refreshSerieSetFilterDropdowns();
@@ -2056,14 +2145,14 @@
     });
   });
 
-  async function loadExtraItems(categorie) {
+  async function loadAllExtraItems() {
     if (!config) return;
     const statusEl2 = document.getElementById('extraCountStatus');
     statusEl2.textContent = 'Bezig met laden...';
     try {
-      const res = await fetch(extraRestUrl(`?categorie=eq.${categorie}&select=*&order=id.desc`), { headers: authHeaders() });
+      const res = await fetch(extraRestUrl(`?select=*&order=id.desc`), { headers: authHeaders() });
       if (!res.ok) throw new Error(`status ${res.status}`);
-      extraItemsByCategory[categorie] = await res.json();
+      extraItems = await res.json();
       renderExtraGrid();
       refreshSerieSetFilterDropdowns();
     } catch (err) {
@@ -2071,12 +2160,13 @@
     }
   }
 
-  function currentExtraItems() { return extraItemsByCategory[currentExtraCategory] || []; }
+  function currentExtraItems() { return extraItems; }
 
-  function getExtra(id) { return currentExtraItems().find(i => String(i.id) === String(id)); }
+  function getExtra(id) { return extraItems.find(i => String(i.id) === String(id)); }
 
   function sortedExtraItems() {
-    const list = [...currentExtraItems()];
+    let list = extraItems.filter(i => currentMainTab === 'energy' ? i.categorie === 'energy' : TRAINER_TYPES.includes(i.categorie));
+    if (currentMainTab === 'trainers' && extraTypeFilter) list = list.filter(i => i.categorie === extraTypeFilter);
     if (extraSortMode === 'naam') list.sort((a, b) => (a.naam || '').localeCompare(b.naam || '', 'nl'));
     else if (extraSortMode === 'waarde') list.sort((a, b) => (parseFloat(b.waarde) || 0) - (parseFloat(a.waarde) || 0));
     else list.sort((a, b) => b.id - a.id);
@@ -2085,13 +2175,13 @@
 
   function mainImageForExtra(item) {
     if (!item) return null;
-    const best = bestPhotoInstance(item.categorie, item.id);
+    const best = bestPhotoInstance(EXTRA_PARENT_TYPE, item.id);
     if (best) return best.afbeelding;
     return item.afbeelding || null;
   }
 
   function extraCardHtml(item) {
-    const list = instancesFor(currentTabParentType(item.categorie), item.id);
+    const list = instancesFor(EXTRA_PARENT_TYPE, item.id);
     const imgUrl = mainImageForExtra(item);
     const thumbHtml = imgUrl
       ? `<img src="${imgUrl}" alt="${item.naam || ''}">`
@@ -2100,17 +2190,18 @@
     const waardeHtml = total > 0 ? `<div class="extra-waarde">&euro; ${fmtEuro(total)}</div>` : '';
     const countTotal = list.reduce((sum, i) => sum + (parseInt(i.aantal) || 1), 0);
     const countHtml = countTotal ? `<div class="extra-set">${countTotal} ${countTotal === 1 ? 'exemplaar' : 'exemplaren'}</div>` : '';
+    const typeLabel = currentMainTab === 'trainers' ? (EXTRA_TYPE_LABELS[item.categorie] || item.categorie || '') : '';
     return `
-      <div class="extra-card" data-id="${item.id}" data-naam="${(item.naam || '').toLowerCase()}" data-set="">
+      <div class="extra-card" data-id="${item.id}" data-naam="${(item.naam || '').toLowerCase()}" data-type="${item.categorie || ''}">
         <div class="extra-thumb">${thumbHtml}</div>
         <div class="extra-info">
           <div class="extra-naam">${item.naam || '(naamloos)'}</div>
+          ${typeLabel ? `<div class="extra-type-badge">${typeLabel}</div>` : ''}
           ${countHtml}
           ${waardeHtml}
         </div>
       </div>`;
   }
-  function currentTabParentType(categorie) { return categorie; }
 
   function renderExtraGrid() {
     const list = sortedExtraItems();
@@ -2128,7 +2219,7 @@
     document.querySelectorAll('.extra-card').forEach(card => {
       total++;
       const matchesText = card.dataset.naam.includes(q);
-      const matchesSerieSetFilter = matchesSerieSet(currentExtraCategory, card.dataset.id, extraSerieFilter, extraSetFilter);
+      const matchesSerieSetFilter = matchesSerieSet(EXTRA_PARENT_TYPE, card.dataset.id, extraSerieFilter, extraSetFilter);
       const show = matchesText && matchesSerieSetFilter;
       card.classList.toggle('hidden', !show);
       if (show) visible++;
@@ -2167,21 +2258,38 @@
   });
   refreshExtraSortLabel();
 
+  // Type-filter voor de samengevoegde Kaarten-tab
+  const extraTypeDropdown = document.getElementById('extraTypeDropdown');
+  document.getElementById('extraTypeDropdownBtn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
+    extraTypeDropdown.classList.toggle('open');
+  });
+  extraTypeDropdown.querySelectorAll('.dropdown-item').forEach(item => {
+    item.addEventListener('click', () => {
+      extraTypeFilter = item.dataset.value;
+      document.getElementById('extraTypeDropdownBtn').innerHTML =
+        `Type: ${extraTypeFilter ? EXTRA_TYPE_LABELS[extraTypeFilter] : 'Alle'} <span class="caret">▾</span>`;
+      extraTypeDropdown.classList.remove('open');
+      renderExtraGrid();
+    });
+  });
+
   // ---------- Item add/edit modal ----------
   const extraDetailModal = document.getElementById('extraDetailModal');
   const extraDetailTitle = document.getElementById('extraDetailTitle');
   const extraDetailImg = document.getElementById('extraDetailImg');
   const extraDetailImgPlaceholder = document.getElementById('extraDetailImgPlaceholder');
   const eNaam = document.getElementById('eNaam');
+  const eType = document.getElementById('eType');
   const eNotitie = document.getElementById('eNotitie');
   const extraDeleteBtn = document.getElementById('extraDeleteBtn');
   let currentExtraId = null; // null = adding a new item
-  let currentExtraCategory = 'item';
 
   function refreshExtraDetailPreview() {
     if (currentExtraId === null) return;
     const item = getExtra(currentExtraId);
-    const list = instancesFor(currentExtraCategory, currentExtraId);
+    const list = instancesFor(EXTRA_PARENT_TYPE, currentExtraId);
     const imgUrl = mainImageForExtra(item);
     if (imgUrl) {
       extraDetailImg.src = imgUrl; extraDetailImg.style.display = '';
@@ -2197,11 +2305,22 @@
     document.getElementById('extraEditCurrentBtn').style.display = hasOwnPhoto ? '' : 'none';
     document.getElementById('extraResetImgBtn').style.display = hasOwnPhoto ? '' : 'none';
     document.getElementById('extraTotalValueLine').innerHTML = `Totale waarde: &euro; ${fmtEuro(totalForInstanceList(list))}`;
-    renderInstancesInto(document.getElementById('extraInstancesList'), currentExtraCategory, currentExtraId);
+    renderInstancesInto(document.getElementById('extraInstancesList'), EXTRA_PARENT_TYPE, currentExtraId);
+  }
+
+  function currentExtraIsEnergy() {
+    if (currentExtraId !== null) {
+      const item = getExtra(currentExtraId);
+      if (item) return item.categorie === 'energy';
+    }
+    return currentMainTab === 'energy';
   }
 
   function fillExtraFields(item) {
     eNaam.value = item.naam || '';
+    const isEnergy = item.categorie ? item.categorie === 'energy' : currentMainTab === 'energy';
+    document.getElementById('eTypeRow').style.display = isEnergy ? 'none' : '';
+    eType.value = (item.categorie && item.categorie !== 'energy') ? item.categorie : 'item';
     eNotitie.value = item.notitie || '';
   }
 
@@ -2218,7 +2337,8 @@
 
   function openExtraAddModal() {
     currentExtraId = null;
-    extraDetailTitle.textContent = EXTRA_NEW_TITLES[currentExtraCategory] || 'Nieuw item';
+    extraDuplicateCheckDismissed = false;
+    extraDetailTitle.textContent = 'Nieuwe kaart';
     extraDeleteBtn.style.display = 'none';
     fillExtraFields({});
     extraDetailImg.style.display = 'none';
@@ -2238,16 +2358,43 @@
 
   function collectExtraPayload() {
     return {
-      categorie: currentExtraCategory,
+      categorie: currentExtraIsEnergy() ? 'energy' : eType.value,
       naam: eNaam.value.trim() || null,
       notitie: eNotitie.value.trim() || null
     };
   }
 
+  // Type wijzigen werkt onmiddellijk (net als naam/notitie), zodat een
+  // verkeerd gekozen categorie altijd achteraf te herstellen is.
+  eType.addEventListener('change', () => { clearTimeout(extraSaveTimer); extraSaveTimer = setTimeout(saveExtraField, 300); });
+
   let extraSaveTimer = null;
+  let extraDuplicateCheckDismissed = false; // reset bij het openen van "nieuwe kaart"
+
   async function saveExtraField() {
     const payload = collectExtraPayload();
     if (currentExtraId === null) {
+      const naamNorm = (payload.naam || '').trim().toLowerCase();
+      if (naamNorm && !extraDuplicateCheckDismissed) {
+        const duplicate = extraItems.find(i => (i.naam || '').trim().toLowerCase() === naamNorm);
+        if (duplicate) {
+          const wantsExisting = confirm(
+            `Er bestaat al een kaart met de naam "${duplicate.naam}". Wil je in plaats daarvan een exemplaar toevoegen aan die bestaande kaart?\n\nKlik op Annuleren om toch een nieuwe, aparte kaart met deze naam aan te maken.`
+          );
+          if (wantsExisting) {
+            // Switch to the existing card in-place, so whatever the user was
+            // trying to do next (exemplaar toevoegen, foto uploaden) continues
+            // seamlessly on the existing card instead of creating a duplicate.
+            currentExtraId = duplicate.id;
+            fillExtraFields(duplicate);
+            extraDetailTitle.textContent = duplicate.naam || 'Item';
+            extraDeleteBtn.style.display = 'inline-block';
+            refreshExtraDetailPreview();
+            return;
+          }
+          extraDuplicateCheckDismissed = true; // niet nogmaals vragen voor deze nieuwe kaart
+        }
+      }
       try {
         const res = await fetch(extraRestUrl(), {
           method: 'POST',
@@ -2257,8 +2404,7 @@
         if (!res.ok) throw new Error(`status ${res.status}: ${await res.text()}`);
         const created = await res.json();
         const newItem = created[0];
-        if (!extraItemsByCategory[currentExtraCategory]) extraItemsByCategory[currentExtraCategory] = [];
-        extraItemsByCategory[currentExtraCategory].unshift(newItem);
+        extraItems.unshift(newItem);
         currentExtraId = newItem.id;
         extraDetailTitle.textContent = newItem.naam || 'Item';
         extraDeleteBtn.style.display = 'inline-block';
@@ -2295,7 +2441,7 @@
     try {
       const res = await fetch(extraRestUrl(`?id=eq.${currentExtraId}`), { method: 'DELETE', headers: authHeaders() });
       if (!res.ok) throw new Error(`status ${res.status}`);
-      extraItemsByCategory[currentExtraCategory] = currentExtraItems().filter(i => String(i.id) !== String(currentExtraId));
+      extraItems = extraItems.filter(i => String(i.id) !== String(currentExtraId));
       extraDetailModal.classList.remove('open');
       renderExtraGrid();
     } catch (err) {
@@ -2381,18 +2527,23 @@
 
   async function loadAllInstances() {
     try {
+      if (!extraLoaded) {
+        extraLoaded = true;
+        await loadAllExtraItems();
+      }
       const res = await fetch(instRestUrl('?select=*&order=id.asc'), { headers: authHeaders() });
       if (!res.ok) throw new Error(`status ${res.status}`);
       allInstances = await res.json();
+      await migrateExtraInstanceParentTypes();
       await migrateLegacyOwnedToInstances();
       updateTotalsBar();
       updateProgress();
       renderGrid();
       if (currentView === 'checklist') renderChecklist();
-      if (extraLoadedFor[currentExtraCategory]) renderExtraGrid();
+      if (extraLoaded) renderExtraGrid();
       refreshSerieSetFilterDropdowns();
       applyFilter();
-      if (extraLoadedFor[currentExtraCategory]) applyExtraFilter();
+      if (extraLoaded) applyExtraFilter();
     } catch (err) {
       console.error('Kon kaartexemplaren niet laden:', err);
     }
@@ -2401,6 +2552,28 @@
   // One-time (idempotent) migration: every already-owned Pokemon without any
   // instance yet gets exactly one default instance, carrying over its old
   // single "waarde" value (if any), so nothing gets lost by this upgrade.
+  // Vroeger was parent_type van een kaartexemplaar gelijk aan het type
+  // (item/tool/supporter/stadium/energy). Nu Type een vrij te wijzigen veld is
+  // op de kaart zelf, gebruiken alle niet-Pokémon exemplaren voortaan een
+  // vaste parent_type ('extra') — dit migreert oude rijen eenmalig.
+  async function migrateExtraInstanceParentTypes() {
+    const legacyTypes = ['item', 'tool', 'supporter', 'stadium', 'energy'];
+    const hasLegacy = allInstances.some(i => legacyTypes.includes(i.parent_type));
+    if (!hasLegacy) return;
+    try {
+      const filter = `parent_type=in.(${legacyTypes.join(',')})`;
+      const res = await fetch(instRestUrl(`?${filter}`), {
+        method: 'PATCH',
+        headers: authHeaders({ 'Prefer': 'return=minimal' }),
+        body: JSON.stringify({ parent_type: EXTRA_PARENT_TYPE })
+      });
+      if (!res.ok) throw new Error(await res.text());
+      allInstances.forEach(i => { if (legacyTypes.includes(i.parent_type)) i.parent_type = EXTRA_PARENT_TYPE; });
+    } catch (err) {
+      console.error('Kon oude parent_type-waarden niet migreren:', err);
+    }
+  }
+
   async function migrateLegacyOwnedToInstances() {
     const ownedWithoutInstances = records.filter(r => {
       if (!r.inbezit || instancesFor('pokemon', r.id).length > 0) return false;
@@ -2493,12 +2666,12 @@
       refreshSerieSetFilterDropdowns();
       applyFilter();
     });
-    populateFilterDropdown('extraSerieMenu', 'extraSerieDropdownBtn', distinctValues(currentExtraCategory, 'serie'), extraSerieFilter, 'Serie', (v) => {
+    populateFilterDropdown('extraSerieMenu', 'extraSerieDropdownBtn', distinctValues(EXTRA_PARENT_TYPE, 'serie'), extraSerieFilter, 'Serie', (v) => {
       extraSerieFilter = v;
       refreshSerieSetFilterDropdowns();
       applyExtraFilter();
     });
-    populateFilterDropdown('extraSetMenu', 'extraSetDropdownBtn', distinctValues(currentExtraCategory, 'set_naam'), extraSetFilter, 'Set', (v) => {
+    populateFilterDropdown('extraSetMenu', 'extraSetDropdownBtn', distinctValues(EXTRA_PARENT_TYPE, 'set_naam'), extraSetFilter, 'Set', (v) => {
       extraSetFilter = v;
       refreshSerieSetFilterDropdowns();
       applyExtraFilter();
@@ -2540,13 +2713,26 @@
     return allInstances.filter(i => i.parent_type === parentType).reduce((sum, i) => sum + instanceLineValue(i), 0);
   }
 
+  // Instanties van niet-Pokémon-kaarten delen allemaal parent_type 'extra',
+  // dus de waarde per Type (Item/Tool/...) moet via de kaart zelf herleid
+  // worden in plaats van rechtstreeks via parent_type.
+  function totalForExtraType(type) {
+    const idsOfType = new Set(extraItems.filter(i => i.categorie === type).map(i => String(i.id)));
+    return allInstances
+      .filter(i => i.parent_type === EXTRA_PARENT_TYPE && idsOfType.has(String(i.parent_id)))
+      .reduce((sum, i) => sum + instanceLineValue(i), 0);
+  }
+
+  function totalForTab(tab) {
+    return tab === 'pokemon' ? totalForParentType('pokemon') : totalForExtraType(tab);
+  }
+
   const TAB_LABELS = { pokemon: 'Pokémon', item: 'Item', tool: 'Tool', supporter: 'Supporter', stadium: 'Stadium', energy: 'Energy' };
-  const EXTRA_NEW_TITLES = { item: 'Nieuw Item', tool: 'Nieuw Tool', supporter: 'Nieuwe Supporter', stadium: 'Nieuw Stadium', energy: 'Nieuwe Energy' };
   const TAB_COLORS = { pokemon: '#3ecf8e', item: '#f5a623', tool: '#4a90d9', supporter: '#e94f64', stadium: '#9b59b6', energy: '#f1c40f' };
 
   function updateTotalsBar() {
     const parts = Object.keys(TAB_LABELS).map(tab => {
-      const total = totalForParentType(tab);
+      const total = totalForTab(tab);
       return `${TAB_LABELS[tab]}: &euro; ${fmtEuro(total)}`;
     });
     const grandTotal = allInstances.reduce((sum, i) => sum + instanceLineValue(i), 0);
@@ -2567,7 +2753,7 @@
     let cumulative = 0;
     const legendRows = [];
     Object.keys(TAB_LABELS).forEach(tab => {
-      const total = totalForParentType(tab);
+      const total = totalForTab(tab);
       if (total <= 0) return;
       const pct = (total / grandTotal) * 100;
       const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
@@ -2740,7 +2926,7 @@
       await saveExtraField();
       if (currentExtraId === null) return; // saving failed; saveExtraField already alerted
     }
-    openInstanceModal(currentExtraCategory, currentExtraId, null);
+    openInstanceModal(EXTRA_PARENT_TYPE, currentExtraId, null);
   });
 
   function collectInstancePayload() {
@@ -2945,6 +3131,169 @@
       }
     });
   })();
+
+  // ---------- Hoge-waarde lijst (alle categorieën samen) ----------
+  const highValueModal = document.getElementById('highValueModal');
+  const highValueThresholdInput = document.getElementById('highValueThreshold');
+  let highValueLastRows = [];
+
+  function nameForInstance(inst) {
+    if (inst.parent_type === 'pokemon') {
+      const rec = getRec(inst.parent_id);
+      return rec ? (rec.naam || '(onbekend)') : '(onbekend)';
+    }
+    const item = extraItems.find(i => String(i.id) === String(inst.parent_id));
+    return item ? (item.naam || '(naamloos)') : '(onbekend)';
+  }
+
+  function categorieLabelForInstance(inst) {
+    if (inst.parent_type === 'pokemon') return TAB_LABELS.pokemon;
+    const item = extraItems.find(i => String(i.id) === String(inst.parent_id));
+    return item ? (EXTRA_TYPE_LABELS[item.categorie] || item.categorie) : '';
+  }
+
+  function computeHighValueRows(threshold) {
+    const rows = [];
+    allInstances.forEach(inst => {
+      const waardePerStuk = parseFloat(inst.waarde) || 0;
+      if (waardePerStuk < threshold) return;
+      rows.push({
+        naam: nameForInstance(inst),
+        categorie: categorieLabelForInstance(inst),
+        details: [inst.serie, inst.set_naam, inst.versie].filter(Boolean).join(' · '),
+        aantal: parseInt(inst.aantal) || 1,
+        waardePerStuk
+      });
+    });
+    rows.sort((a, b) => b.waardePerStuk - a.waardePerStuk);
+    return rows;
+  }
+
+  function highValueRowsHtml(rows) {
+    return rows.map(r => `
+      <tr>
+        <td>${r.naam}</td>
+        <td>${r.categorie}</td>
+        <td>${r.details || '—'}</td>
+        <td class="hv-num">${r.aantal}x</td>
+        <td class="hv-num">&euro; ${fmtEuro(r.waardePerStuk)}</td>
+      </tr>`).join('');
+  }
+
+  function renderHighValueList() {
+    const threshold = parseMoneyInput(highValueThresholdInput.value);
+    const tbody = document.getElementById('highValueTbody');
+    const summary = document.getElementById('highValueSummary');
+    if (threshold === null || isNaN(threshold)) {
+      highValueLastRows = [];
+      tbody.innerHTML = '';
+      summary.textContent = 'Vul een minimale waarde in.';
+      return;
+    }
+    const rows = computeHighValueRows(threshold);
+    highValueLastRows = rows;
+    if (rows.length === 0) {
+      tbody.innerHTML = '';
+      summary.textContent = `Geen kaarten gevonden boven € ${fmtEuro(threshold)}.`;
+      return;
+    }
+    summary.textContent = `${rows.length} unieke ${rows.length === 1 ? 'kaart' : 'kaarten'} gevonden (waarde per stuk, ongeacht aantal)`;
+    tbody.innerHTML = highValueRowsHtml(rows);
+  }
+
+  let highValueRenderTimer = null;
+  highValueThresholdInput.addEventListener('input', () => {
+    clearTimeout(highValueRenderTimer);
+    highValueRenderTimer = setTimeout(renderHighValueList, 200);
+  });
+
+  document.getElementById('highValueBtn').addEventListener('click', () => {
+    highValueModal.classList.add('open');
+    if (!highValueThresholdInput.value) highValueThresholdInput.value = '500'; // standaard: € 5,00
+    renderHighValueList();
+  });
+  document.getElementById('highValueCloseBtn').addEventListener('click', () => highValueModal.classList.remove('open'));
+  document.getElementById('highValueDoneBtn').addEventListener('click', () => highValueModal.classList.remove('open'));
+  highValueModal.addEventListener('click', (e) => { if (e.target === highValueModal) highValueModal.classList.remove('open'); });
+
+  document.getElementById('highValuePrintBtn').addEventListener('click', () => {
+    const threshold = parseMoneyInput(highValueThresholdInput.value) || 0;
+    const rows = highValueLastRows;
+    const printArea = document.getElementById('highValuePrintArea');
+    printArea.innerHTML = `
+      <h2>Kaarten boven &euro; ${fmtEuro(threshold)}</h2>
+      <div class="hv-print-sub">${rows.length} unieke ${rows.length === 1 ? 'kaart' : 'kaarten'} (waarde per stuk, ongeacht aantal)</div>
+      <table>
+        <thead><tr><th>Naam</th><th>Categorie</th><th>Serie / Set / Versie</th><th>Aantal</th><th>Waarde (per stuk)</th></tr></thead>
+        <tbody>${highValueRowsHtml(rows)}</tbody>
+      </table>`;
+    document.body.classList.add('print-highvalue-mode');
+    window.print();
+    const restore = () => {
+      document.body.classList.remove('print-highvalue-mode');
+      window.removeEventListener('afterprint', restore);
+    };
+    window.addEventListener('afterprint', restore);
+  });
+
+  // ---------- Opslaggebruik controleren (Supabase Storage) ----------
+  // Let op: de 50 MB-limiet is de maximale bestandsgrootte per upload, niet de
+  // buckets-capaciteit. Het gratis plan geeft 1 GB totale bestandsopslag voor
+  // het hele project, gedeeld over alle buckets samen — dat is de grens die
+  // hier wordt bijgehouden.
+  const STORAGE_LIMIT_BYTES = 1024 * 1024 * 1024; // 1 GB
+
+  function fmtMB(bytes) {
+    return (bytes / (1024 * 1024)).toFixed(1);
+  }
+
+  async function listBucketPrefix(prefix) {
+    const all = [];
+    let offset = 0;
+    while (true) {
+      const res = await fetch(`${config.url}/storage/v1/object/list/${STORAGE_BUCKET}`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ prefix, limit: 1000, offset, sortBy: { column: 'name', order: 'asc' } })
+      });
+      if (!res.ok) throw new Error(`status ${res.status}: ${await res.text()}`);
+      const items = await res.json();
+      all.push(...items);
+      if (items.length < 1000) break;
+      offset += 1000;
+    }
+    return all;
+  }
+
+  document.getElementById('checkStorageBtn').addEventListener('click', async () => {
+    const resultEl = document.getElementById('storageUsageResult');
+    if (!config) { resultEl.textContent = 'Nog niet verbonden met Supabase.'; return; }
+    resultEl.textContent = 'Bezig met controleren...';
+    try {
+      // Bekende upload-locaties in deze bucket (zie de upload-functies verderop
+      // in dit bestand): pokemon-foto's staan in de root, de rest in submappen.
+      const prefixes = ['', 'kaart_exemplaren', EXTRA_TABLE, 'kaart_groepen'];
+      let totalBytes = 0, fileCount = 0;
+      for (const prefix of prefixes) {
+        const items = await listBucketPrefix(prefix);
+        items.forEach(item => {
+          if (item.metadata && typeof item.metadata.size === 'number') {
+            totalBytes += item.metadata.size;
+            fileCount++;
+          }
+        });
+      }
+      const pct = Math.min(100, (totalBytes / STORAGE_LIMIT_BYTES) * 100);
+      const barColor = pct >= 90 ? '#e63946' : (pct >= 70 ? '#f5a623' : '#3ecf8e');
+      resultEl.innerHTML = `
+        <div id="storageUsageBarTrack"><div id="storageUsageBarFill" style="width:${pct.toFixed(1)}%; background:${barColor};"></div></div>
+        <div>${fmtMB(totalBytes)} MB van 1024 MB (1 GB) gebruikt &middot; ${pct.toFixed(1)}% &middot; ${fileCount} bestanden</div>
+        ${pct >= 80 ? '<div id="storageUsageWarning">⚠️ Je nadert de gratis-limiet van 1 GB bestandsopslag.</div>' : ''}
+      `;
+    } catch (err) {
+      resultEl.textContent = 'Kon opslaggebruik niet ophalen: ' + err.message;
+    }
+  });
 
   (function init() {
     config = loadConfig();
