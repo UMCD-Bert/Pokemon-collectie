@@ -301,6 +301,8 @@
   #storageUsageWarning { color: #e63946; font-weight: 600; margin-top: 4px; }
   #bulkSyncSection { margin-top: 14px; padding-top: 12px; border-top: 1px solid #eee; }
   #bulkSyncStartBtn { background: #457b9d; color: white; border: none; padding: 8px 12px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  #noPriceOverviewBtn { background: #457b9d; color: white; border: none; padding: 8px 12px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  #zeroValueOverviewBtn { background: #e63946; color: white; border: none; padding: 8px 12px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
   #bulkSyncStartBtn:disabled { opacity: 0.6; cursor: default; }
   #bulkSyncProgressWrap { margin-top: 10px; }
   #bulkSyncBarTrack { width: 100%; height: 10px; border-radius: 6px; background: #eef1f4; overflow: hidden; margin-bottom: 6px; }
@@ -414,6 +416,7 @@
   }
   .dropdown-item:hover { background: #f1f3f5; }
   .dropdown-item.active { background: #2a9d8f; color: white; }
+  .dropdown-empty { padding: 10px 14px; font-size: 13px; color: #999; font-style: italic; }
   .dropdown-checkbox-item {
     display: flex;
     align-items: center;
@@ -523,6 +526,33 @@
   #highValuePrintArea .hv-print-sub { text-align: center; color: #555; margin-bottom: 14px; font-size: 13px; }
   #highValuePrintArea table { width: 100%; border-collapse: collapse; font-size: 12px; }
   #highValuePrintArea th, #highValuePrintArea td { padding: 5px 6px; border-bottom: 1px solid #ccc; text-align: left; }
+
+  /* ---------- Kaarten zonder opgehaalde prijs ---------- */
+  #noPriceModal .modal-box { max-width: 520px; }
+  #noPriceSummary { font-size: 12px; color: #666; margin: 6px 0 10px 0; text-align: center; }
+  #noPriceFetchAllBtn {
+    display: block; width: 100%; margin-bottom: 10px; padding: 8px 10px; border-radius: 8px; border: 1px solid #457b9d;
+    background: #eef5fa; color: #2c5d7a; font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  #noPriceFetchAllBtn:disabled { opacity: 0.6; cursor: default; }
+  #noPriceProgressWrap { margin-bottom: 10px; }
+  #noPriceBarTrack { width: 100%; height: 10px; border-radius: 6px; background: #eef1f4; overflow: hidden; margin-bottom: 6px; }
+  #noPriceBarFill { height: 100%; border-radius: 6px; background: #3ecf8e; width: 0%; transition: width 0.2s ease; }
+  #noPriceStatusText { font-size: 12px; color: #444; }
+  #noPriceListWrap { max-height: 42vh; overflow-y: auto; }
+  #noPriceTable { width: 100%; border-collapse: collapse; font-size: 12px; }
+  #noPriceTable th, #noPriceTable td { padding: 5px 6px; border-bottom: 1px solid #eee; text-align: left; }
+  #noPriceTable th { color: #666; font-weight: 600; }
+
+  /* ---------- Kaarten met waarde € 0,00 ---------- */
+  #zeroValueModal .modal-box { max-width: 520px; }
+  #zeroValueSummary { font-size: 12px; color: #666; margin: 6px 0 10px 0; text-align: center; }
+  #zeroValueListWrap { max-height: 50vh; overflow-y: auto; }
+  #zeroValueTable { width: 100%; border-collapse: collapse; font-size: 12px; }
+  #zeroValueTable th, #zeroValueTable td { padding: 5px 6px; border-bottom: 1px solid #eee; text-align: left; }
+  #zeroValueTable th { color: #666; font-weight: 600; }
+  #zeroValueTable tbody tr { cursor: pointer; }
+  #zeroValueTable tbody tr:hover { background: #fff5f5; }
 
   /* ---------- Foto-lightbox (grote weergave bij tikken op een kaartfoto) ---------- */
   #photoLightbox { z-index: 1150; }
@@ -778,11 +808,13 @@
   </div>
   <div id="bulkSyncSection">
     <button type="button" id="bulkSyncStartBtn">🔄 Foto's &amp; prijzen bijwerken voor hele verzameling</button>
-    <p style="font-size:11px;color:#999;margin:4px 0 0 0;">Zoekt voor alle kaartexemplaren met serie, set én kaartnummer: een foto via TCGdex (alleen waar die nog ontbreekt) en de actuele Cardmarket-prijs via pokemontcg.io (overschrijft altijd).</p>
+    <p style="font-size:11px;color:#999;margin:4px 0 0 0;">Zoekt voor alle kaartexemplaren met serie, set én kaartnummer: een foto en de actuele Cardmarket-prijs, beide via TCGdex (foto alleen waar die nog ontbreekt; prijs overschrijft altijd, tenzij je zelf een recentere prijs hebt ingevuld).</p>
     <div id="bulkSyncProgressWrap" style="display:none;">
       <div id="bulkSyncBarTrack"><div id="bulkSyncBarFill"></div></div>
       <div id="bulkSyncStatusText"></div>
     </div>
+    <button type="button" id="noPriceOverviewBtn" style="margin-top:8px;">📋 Kaarten zonder ooit opgehaalde prijs bekijken</button>
+    <button type="button" id="zeroValueOverviewBtn" style="margin-top:8px;">🔍 Kaarten met waarde € 0,00 bekijken</button>
   </div>
   <div class="settings-actions">
     <button id="settingsCancelBtn">Annuleren</button>
@@ -1017,20 +1049,20 @@
     <button type="button" id="iCardLookupBtn" style="display:none;">🔍 Welke sets? (pokemontcg.io)</button>
     <div id="iCardLookupStatus"></div>
     <div id="iCardLookupResults"></div>
-    <label class="field-label">Serie</label>
-    <div class="field-with-picker">
-      <input type="text" class="field-input" id="iSerie" placeholder="Typ of kies rechts...">
-      <div class="dropdown mini-picker" id="iSeriePicker">
-        <button type="button" class="dropdown-btn picker-btn" id="iSeriePickerBtn">▾</button>
-        <div class="dropdown-menu" id="iSerieMenu"></div>
-      </div>
-    </div>
     <label class="field-label">Set</label>
     <div class="field-with-picker">
       <input type="text" class="field-input" id="iSet" placeholder="Typ of kies rechts...">
       <div class="dropdown mini-picker" id="iSetPicker">
         <button type="button" class="dropdown-btn picker-btn" id="iSetPickerBtn">▾</button>
         <div class="dropdown-menu" id="iSetMenu"></div>
+      </div>
+    </div>
+    <label class="field-label">Serie</label>
+    <div class="field-with-picker">
+      <input type="text" class="field-input" id="iSerie" placeholder="Typ of kies rechts...">
+      <div class="dropdown mini-picker" id="iSeriePicker">
+        <button type="button" class="dropdown-btn picker-btn" id="iSeriePickerBtn">▾</button>
+        <div class="dropdown-menu" id="iSerieMenu"></div>
       </div>
     </div>
     <label class="field-label">Versie</label>
@@ -1098,6 +1130,46 @@
 
 <div id="highValuePrintArea"></div>
 
+<div class="modal-overlay" id="noPriceModal">
+  <div class="modal-box">
+    <button type="button" class="modal-close" id="noPriceCloseBtn">&times;</button>
+    <h3>Kaarten zonder opgehaalde prijs</h3>
+    <div id="noPriceSummary"></div>
+    <button type="button" id="noPriceFetchAllBtn" style="display:none;">💶 Nu ophalen voor deze kaarten</button>
+    <div id="noPriceProgressWrap" style="display:none;">
+      <div id="noPriceBarTrack"><div id="noPriceBarFill"></div></div>
+      <div id="noPriceStatusText"></div>
+    </div>
+    <div id="noPriceListWrap">
+      <table id="noPriceTable">
+        <thead><tr><th>Naam</th><th>Categorie</th><th>Serie / Set / Nr</th><th>Reden</th></tr></thead>
+        <tbody id="noPriceTbody"></tbody>
+      </table>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn-primary" id="noPriceDoneBtn">Sluiten</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="zeroValueModal">
+  <div class="modal-box">
+    <button type="button" class="modal-close" id="zeroValueCloseBtn">&times;</button>
+    <h3>Kaarten met waarde &euro; 0,00</h3>
+    <div id="zeroValueSummary"></div>
+    <div id="zeroValueListWrap">
+      <table id="zeroValueTable">
+        <thead><tr><th>Naam</th><th>Categorie</th><th>Serie / Set / Nr</th><th>Versie</th></tr></thead>
+        <tbody id="zeroValueTbody"></tbody>
+      </table>
+    </div>
+    <p style="font-size:11px;color:#999;margin-top:8px;">Tik op een regel om die kaart meteen te openen en aan te passen.</p>
+    <div class="modal-actions">
+      <button type="button" class="btn-primary" id="zeroValueDoneBtn">Sluiten</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="photoLightbox">
   <div class="modal-box" id="photoLightboxBox">
     <button type="button" class="modal-close" id="photoLightboxCloseBtn">&times;</button>
@@ -1110,7 +1182,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '2.22';
+  const APP_VERSION = '2.31';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -1164,6 +1236,19 @@
   document.addEventListener('click', () => {
     document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
   });
+
+  // Sluit een modal alleen als zowel de muisklik-start (mousedown) als het
+  // klik-doel op de achtergrond zelf waren. Zonder deze check sluit een
+  // tekstselectie die per ongeluk over de rand van het venster eindigt
+  // (bijv. bij het selecteren van een waarde in een veld) het venster al
+  // voordat je iets kon opslaan.
+  function wireOverlayClickToClose(overlayEl, closeFn) {
+    let mouseDownOnOverlay = false;
+    overlayEl.addEventListener('mousedown', (e) => { mouseDownOnOverlay = (e.target === overlayEl); });
+    overlayEl.addEventListener('click', (e) => {
+      if (e.target === overlayEl && mouseDownOnOverlay) closeFn();
+    });
+  }
   const grid = document.getElementById('grid');
   const checklistView = document.getElementById('checklistView');
   const checklistTable = document.getElementById('checklistTable');
@@ -1200,13 +1285,16 @@
     const dropdown = document.getElementById(pickerId);
     const btn = document.getElementById(btnId);
     const menu = document.getElementById(menuId);
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const wasOpen = dropdown.classList.contains('open');
-      document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
-      if (wasOpen) return;
+
+    function renderMenu(filterText) {
       const opts = getOptions();
-      menu.innerHTML = opts.map(o => `<button type="button" class="dropdown-item">${o}</button>`).join('');
+      const q = (filterText || '').trim().toLowerCase();
+      // Niet alleen op begin van de tekst filteren, maar overal in de naam
+      // (dus "holo" vindt ook "Cosmic Holo" en "Reverse Holo").
+      const filtered = q ? opts.filter(o => o.toLowerCase().includes(q)) : opts;
+      menu.innerHTML = filtered.length
+        ? filtered.map(o => `<button type="button" class="dropdown-item">${o}</button>`).join('')
+        : `<div class="dropdown-empty">Geen overeenkomsten</div>`;
       menu.querySelectorAll('.dropdown-item').forEach(item => {
         item.addEventListener('click', () => {
           inputEl.value = item.textContent;
@@ -1214,6 +1302,20 @@
           dropdown.classList.remove('open');
         });
       });
+    }
+
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const wasOpen = dropdown.classList.contains('open');
+      document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
+      if (wasOpen) return;
+      renderMenu(inputEl.value);
+      dropdown.classList.add('open');
+    });
+    // Tijdens typen live filteren en het menu automatisch open houden.
+    inputEl.addEventListener('click', (e) => e.stopPropagation());
+    inputEl.addEventListener('input', () => {
+      renderMenu(inputEl.value);
       dropdown.classList.add('open');
     });
   }
@@ -1320,9 +1422,10 @@
     key: 'sb_publishable_KELGR-EkKYZBF_knnwdNvg_vA966Yqr'
   };
 
-  // Gratis API-key van https://pokemontcg.io (zelf aan te vragen via hun site),
-  // gebruikt om Cardmarket-marktprijzen op te halen. Leeg = werkt nog steeds,
-  // maar met een veel lager aanvraaglimiet per dag.
+  // Gratis API-key van https://pokemontcg.io (zelf aan te vragen via hun site).
+  // Wordt alleen nog gebruikt voor de "Welke sets?"-naamzoekfunctie (foto's en
+  // prijzen komen inmiddels van TCGdex). Leeg = werkt nog steeds, maar met een
+  // veel lager aanvraaglimiet per dag.
   const POKEMONTCG_API_KEY = 'd56d2bd1-7f5b-4ae5-8d74-cfb0abef1cbb';
 
   function loadConfig() {
@@ -1582,9 +1685,7 @@
   }
 
   document.getElementById('detailCloseBtn').addEventListener('click', closeDetailModal);
-  detailModal.addEventListener('click', (e) => {
-    if (e.target === detailModal) closeDetailModal();
-  });
+  wireOverlayClickToClose(detailModal, closeDetailModal);
 
   // ---------- Foto-lightbox: grote weergave + gegevens bij tikken op de foto ----------
   const photoLightbox = document.getElementById('photoLightbox');
@@ -1603,7 +1704,7 @@
     photoLightbox.classList.add('open');
   }
   document.getElementById('photoLightboxCloseBtn').addEventListener('click', () => photoLightbox.classList.remove('open'));
-  photoLightbox.addEventListener('click', (e) => { if (e.target === photoLightbox) photoLightbox.classList.remove('open'); });
+  wireOverlayClickToClose(photoLightbox, () => photoLightbox.classList.remove('open'));
 
   document.getElementById('detailArtFrame').addEventListener('click', () => {
     const rec = getRec(currentDetailId);
@@ -2549,7 +2650,7 @@
   document.getElementById('extraFab').addEventListener('click', openExtraAddModal);
   document.getElementById('extraDetailCloseBtn').addEventListener('click', () => extraDetailModal.classList.remove('open'));
   document.getElementById('extraDoneBtn').addEventListener('click', () => extraDetailModal.classList.remove('open'));
-  extraDetailModal.addEventListener('click', (e) => { if (e.target === extraDetailModal) extraDetailModal.classList.remove('open'); });
+  wireOverlayClickToClose(extraDetailModal, () => extraDetailModal.classList.remove('open'));
 
   function collectExtraPayload() {
     return {
@@ -2991,7 +3092,7 @@
           <div class="inst-sub">${subParts}</div>
         </div>
         <div class="inst-value">${valueHtml}</div>
-        ${canTryPrice ? `<button type="button" class="inst-price-refresh" title="Marktprijs ophalen (Cardmarket via pokemontcg.io)" data-inst-id="${inst.id}" ${isPending ? 'disabled' : ''}>💶 Prijs</button>` : ''}
+        ${canTryPrice ? `<button type="button" class="inst-price-refresh" title="Marktprijs ophalen (Cardmarket via TCGdex)" data-inst-id="${inst.id}" ${isPending ? 'disabled' : ''}>💶 Prijs</button>` : ''}
       </div>`;
   }
 
@@ -3061,6 +3162,12 @@
         if (result.status === 'found') {
           btn.innerHTML = priceFreshnessDotHtml(result.updatedAt) + '✓';
           btn.title = priceFreshnessLabel(result.updatedAt);
+        } else if (result.status === 'kept-manual') {
+          btn.textContent = '🔒';
+          btn.title = 'Je eigen ingevulde prijs is niet ouder dan de online data — niet overschreven.';
+        } else if (result.status === 'only-us') {
+          btn.textContent = '🇺🇸';
+          btn.title = `Geen Cardmarket (EU) prijs gevonden. Wel een TCGplayer (VS)-prijs: $${result.usdPrice.toFixed(2)} — niet overgenomen (andere markt/munt).`;
         } else {
           btn.textContent = result.status === 'not-found' ? '✗' : '⚠️';
         }
@@ -3194,7 +3301,7 @@
   }
   function closeInstanceModal() { instanceModal.classList.remove('open'); }
   document.getElementById('instanceCloseBtn').addEventListener('click', closeInstanceModal);
-  instanceModal.addEventListener('click', (e) => { if (e.target === instanceModal) closeInstanceModal(); });
+  wireOverlayClickToClose(instanceModal, closeInstanceModal);
 
   document.getElementById('detailAddInstanceBtn').addEventListener('click', () => {
     if (!currentDetailId) return;
@@ -3226,8 +3333,14 @@
     };
     // Handmatige wijziging van de waarde betekent dat een eventuele eerder
     // opgehaalde marktprijs-datum niet meer klopt voor dit (nieuwe) bedrag.
-    if (currentInstanceId !== null && waardeNum !== iWaardeAtOpen) {
+    // We onthouden wél wanneer je 'm zelf hebt ingevuld, zodat een latere
+    // automatische opzoeking alleen overschrijft als de online data echt
+    // recenter is dan jouw eigen invoer.
+    if (currentInstanceId === null) {
+      if (waardeNum !== null) payload.prijs_handmatig_datum = new Date().toISOString().slice(0, 10);
+    } else if (waardeNum !== iWaardeAtOpen) {
       payload.prijs_bron_datum = null;
+      payload.prijs_handmatig_datum = waardeNum !== null ? new Date().toISOString().slice(0, 10) : null;
     }
     return payload;
   }
@@ -3290,7 +3403,9 @@
     return match ? match.id : null;
   }
 
-  async function fetchTcgdexCardImage(setName, kaartnummer) {
+  // Haalt het volledige TCGdex-kaartobject op (afbeelding én prijzen in één
+  // aanroep) voor een serie+set+kaartnummer. Voorloopnullen maken niet uit.
+  async function fetchTcgdexCard(setName, kaartnummer) {
     const setId = await findTcgdexSetId(setName);
     if (!setId) return null;
     try {
@@ -3299,22 +3414,30 @@
       const res = await fetch(`https://api.tcgdex.net/v2/en/sets/${encodeURIComponent(setId)}/${encodeURIComponent(kaartnummer)}`);
       if (res.ok) {
         const card = await res.json();
-        if (card && card.image) return `${card.image}/high.png`;
+        if (card && card.id) return card;
       }
       // Tweede poging: voorloopnullen maken niet uit. Haal de hele kaartenlijst
-      // van de set op en zoek een kaart met hetzelfde nummer, genegeerd de
-      // voorloopnullen (zo maakt het niet uit of je "2", "02" of "002" typt).
+      // van de set op, zoek het echte localId, en haal daarmee alsnog de
+      // volledige kaart op (de lijst zelf bevat geen prijzen, alleen de
+      // losse kaart-aanvraag wel).
       const setRes = await fetch(`https://api.tcgdex.net/v2/en/sets/${encodeURIComponent(setId)}`);
       if (!setRes.ok) return null;
       const setData = await setRes.json();
       const target = String(kaartnummer).trim().replace(/^0+(?=\d)/, '');
       const match = (setData.cards || []).find(c => String(c.localId).trim().replace(/^0+(?=\d)/, '') === target);
-      if (!match || !match.image) return null;
-      return `${match.image}/high.png`;
+      if (!match) return null;
+      const fullRes = await fetch(`https://api.tcgdex.net/v2/en/sets/${encodeURIComponent(setId)}/${encodeURIComponent(match.localId)}`);
+      if (!fullRes.ok) return null;
+      return await fullRes.json();
     } catch (err) {
       console.error('TCGdex-opzoeking mislukt:', err);
       return null;
     }
+  }
+
+  async function fetchTcgdexCardImage(setName, kaartnummer) {
+    const card = await fetchTcgdexCard(setName, kaartnummer);
+    return (card && card.image) ? `${card.image}/high.png` : null;
   }
 
   // Probeert automatisch een foto op te halen voor een groep (serie+set+
@@ -3346,23 +3469,24 @@
     }
   }
 
-  // ---------- pokemontcg.io: automatisch Cardmarket-marktprijs ophalen ----------
-  let pokemonTcgSetsPromise = null;
-  function loadPokemonTcgSets() {
-    if (!pokemonTcgSetsPromise) {
-      pokemonTcgSetsPromise = fetch('https://api.pokemontcg.io/v2/sets', {
-        headers: POKEMONTCG_API_KEY ? { 'X-Api-Key': POKEMONTCG_API_KEY } : {}
-      })
-        .then(res => { if (!res.ok) throw new Error('status ' + res.status); return res.json(); })
-        .then(json => json.data || [])
-        .catch(err => { console.error('Kon pokemontcg.io-setlijst niet laden:', err); pokemonTcgSetsPromise = null; return []; });
+  // ---------- pokemontcg.io: gebruikt voor de "Welke sets?"-naamzoekfunctie ----------
+  // pokemontcg.io geeft af en toe een tijdelijke serverfout (500) terug —
+  // gewoon nog een paar keer proberen lost dat meestal vanzelf op.
+  async function fetchWithRetry(url, options, attempts) {
+    let lastErr = null;
+    const tries = attempts || 3;
+    for (let i = 0; i < tries; i++) {
+      try {
+        const res = await fetch(url, options);
+        if (res.ok) return res;
+        lastErr = new Error('status ' + res.status);
+      } catch (err) {
+        lastErr = err;
+      }
+      if (i < tries - 1) await new Promise(r => setTimeout(r, 500));
     }
-    return pokemonTcgSetsPromise;
+    throw lastErr;
   }
-
-  const POKEMONTCG_NAME_OVERRIDES = {
-    'scarlet & violet 151': '151'
-  };
 
   function currentInstanceCardName() {
     if (currentInstanceParentType === 'pokemon') {
@@ -3447,51 +3571,25 @@
     });
   });
 
-  async function findPokemonTcgSetId(setName) {
-    if (!setName) return null;
-    const sets = await loadPokemonTcgSets();
-    const override = POKEMONTCG_NAME_OVERRIDES[setName.trim().toLowerCase()];
-    const norm = normalizeSetName(override || setName);
-    const match = sets.find(s => normalizeSetName(s.name) === norm);
-    return match ? match.id : null;
+  // Haalt het prijzenblok op via TCGdex (dezelfde bron als de foto's) voor
+  // een serie+set+kaartnummer — Cardmarket (EU, EUR) wordt dagelijks
+  // bijgewerkt, in tegenstelling tot de eerder gebruikte pokemontcg.io-
+  // snapshot. TCGplayer (VS, USD) wordt los meegegeven, puur ter info als
+  // Cardmarket niets heeft — nooit gebruikt om de waarde automatisch te vullen.
+  async function fetchTcgdexPricing(setName, kaartnummer) {
+    const card = await fetchTcgdexCard(setName, kaartnummer);
+    if (!card || !card.pricing) return null;
+    return {
+      cardmarket: card.pricing.cardmarket || null,
+      tcgplayer: card.pricing.tcgplayer || null
+    };
   }
 
-  // Haalt het volledige cardmarket-prijzenblok op voor een serie+set+kaartnummer
-  // (één keer per groep — de prijzen per variant, bijv. reverse holo, zitten al
-  // in dit ene antwoord, dus dit wordt per-instantie verder verwerkt op basis
-  // van "versie").
-  async function fetchPokemonTcgCardmarketPrices(setName, kaartnummer) {
-    const setId = await findPokemonTcgSetId(setName);
-    if (!setId) return null;
-    const headers = POKEMONTCG_API_KEY ? { 'X-Api-Key': POKEMONTCG_API_KEY } : {};
-    try {
-      const direct = await fetch(`https://api.pokemontcg.io/v2/cards/${encodeURIComponent(setId)}-${encodeURIComponent(kaartnummer)}`, { headers });
-      if (direct.ok) {
-        const json = await direct.json();
-        if (json.data && json.data.cardmarket && json.data.cardmarket.prices) {
-          return { prices: json.data.cardmarket.prices, updatedAt: json.data.cardmarket.updatedAt || null };
-        }
-      }
-      // Voorloopnullen kunnen ook hier verschillen — zoek in de hele set op nummer.
-      const target = String(kaartnummer).trim().replace(/^0+(?=\d)/, '');
-      const listRes = await fetch(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(`set.id:${setId}`)}&pageSize=250`, { headers });
-      if (!listRes.ok) return null;
-      const listJson = await listRes.json();
-      const match = (listJson.data || []).find(c => String(c.number).trim().replace(/^0+(?=\d)/, '') === target);
-      if (!match || !match.cardmarket || !match.cardmarket.prices) return null;
-      return { prices: match.cardmarket.prices, updatedAt: match.cardmarket.updatedAt || null };
-    } catch (err) {
-      console.error('pokemontcg.io-opzoeking mislukt:', err);
-      return null;
-    }
-  }
-
-  // Cardmarket onderscheidt in de gratis data feitelijk alleen "normaal" en
-  // "reverse holo" — subtielere varianten (Holo zonder reverse, 1st Edition,
-  // Alternate Art, etc.) vallen terug op de normale trendprijs, bij gebrek aan
-  // fijnmaziger brondata.
-  // Zet de "updatedAt" van pokemontcg.io om in een grove, makkelijker te
-  // beoordelen leeftijdscategorie in plaats van een kale datum.
+  // Cardmarket-data via TCGdex onderscheidt "normaal" en "holo" (dat dekt ook
+  // reverse holo) — subtielere varianten (1st Edition, Alternate Art, etc.)
+  // vallen terug op de normale trendprijs, bij gebrek aan fijnmaziger brondata.
+  // Zet de "updatedAt" om in een grove, makkelijker te beoordelen
+  // leeftijdscategorie in plaats van een kale datum.
   function priceFreshnessLabel(updatedAt) {
     if (!updatedAt) return 'bijwerkdatum onbekend';
     const d = new Date(String(updatedAt).replace(/\//g, '-'));
@@ -3527,7 +3625,7 @@
   }
   // Voor een totaal over meerdere exemplaren: de "zwakste schakel" (oudste
   // brondatum) bepaalt de kleur, zodat je altijd weet dat er íéts verouderds
-  // in dat totaal zit als dat zo is.
+  // in dat totaal zit as dat zo is.
   function oldestFreshnessDate(instances) {
     const dates = instances.map(i => i.prijs_bron_datum).filter(Boolean);
     if (dates.length === 0) return null;
@@ -3540,14 +3638,38 @@
     });
   }
 
-  function pickPokemonTcgPrice(prices, versie) {
+  // Een waarde van precies 0 uit Cardmarket betekent in de praktijk "geen
+  // data", niet "gratis" — die moet dus ook worden overgeslagen, niet alleen
+  // null/undefined (de ?? operator vangt 0 niet af, vandaar deze helper).
+  function firstPositive(...values) {
+    for (const v of values) {
+      if (typeof v === 'number' && v > 0) return v;
+    }
+    return null;
+  }
+
+  function pickTcgdexPrice(prices, versie) {
     if (!prices) return null;
     const v = (versie || '').toLowerCase();
-    if (v.includes('reverse')) {
-      const p = prices.reverseHoloTrend ?? prices.reverseHoloSell;
+    const holoPrice = firstPositive(prices['trend-holo'], prices['avg-holo']);
+    const normalPrice = firstPositive(prices.trend, prices.avg);
+    // Voorkeur voor de gekozen versie, maar val terug op de andere variant
+    // als die geen data heeft — beter een reëel bedrag dan niets, dit komt
+    // vaak voor bij secret rares/full arts die maar op één manier bestaan.
+    if (v.includes('holo')) return holoPrice != null ? holoPrice : normalPrice;
+    return normalPrice != null ? normalPrice : holoPrice;
+  }
+
+  // Alleen ter info wanneer er geen Cardmarket-data is — nooit gebruikt om
+  // de waarde automatisch te vullen (andere markt, andere munteenheid).
+  function pickTcgdexUsdPrice(tcgplayer, versie) {
+    if (!tcgplayer) return null;
+    const v = (versie || '').toLowerCase();
+    if (v.includes('holo')) {
+      const p = firstPositive(tcgplayer['market-holo'], tcgplayer['market-reverse'], tcgplayer['mid-holo']);
       if (p != null) return p;
     }
-    return prices.trendPrice ?? prices.averageSellPrice ?? null;
+    return firstPositive(tcgplayer.market, tcgplayer.mid);
   }
 
   const pendingPriceFetchIds = new Set(); // instanceId's waarvoor nu een prijs wordt opgezocht (voor UI-indicatie)
@@ -3565,18 +3687,35 @@
       if (!inst || !inst.set_naam || !inst.kaartnummer) return { status: 'missing-data' };
       pendingPriceFetchIds.add(instId);
       try {
-        const result = await fetchPokemonTcgCardmarketPrices(inst.set_naam, inst.kaartnummer);
-        const price = result ? pickPokemonTcgPrice(result.prices, inst.versie) : null;
-        if (price == null) return { status: 'not-found' };
+        const pricing = await fetchTcgdexPricing(inst.set_naam, inst.kaartnummer);
+        const price = pricing ? pickTcgdexPrice(pricing.cardmarket, inst.versie) : null;
+        if (price == null) {
+          // Geen Cardmarket (EU/EUR) prijs — nooit automatisch TCGplayer
+          // (VS/USD) gebruiken, wel ter info teruggeven als die er wél is.
+          const usdPrice = pricing ? pickTcgdexUsdPrice(pricing.tcgplayer, inst.versie) : null;
+          if (usdPrice != null) return { status: 'only-us', usdPrice };
+          return { status: 'not-found' };
+        }
+        const updatedAt = pricing.cardmarket.updated || null;
+        // Is er een handmatig ingevulde prijs, en is de online brondata niet
+        // aantoonbaar recenter dan die handmatige invoer? Dan laten we 'm
+        // met rust — jouw eigen invoer wint bij twijfel.
+        if (inst.prijs_handmatig_datum) {
+          const manualDate = new Date(inst.prijs_handmatig_datum);
+          const onlineDate = updatedAt ? new Date(String(updatedAt).replace(/\//g, '-')) : null;
+          const onlineIsNewer = onlineDate && !isNaN(onlineDate.getTime()) && onlineDate > manualDate;
+          if (!onlineIsNewer) return { status: 'kept-manual' };
+        }
         const res = await fetch(instRestUrl(`?id=eq.${instId}`), {
           method: 'PATCH',
           headers: authHeaders({ 'Prefer': 'return=minimal' }),
-          body: JSON.stringify({ waarde: price, prijs_bron_datum: result.updatedAt || null })
+          body: JSON.stringify({ waarde: price, prijs_bron_datum: updatedAt, prijs_handmatig_datum: null })
         });
         if (!res.ok) throw new Error(await res.text());
         inst.waarde = price;
-        inst.prijs_bron_datum = result.updatedAt || null;
-        return { status: 'found', price, updatedAt: result.updatedAt };
+        inst.prijs_bron_datum = updatedAt;
+        inst.prijs_handmatig_datum = null;
+        return { status: 'found', price, updatedAt };
       } catch (err) {
         console.error('Kon opgehaalde marktprijs niet opslaan:', err);
         return { status: 'error' };
@@ -3658,6 +3797,12 @@
       iWaarde.value = formatValue(inst.waarde);
       status.innerHTML = priceFreshnessDotHtml(result.updatedAt) + 'Marktprijs gevonden en ingevuld ✓ — check bij twijfel zelf even cardmarket.com.';
       status.className = 'tcgdex-found';
+    } else if (result.status === 'kept-manual') {
+      status.textContent = '🔒 Je eigen ingevulde prijs is niet ouder dan de online brondata — niet overschreven.';
+      status.className = '';
+    } else if (result.status === 'only-us') {
+      status.textContent = `🇺🇸 Geen Cardmarket (EU)-prijs gevonden — wel een TCGplayer (VS)-prijs: $${result.usdPrice.toFixed(2)}. Niet automatisch overgenomen (andere markt/munt); vul zelf iets in als je dat toch wilt gebruiken.`;
+      status.className = 'tcgdex-notfound';
     } else if (result.status === 'not-found') {
       status.textContent = 'Geen prijs gevonden voor deze set/kaartnummer/versie.';
       status.className = 'tcgdex-notfound';
@@ -3884,7 +4029,7 @@
   });
   document.getElementById('highValueCloseBtn').addEventListener('click', () => highValueModal.classList.remove('open'));
   document.getElementById('highValueDoneBtn').addEventListener('click', () => highValueModal.classList.remove('open'));
-  highValueModal.addEventListener('click', (e) => { if (e.target === highValueModal) highValueModal.classList.remove('open'); });
+  wireOverlayClickToClose(highValueModal, () => highValueModal.classList.remove('open'));
 
   document.getElementById('highValuePrintBtn').addEventListener('click', () => {
     const threshold = parseMoneyInput(highValueThresholdInput.value) || 0;
@@ -4016,6 +4161,108 @@
     startBtn.disabled = false;
     startBtn.textContent = "🔄 Foto's & prijzen bijwerken voor hele verzameling";
     statusText.textContent += ' — Klaar!';
+  });
+
+  // ---------- Kaarten zonder ooit opgehaalde prijs ----------
+  let noPriceLastList = [];
+
+  function computeNoPriceList() {
+    return allInstances
+      .filter(i => !i.prijs_bron_datum)
+      .map(inst => ({
+        inst,
+        naam: nameForInstance(inst),
+        categorie: categorieLabelForInstance(inst),
+        details: [inst.serie, inst.set_naam, inst.kaartnummer ? `#${inst.kaartnummer}` : ''].filter(Boolean).join(' · '),
+        eligible: !!(inst.set_naam && inst.kaartnummer)
+      }))
+      .sort((a, b) => a.naam.localeCompare(b.naam, 'nl'));
+  }
+
+  function renderNoPriceList() {
+    const rows = computeNoPriceList();
+    noPriceLastList = rows;
+    const eligibleCount = rows.filter(r => r.eligible).length;
+    const summary = document.getElementById('noPriceSummary');
+    const fetchAllBtn = document.getElementById('noPriceFetchAllBtn');
+    summary.textContent = `${rows.length} kaartexemplaren zonder ooit opgehaalde prijs — waarvan ${eligibleCount} met set + kaartnummer bekend (dus op te halen).`;
+    fetchAllBtn.style.display = eligibleCount > 0 ? '' : 'none';
+    document.getElementById('noPriceTbody').innerHTML = rows.map(r => `
+      <tr>
+        <td>${r.naam}</td>
+        <td>${r.categorie}</td>
+        <td>${r.details || '—'}</td>
+        <td>${r.eligible ? 'nog niet opgehaald' : 'set/kaartnummer ontbreekt'}</td>
+      </tr>`).join('');
+  }
+
+  document.getElementById('noPriceOverviewBtn').addEventListener('click', () => {
+    document.getElementById('noPriceModal').classList.add('open');
+    renderNoPriceList();
+  });
+  document.getElementById('noPriceCloseBtn').addEventListener('click', () => document.getElementById('noPriceModal').classList.remove('open'));
+  document.getElementById('noPriceDoneBtn').addEventListener('click', () => document.getElementById('noPriceModal').classList.remove('open'));
+  wireOverlayClickToClose(document.getElementById('noPriceModal'), () => document.getElementById('noPriceModal').classList.remove('open'));
+
+  // ---------- Kaarten met waarde € 0,00 ----------
+  function renderZeroValueList() {
+    const rows = allInstances
+      .filter(i => parseFloat(i.waarde) === 0)
+      .map(inst => ({
+        inst,
+        naam: nameForInstance(inst),
+        categorie: categorieLabelForInstance(inst),
+        details: [inst.serie, inst.set_naam, inst.kaartnummer ? `#${inst.kaartnummer}` : ''].filter(Boolean).join(' · ')
+      }))
+      .sort((a, b) => a.naam.localeCompare(b.naam, 'nl'));
+    document.getElementById('zeroValueSummary').textContent = `${rows.length} kaartexemplaren met waarde € 0,00.`;
+    document.getElementById('zeroValueTbody').innerHTML = rows.map(r => `
+      <tr data-inst-id="${r.inst.id}" data-parent-type="${r.inst.parent_type}" data-parent-id="${r.inst.parent_id}">
+        <td>${r.naam}</td>
+        <td>${r.categorie}</td>
+        <td>${r.details || '—'}</td>
+        <td>${r.inst.versie || '—'}</td>
+      </tr>`).join('');
+    document.getElementById('zeroValueTbody').querySelectorAll('tr').forEach(row => {
+      row.addEventListener('click', () => {
+        document.getElementById('zeroValueModal').classList.remove('open');
+        openInstanceModal(row.dataset.parentType, row.dataset.parentId, row.dataset.instId);
+      });
+    });
+  }
+  document.getElementById('zeroValueOverviewBtn').addEventListener('click', () => {
+    document.getElementById('zeroValueModal').classList.add('open');
+    renderZeroValueList();
+  });
+  document.getElementById('zeroValueCloseBtn').addEventListener('click', () => document.getElementById('zeroValueModal').classList.remove('open'));
+  document.getElementById('zeroValueDoneBtn').addEventListener('click', () => document.getElementById('zeroValueModal').classList.remove('open'));
+  wireOverlayClickToClose(document.getElementById('zeroValueModal'), () => document.getElementById('zeroValueModal').classList.remove('open'));
+
+  document.getElementById('noPriceFetchAllBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('noPriceFetchAllBtn');
+    const progressWrap = document.getElementById('noPriceProgressWrap');
+    const barFill = document.getElementById('noPriceBarFill');
+    const statusText = document.getElementById('noPriceStatusText');
+    const eligible = noPriceLastList.filter(r => r.eligible);
+    if (eligible.length === 0) return;
+    btn.disabled = true;
+    progressWrap.style.display = '';
+    barFill.style.width = '0%';
+    let processed = 0, found = 0;
+    for (const r of eligible) {
+      const result = await tryAutoFetchInstancePrice(r.inst.id, true);
+      if (result.status === 'found') found++;
+      processed++;
+      const pct = Math.round((processed / eligible.length) * 100);
+      barFill.style.width = pct + '%';
+      statusText.textContent = `${processed} / ${eligible.length} verwerkt (${pct}%) — ${found} prijs${found === 1 ? '' : 'en'} gevonden`;
+    }
+    renderGrid();
+    renderExtraGrid();
+    updateTotalsBar();
+    btn.disabled = false;
+    statusText.textContent += ' — Klaar!';
+    renderNoPriceList(); // lijst bijwerken: gevonden kaarten vallen er nu vanzelf uit
   });
 
   (function init() {
