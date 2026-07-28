@@ -352,7 +352,7 @@
   .so-checks { display: flex; flex-direction: column; gap: 3px; margin-top: 4px; }
   .so-check { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #444; cursor: pointer; }
   .so-check input[type="checkbox"] { flex-shrink: 0; }
-  .so-check span[data-price-row] { color: #1d7a4c; font-weight: 600; }
+  .so-check span[data-price-row] { color: #1d7a4c; font-weight: 600; margin-left: auto; }
 
   .grid { display: grid; grid-template-columns: repeat(auto-fill, 36mm); gap: 4mm; justify-content: center; max-width: 1400px; margin: 0 auto; }
   .card {
@@ -1434,7 +1434,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '2.52';
+  const APP_VERSION = '2.53';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -4882,6 +4882,7 @@
     return allSetsFlat;
   });
   soSetInput.addEventListener('change', () => {
+    soSerieInput.value = '';
     const serie = findSerieForSetName(soSetInput.value);
     if (serie) soSerieInput.value = serie;
     loadSetOverview();
@@ -5038,10 +5039,16 @@
     }
   }
 
+  // Voorloopnullen negeren (TCGdex geeft soms "034", handmatig ingevoerde
+  // exemplaren hebben vaak "34") — anders mist het vinkje ten onrechte.
+  function normalizeKaartnummer(n) {
+    return String(n || '').trim().replace(/^0+(?=\d)/, '');
+  }
   function findInstanceForSetCard(row, versie) {
     const v = versie.toLowerCase();
-    return allInstances.find(i => (i.set_naam || '') === row.set_naam && String(i.kaartnummer || '') === String(row.kaartnummer) &&
-      (i.versie || '').toLowerCase() === v);
+    const targetNum = normalizeKaartnummer(row.kaartnummer);
+    return allInstances.find(i => (i.set_naam || '').trim().toLowerCase() === (row.set_naam || '').trim().toLowerCase() &&
+      normalizeKaartnummer(i.kaartnummer) === targetNum && (i.versie || '').toLowerCase() === v);
   }
 
   function renderSetOverviewGrid() {
@@ -5059,17 +5066,17 @@
       const checks = [];
       if (row.heeft_normaal) {
         const inst = findInstanceForSetCard(row, 'Normaal');
-        const prijsHtml = row.prijs_normaal != null ? priceFreshnessDotHtml(row.prijs_updated) + `(&euro; ${fmtEuro(row.prijs_normaal)})` : '';
+        const prijsHtml = row.prijs_normaal != null ? priceFreshnessDotHtml(row.prijs_updated) + fmtEuro(row.prijs_normaal) : '';
         checks.push(`<label class="so-check"><input type="checkbox" data-row-id="${row.id}" data-versie="Normaal" ${inst ? 'checked' : ''}> Normaal <span data-price-row="${row.id}" data-variant="normaal">${prijsHtml}</span></label>`);
       }
       if (row.heeft_holo) {
         const inst = findInstanceForSetCard(row, 'Holo');
-        const prijsHtml = row.prijs_holo != null ? priceFreshnessDotHtml(row.prijs_updated) + `(&euro; ${fmtEuro(row.prijs_holo)})` : '';
+        const prijsHtml = row.prijs_holo != null ? priceFreshnessDotHtml(row.prijs_updated) + fmtEuro(row.prijs_holo) : '';
         checks.push(`<label class="so-check"><input type="checkbox" data-row-id="${row.id}" data-versie="Holo" ${inst ? 'checked' : ''}> Holo <span data-price-row="${row.id}" data-variant="holo">${prijsHtml}</span></label>`);
       }
       if (row.heeft_reverse) {
         const inst = findInstanceForSetCard(row, 'Reverse Holo');
-        const prijsHtml = row.prijs_reverse != null ? priceFreshnessDotHtml(row.prijs_updated) + `(&euro; ${fmtEuro(row.prijs_reverse)})` : '';
+        const prijsHtml = row.prijs_reverse != null ? priceFreshnessDotHtml(row.prijs_updated) + fmtEuro(row.prijs_reverse) : '';
         checks.push(`<label class="so-check"><input type="checkbox" data-row-id="${row.id}" data-versie="Reverse Holo" ${inst ? 'checked' : ''}> Reverse Holo <span data-price-row="${row.id}" data-variant="reverse">${prijsHtml}</span></label>`);
       }
       return `
@@ -5357,14 +5364,14 @@
           patch.prijs_normaal = p;
           row.prijs_normaal = p;
           const el = document.querySelector(`[data-price-row="${row.id}"][data-variant="normaal"]`);
-          if (el) el.innerHTML = p != null ? priceFreshnessDotHtml(nu) + `(&euro; ${fmtEuro(p)})` : '(onbekend)';
+          if (el) el.innerHTML = p != null ? priceFreshnessDotHtml(nu) + fmtEuro(p) : '(onbekend)';
         }
         if (row.heeft_holo) {
           const p = pickTcgdexPrice(cm, 'Holo');
           patch.prijs_holo = p;
           row.prijs_holo = p;
           const el = document.querySelector(`[data-price-row="${row.id}"][data-variant="holo"]`);
-          if (el) el.innerHTML = p != null ? priceFreshnessDotHtml(nu) + `(&euro; ${fmtEuro(p)})` : '(onbekend)';
+          if (el) el.innerHTML = p != null ? priceFreshnessDotHtml(nu) + fmtEuro(p) : '(onbekend)';
         }
         if (row.heeft_reverse) {
           // TCGdex kent geen apart "reverse"-prijsveld — zelfde holo-prijs als benadering.
@@ -5372,7 +5379,7 @@
           patch.prijs_reverse = p;
           row.prijs_reverse = p;
           const el = document.querySelector(`[data-price-row="${row.id}"][data-variant="reverse"]`);
-          if (el) el.innerHTML = p != null ? priceFreshnessDotHtml(nu) + `(&euro; ${fmtEuro(p)})` : '(onbekend)';
+          if (el) el.innerHTML = p != null ? priceFreshnessDotHtml(nu) + fmtEuro(p) : '(onbekend)';
         }
         row.prijs_updated = nu;
         await fetch(setKaartenRestUrl(`?id=eq.${row.id}`), {
