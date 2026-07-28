@@ -350,9 +350,16 @@
   .so-nummer { color: #888; font-size: 11px; }
   .so-prices { font-size: 11px; color: #1d7a4c; margin-top: 4px; display: flex; flex-direction: column; gap: 1px; }
   .so-checks { display: flex; flex-direction: column; gap: 3px; margin-top: 4px; }
-  .so-check { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #444; cursor: pointer; }
+  .so-check { display: grid; grid-template-columns: auto 1fr auto; align-items: center; column-gap: 5px; font-size: 11px; color: #444; cursor: pointer; }
   .so-check input[type="checkbox"] { flex-shrink: 0; }
-  .so-check span[data-price-row] { color: #1d7a4c; font-weight: 600; margin-left: auto; }
+  .so-check-price { color: #1d7a4c; font-weight: 600; text-align: right; white-space: nowrap; }
+  .so-stepper { display: flex; align-items: center; gap: 6px; margin: 2px 0 0 20px; }
+  .so-stepper-btn {
+    width: 20px; height: 20px; border-radius: 5px; border: 1px solid #ccc; background: #f5f5f5;
+    color: #444; font-size: 13px; line-height: 1; cursor: pointer; padding: 0;
+  }
+  .so-stepper-btn:hover { background: #e8e8e8; }
+  .so-stepper-count { font-size: 12px; font-weight: 700; color: #2c3e50; min-width: 14px; text-align: center; }
 
   .grid { display: grid; grid-template-columns: repeat(auto-fill, 36mm); gap: 4mm; justify-content: center; max-width: 1400px; margin: 0 auto; }
   .card {
@@ -1434,7 +1441,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '2.53';
+  const APP_VERSION = '2.56';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -2045,18 +2052,9 @@
     grid3.innerHTML = rows3.map(row => {
       const thumbHtml = row.afbeelding ? `<img src="${row.afbeelding}/low.png" alt="">` : `<span class="placeholder-mark">🎴</span>`;
       const checks = [];
-      if (row.heeft_normaal) {
-        const inst = findInstanceForSetCard(row, 'Normaal');
-        checks.push(`<label class="so-check"><input type="checkbox" data-row-id="${row.id}" data-versie="Normaal" ${inst ? 'checked' : ''}> Normaal</label>`);
-      }
-      if (row.heeft_holo) {
-        const inst = findInstanceForSetCard(row, 'Holo');
-        checks.push(`<label class="so-check"><input type="checkbox" data-row-id="${row.id}" data-versie="Holo" ${inst ? 'checked' : ''}> Holo</label>`);
-      }
-      if (row.heeft_reverse) {
-        const inst = findInstanceForSetCard(row, 'Reverse Holo');
-        checks.push(`<label class="so-check"><input type="checkbox" data-row-id="${row.id}" data-versie="Reverse Holo" ${inst ? 'checked' : ''}> Reverse Holo</label>`);
-      }
+      if (row.heeft_normaal) checks.push(setCheckRowHtml(row, 'Normaal', null, null));
+      if (row.heeft_holo) checks.push(setCheckRowHtml(row, 'Holo', null, null));
+      if (row.heeft_reverse) checks.push(setCheckRowHtml(row, 'Reverse Holo', null, null));
       return `
         <div class="so-card" data-row-id="${row.id}">
           <div class="so-thumb">${thumbHtml}</div>
@@ -2075,6 +2073,7 @@
         else onUncheckSetCard(row, cb.dataset.versie, cb);
       });
     });
+    wireStepperButtons(grid3);
   }
 
   // ---------- Foto-lightbox: grote weergave + gegevens bij tikken op de foto ----------
@@ -4881,6 +4880,9 @@
     if (merged.length > 0) return merged.sort((a, b) => a.localeCompare(b, 'nl'));
     return allSetsFlat;
   });
+  // Zodra je begint te typen in Set, klopt de eventueel nog getoonde serie
+  // meteen niet meer meer — dus die alvast leegmaken (niet pas bij blur/change).
+  soSetInput.addEventListener('input', () => { soSerieInput.value = ''; });
   soSetInput.addEventListener('change', () => {
     soSerieInput.value = '';
     const serie = findSerieForSetName(soSetInput.value);
@@ -4980,6 +4982,58 @@
     return { parentType: EXTRA_PARENT_TYPE, parentId: item.id };
   }
 
+  function storedRowPrice(row, versie) {
+    if (versie === 'Normaal') return row.prijs_normaal;
+    if (versie === 'Holo') return row.prijs_holo;
+    if (versie === 'Reverse Holo') return row.prijs_reverse;
+    return null;
+  }
+
+  async function onAdjustAantal(instId, delta) {
+    const inst = getInstance(instId);
+    if (!inst) return;
+    const huidigAantal = parseInt(inst.aantal) || 1;
+    const nieuwAantal = huidigAantal + delta;
+    if (nieuwAantal <= 0) {
+      const wantsDelete = confirm('Dit haalt het laatste exemplaar van deze versie weg — ook echt verwijderen?\n\nKlik op Annuleren om het aantal op 1 te laten staan.');
+      if (!wantsDelete) return;
+      try {
+        const res = await fetch(instRestUrl(`?id=eq.${instId}`), { method: 'DELETE', headers: authHeaders() });
+        if (!res.ok) throw new Error(await res.text());
+        allInstances = allInstances.filter(i => String(i.id) !== String(instId));
+        refreshParentUI(inst.parent_type, inst.parent_id);
+        document.querySelectorAll(`[data-inst-id="${instId}"]`).forEach(el => el.remove());
+        document.querySelectorAll(`input[type="checkbox"][data-inst-checkbox-id="${instId}"]`).forEach(cb => { cb.checked = false; });
+      } catch (err) {
+        alert('Kon kaartexemplaar niet verwijderen: ' + err.message);
+      }
+      return;
+    }
+    try {
+      const res = await fetch(instRestUrl(`?id=eq.${instId}`), {
+        method: 'PATCH',
+        headers: authHeaders({ 'Prefer': 'return=minimal' }),
+        body: JSON.stringify({ aantal: nieuwAantal })
+      });
+      if (!res.ok) throw new Error(await res.text());
+      inst.aantal = nieuwAantal;
+      refreshParentUI(inst.parent_type, inst.parent_id);
+      document.querySelectorAll(`[data-inst-id="${instId}"] .so-stepper-count`).forEach(el => { el.textContent = nieuwAantal; });
+    } catch (err) {
+      alert('Kon aantal niet aanpassen: ' + err.message);
+    }
+  }
+
+  function wireStepperButtons(container) {
+    container.querySelectorAll('.so-stepper-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const wrap = btn.closest('.so-stepper');
+        onAdjustAantal(wrap.dataset.instId, parseInt(btn.dataset.delta, 10));
+      });
+    });
+  }
+
   async function onCheckSetCard(row, versie, checkboxEl) {
     checkboxEl.disabled = true;
     try {
@@ -4989,10 +5043,13 @@
         checkboxEl.checked = false;
         return;
       }
+      const bekendePrijs = storedRowPrice(row, versie);
       const payload = {
         parent_type: parent.parentType, parent_id: parent.parentId,
         serie: row.serie, set_naam: row.set_naam, versie, kaartnummer: row.kaartnummer,
-        waarde: null, aantal: 1
+        waarde: bekendePrijs != null ? bekendePrijs : null,
+        prijs_bron_datum: bekendePrijs != null ? row.prijs_updated : null,
+        aantal: 1
       };
       const res = await fetch(instRestUrl(), {
         method: 'POST',
@@ -5002,13 +5059,14 @@
       if (!res.ok) throw new Error(await res.text());
       const created = await res.json();
       allInstances.push(created[0]);
-      // Op de achtergrond meteen een foto en prijs proberen te vinden, net als
-      // bij een handmatig toegevoegd exemplaar.
+      // Op de achtergrond meteen een foto proberen te vinden, net als bij een
+      // handmatig toegevoegd exemplaar. Prijs alleen apart opzoeken als de set
+      // zelf nog geen (ververste) prijs had.
       tryAutoFetchGroupPhoto({
         parentType: parent.parentType, parentId: parent.parentId,
         serie: row.serie, set_naam: row.set_naam, kaartnummer: row.kaartnummer
       }, false, true);
-      tryAutoFetchInstancePrice(created[0].id, true);
+      if (bekendePrijs == null) tryAutoFetchInstancePrice(created[0].id, true);
       refreshParentUI(parent.parentType, parent.parentId);
     } catch (err) {
       alert('Kon kaartexemplaar niet aanmaken: ' + err.message);
@@ -5051,6 +5109,22 @@
       normalizeKaartnummer(i.kaartnummer) === targetNum && (i.versie || '').toLowerCase() === v);
   }
 
+  function setCheckRowHtml(row, versie, dataVariant, priceHtml) {
+    const inst = findInstanceForSetCard(row, versie);
+    const checkboxAttrs = `data-row-id="${row.id}" data-versie="${versie}"` + (inst ? ` data-inst-checkbox-id="${inst.id}"` : '');
+    const priceSpan = dataVariant
+      ? `<span class="so-check-price" data-price-row="${row.id}" data-variant="${dataVariant}">${priceHtml || ''}</span>`
+      : '';
+    const stepper = inst
+      ? `<div class="so-stepper" data-inst-id="${inst.id}">
+           <button type="button" class="so-stepper-btn" data-delta="-1">−</button>
+           <span class="so-stepper-count">${inst.aantal || 1}</span>
+           <button type="button" class="so-stepper-btn" data-delta="1">+</button>
+         </div>`
+      : '';
+    return `<label class="so-check"><input type="checkbox" ${checkboxAttrs} ${inst ? 'checked' : ''}> <span>${versie}</span>${priceSpan}</label>${stepper}`;
+  }
+
   function renderSetOverviewGrid() {
     const grid2 = document.getElementById('soGrid');
     updateSetGauge();
@@ -5065,19 +5139,16 @@
       const thumbHtml = row.afbeelding ? `<img src="${row.afbeelding}/low.png" alt="">` : `<span class="placeholder-mark">🎴</span>`;
       const checks = [];
       if (row.heeft_normaal) {
-        const inst = findInstanceForSetCard(row, 'Normaal');
         const prijsHtml = row.prijs_normaal != null ? priceFreshnessDotHtml(row.prijs_updated) + fmtEuro(row.prijs_normaal) : '';
-        checks.push(`<label class="so-check"><input type="checkbox" data-row-id="${row.id}" data-versie="Normaal" ${inst ? 'checked' : ''}> Normaal <span data-price-row="${row.id}" data-variant="normaal">${prijsHtml}</span></label>`);
+        checks.push(setCheckRowHtml(row, 'Normaal', 'normaal', prijsHtml));
       }
       if (row.heeft_holo) {
-        const inst = findInstanceForSetCard(row, 'Holo');
         const prijsHtml = row.prijs_holo != null ? priceFreshnessDotHtml(row.prijs_updated) + fmtEuro(row.prijs_holo) : '';
-        checks.push(`<label class="so-check"><input type="checkbox" data-row-id="${row.id}" data-versie="Holo" ${inst ? 'checked' : ''}> Holo <span data-price-row="${row.id}" data-variant="holo">${prijsHtml}</span></label>`);
+        checks.push(setCheckRowHtml(row, 'Holo', 'holo', prijsHtml));
       }
       if (row.heeft_reverse) {
-        const inst = findInstanceForSetCard(row, 'Reverse Holo');
         const prijsHtml = row.prijs_reverse != null ? priceFreshnessDotHtml(row.prijs_updated) + fmtEuro(row.prijs_reverse) : '';
-        checks.push(`<label class="so-check"><input type="checkbox" data-row-id="${row.id}" data-versie="Reverse Holo" ${inst ? 'checked' : ''}> Reverse Holo <span data-price-row="${row.id}" data-variant="reverse">${prijsHtml}</span></label>`);
+        checks.push(setCheckRowHtml(row, 'Reverse Holo', 'reverse', prijsHtml));
       }
       return `
         <div class="so-card" data-row-id="${row.id}">
@@ -5097,6 +5168,7 @@
         else onUncheckSetCard(row, cb.dataset.versie, cb);
       });
     });
+    wireStepperButtons(grid2);
   }
 
   // Haalt één set volledig op bij TCGdex en slaat 'm op in tcg_set_kaarten
