@@ -25,15 +25,15 @@
   }
   .toolbar-actions { margin-bottom: 4px; }
   .toolbar-sep { width: 1px; height: 24px; background: #ccc; display: inline-block; }
-  input#search, select#filterOwned, select#sortMode {
+  input#search, input#soSearchInput, input#apSearchInput, select#filterOwned, select#sortMode {
     padding: 10px 14px;
     border-radius: 8px;
     border: 1px solid #ccc;
     font-size: 15px;
   }
-  input#search { width: 240px; max-width: 100%; padding-right: 28px; box-sizing: border-box; }
+  input#search, input#soSearchInput, input#apSearchInput { width: 240px; max-width: 100%; padding-right: 28px; box-sizing: border-box; }
   .search-wrap { position: relative; display: inline-block; max-width: 90%; }
-  #searchClearBtn {
+  #searchClearBtn, #soSearchClearBtn, #apSearchClearBtn {
     display: none;
     position: absolute;
     right: 6px;
@@ -47,7 +47,8 @@
     padding: 2px 4px;
     cursor: pointer;
   }
-  #searchClearBtn:hover { color: #333; }
+  #searchClearBtn:hover, #soSearchClearBtn:hover, #apSearchClearBtn:hover { color: #333; }
+  .search-wrap.has-text #soSearchClearBtn, .search-wrap.has-text #apSearchClearBtn { display: block; }
   .search-wrap.has-text #searchClearBtn { display: block; }
   button {
     padding: 10px 16px;
@@ -311,16 +312,32 @@
 
   /* ---------- Serie/Set-overzicht ---------- */
   #soActionsRow { display: flex; gap: 8px; margin: 8px 0; flex-wrap: wrap; }
-  #soFetchSetBtn, #soLoadPricesBtn {
+  #soFetchSetBtn, #soLoadPricesBtn, #soFetchAllBtn, #soViewLogBtn, #soFetchMissingBtn, #soFetchSerieBtn {
     background: #457b9d; color: white; border: none; padding: 8px 12px; border-radius: 8px;
     font-size: 13px; font-weight: 600; cursor: pointer;
   }
-  #soFetchSetBtn:disabled, #soLoadPricesBtn:disabled { opacity: 0.6; cursor: default; }
-  #soProgressWrap { margin: 8px 0; }
-  #soBarTrack { width: 100%; height: 10px; border-radius: 6px; background: #eef1f4; overflow: hidden; margin-bottom: 6px; }
+  #soFetchAllBtn { background: #2c5d7a; }
+  #soFetchMissingBtn { background: #1d7a4c; }
+  #soFetchSerieBtn { background: #6a4c93; }
+  #soFetchSetBtn:disabled, #soLoadPricesBtn:disabled, #soFetchAllBtn:disabled, #soFetchMissingBtn:disabled, #soFetchSerieBtn:disabled { opacity: 0.6; cursor: default; }
+  #soLiveCounter { font-size: 12px; color: #333; font-weight: 600; margin-top: 4px; }
+  #soGaugeWrap { text-align: center; margin: 10px 0; }
+  #soGaugeLabel { font-weight: 700; color: #2c3e50; margin-top: -6px; font-size: 13px; }
+  .toolbar-so { flex-direction: column; align-items: stretch; max-width: 420px; margin-left: auto; margin-right: auto; }
+  .toolbar-so .field-with-picker { width: 100%; }
+  #soBulkToggleBtn {
+    background: none; border: none; color: #666; font-size: 12px; cursor: pointer;
+    padding: 4px 0; margin: 4px 0 0 0; display: block;
+  }
+  #soBulkPanel { border-top: 1px dashed #ccc; margin-top: 6px; padding-top: 8px; }
+  #soBulkActionsRow { display: flex; gap: 8px; flex-wrap: wrap; }
+  #soProgressWrap, #soAllProgressWrap { margin: 8px 0; }
+  #soBarTrack, #soAllBarTrack { width: 100%; height: 10px; border-radius: 6px; background: #eef1f4; overflow: hidden; margin-bottom: 6px; }
   #soBarFill { height: 100%; border-radius: 6px; background: #3ecf8e; width: 0%; transition: width 0.2s ease; }
-  #soStatusText { font-size: 12px; color: #444; }
+  #soAllBarFill { height: 100%; border-radius: 6px; background: #2c5d7a; width: 0%; transition: width 0.2s ease; }
+  #soStatusText, #soAllStatusText { font-size: 12px; color: #444; }
   #soStatus { font-size: 12px; color: #777; text-align: center; margin: 8px 0; }
+  #soGrid { display: grid; grid-template-columns: repeat(auto-fill, 36mm); gap: 4mm; justify-content: center; max-width: 1400px; margin: 0 auto; }
   .so-card {
     background: white; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.12); overflow: hidden;
     display: flex; flex-direction: column;
@@ -332,7 +349,10 @@
   .so-naam { font-weight: 700; color: #2c3e50; font-size: 12.5px; }
   .so-nummer { color: #888; font-size: 11px; }
   .so-prices { font-size: 11px; color: #1d7a4c; margin-top: 4px; display: flex; flex-direction: column; gap: 1px; }
-  .so-owned-badge { font-size: 10px; color: #1d7a4c; font-weight: 700; }
+  .so-checks { display: flex; flex-direction: column; gap: 3px; margin-top: 4px; }
+  .so-check { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #444; cursor: pointer; }
+  .so-check input[type="checkbox"] { flex-shrink: 0; }
+  .so-check span[data-price-row] { color: #1d7a4c; font-weight: 600; }
 
   .grid { display: grid; grid-template-columns: repeat(auto-fill, 36mm); gap: 4mm; justify-content: center; max-width: 1400px; margin: 0 auto; }
   .card {
@@ -533,6 +553,10 @@
 
   /* ---------- Hoge-waarde lijst ---------- */
   #highValueModal .modal-box { max-width: 480px; }
+  .modal-box-wide { max-width: 900px !important; }
+  #allPrintsStatus { font-size: 12px; color: #777; text-align: center; margin: 0 0 10px 0; }
+  #allPrintsGrid { display: grid; grid-template-columns: repeat(auto-fill, 44mm); gap: 4mm; justify-content: center; }
+  .ap-setlabel { font-size: 10px; color: #888; line-height: 1.25; white-space: normal; }
   #highValueThresholdRow { display: flex; align-items: center; gap: 6px; margin: 6px 0 4px 0; }
   #highValueThresholdRow .euro { font-weight: 700; }
   #highValueThresholdRow input { width: 110px; }
@@ -596,6 +620,17 @@
   #bulkPriceLogTable th { color: #666; font-weight: 600; }
   #bulkPriceLogTable tbody tr { cursor: pointer; }
   #bulkPriceLogTable tbody tr:hover { background: #eef5fa; }
+
+  /* ---------- Alle sets ophalen: logboek ---------- */
+  #soFetchLogModal .modal-box { max-width: 560px; }
+  #soFetchLogSummary { font-size: 12px; color: #666; margin: 6px 0 10px 0; text-align: center; }
+  #soFetchLogListWrap { max-height: 50vh; overflow-y: auto; }
+  #soFetchLogTable { width: 100%; border-collapse: collapse; font-size: 12px; }
+  #soFetchLogTable th, #soFetchLogTable td { padding: 5px 6px; border-bottom: 1px solid #eee; text-align: left; }
+  #soFetchLogTable th { color: #666; font-weight: 600; }
+  #soFetchLogTable tr.so-log-fout td { color: #b02a37; background: #fff5f5; }
+  #soFetchLogTable tr.so-log-ok td { color: #1d7a4c; }
+  #soViewLogBtn { background: #6c757d; }
 
   /* ---------- Foto-lightbox (grote weergave bij tikken op een kaartfoto) ---------- */
   #photoLightbox { z-index: 1150; }
@@ -722,6 +757,12 @@
     display: block; width: 100%; margin: 6px 0 12px 0; padding: 9px; border-radius: 8px;
     border: 1.5px dashed #b8860b; background: #fffaf0; color: #8a5a1a; font-weight: 600; font-size: 13px; cursor: pointer;
   }
+  .add-instance-link {
+    display: block; width: 100%; margin: 0 0 4px 0; padding: 4px; border: none; background: none;
+    color: #888; font-size: 12px; text-align: center; cursor: pointer; text-decoration: underline;
+  }
+  .detail-section { padding: 10px 0; border-bottom: 1px solid #eee; }
+  .detail-section:last-child { border-bottom: none; padding-bottom: 0; }
   #detailInstancesList, #extraInstancesList { display: flex; flex-direction: column; gap: 6px; }
   .instance-group { margin-bottom: 10px; }
   .instance-group-photo { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; flex-wrap: wrap; }
@@ -976,31 +1017,42 @@
 <div id="detailModal">
   <div id="detailModalInner">
     <button type="button" id="detailCloseBtn">&times;</button>
-    <div id="detailArtFrame">
-      <img id="detailImg" src="" alt="">
-    </div>
-    <div id="detailHeaderRow">
-      <span id="detailName"></span>
-      <span id="detailNum"></span>
-    </div>
-    <label class="detail-owned-row">
-      <input type="checkbox" id="detailOwnedCheck"> In bezit
-    </label>
-    <div id="detailOwnedHint"></div>
-    <div id="detailTotalValueLine">Totale waarde: &euro; 0,00</div>
-    <div id="detailImgActions">
-      <button type="button" id="detailUploadBtn">📷 Nieuwe foto</button>
-      <button type="button" id="detailEditCurrentBtn">✂️ Bewerk huidige foto</button>
-      <button type="button" id="detailResetImgBtn">Standaardafbeelding</button>
-    </div>
-    <p class="crop-hint">Tip: plak een gekopieerde afbeelding met Ctrl+V / Cmd+V terwijl dit venster open staat.</p>
 
-    <label class="field-label">Kaartexemplaren</label>
-    <div id="detailInstancesList"></div>
-    <button type="button" class="add-instance-btn" id="detailAddInstanceBtn">+ Exemplaar toevoegen</button>
+    <div class="detail-section">
+      <div id="detailArtFrame">
+        <img id="detailImg" src="" alt="">
+      </div>
+      <div id="detailHeaderRow">
+        <span id="detailName"></span>
+        <span id="detailNum"></span>
+      </div>
+      <div id="detailImgActions">
+        <button type="button" id="detailUploadBtn">📷 Nieuwe foto</button>
+        <button type="button" id="detailEditCurrentBtn">✂️ Bewerk huidige foto</button>
+        <button type="button" id="detailResetImgBtn">Standaardafbeelding</button>
+      </div>
+      <p class="crop-hint">Tip: plak een gekopieerde afbeelding met Ctrl+V / Cmd+V terwijl dit venster open staat.</p>
+    </div>
 
-    <label for="detailNotitie" class="detail-label">Notitie</label>
-    <textarea id="detailNotitie" rows="3" placeholder="Bijv. conditie, aankoopdatum, opmerkingen..."></textarea>
+    <div class="detail-section">
+      <label class="detail-owned-row">
+        <input type="checkbox" id="detailOwnedCheck"> In bezit
+      </label>
+      <div id="detailOwnedHint"></div>
+      <div id="detailTotalValueLine">Totale waarde: &euro; 0,00</div>
+    </div>
+
+    <div class="detail-section">
+      <label class="field-label">Kaartexemplaren</label>
+      <div id="detailInstancesList"></div>
+      <button type="button" class="add-instance-btn" id="detailAllPrintsBtn">🗂️ Alle bekende drukken</button>
+      <button type="button" class="add-instance-link" id="detailAddInstanceBtn">+ Handmatig toevoegen (kaart niet in de lijst?)</button>
+    </div>
+
+    <div class="detail-section" style="display:none;">
+      <label for="detailNotitie" class="detail-label">Notitie</label>
+      <textarea id="detailNotitie" rows="3" placeholder="Bijv. conditie, aankoopdatum, opmerkingen..."></textarea>
+    </div>
   </div>
 </div>
 <div id="status">Nog niet verbonden met Supabase. Klik op "⚙️ Supabase-instellingen" om te starten.</div>
@@ -1048,31 +1100,86 @@
 </div>
 
 <div id="setOverzichtSection" style="display:none;">
-  <div class="toolbar toolbar-browse">
-    <div class="field-with-picker" style="flex:1;min-width:160px;">
-      <input type="text" class="field-input" id="soSerieInput" placeholder="Kies een Serie...">
-      <div class="dropdown mini-picker" id="soSeriePicker">
-        <button type="button" class="dropdown-btn picker-btn" id="soSeriePickerBtn">▾</button>
-        <div class="dropdown-menu" id="soSerieMenu"></div>
-      </div>
-    </div>
-    <div class="field-with-picker" style="flex:1;min-width:160px;">
+  <div class="toolbar toolbar-so">
+    <div class="field-with-picker">
       <input type="text" class="field-input" id="soSetInput" placeholder="Kies een Set...">
       <div class="dropdown mini-picker" id="soSetPicker">
         <button type="button" class="dropdown-btn picker-btn" id="soSetPickerBtn">▾</button>
         <div class="dropdown-menu" id="soSetMenu"></div>
       </div>
     </div>
+    <div class="field-with-picker">
+      <input type="text" class="field-input" id="soSerieInput" placeholder="Serie (volgt automatisch)...">
+      <div class="dropdown mini-picker" id="soSeriePicker">
+        <button type="button" class="dropdown-btn picker-btn" id="soSeriePickerBtn">▾</button>
+        <div class="dropdown-menu" id="soSerieMenu"></div>
+      </div>
+    </div>
   </div>
   <div id="soActionsRow">
     <button type="button" id="soFetchSetBtn" style="display:none;">📥 Deze set ophalen</button>
-    <button type="button" id="soLoadPricesBtn" style="display:none;">💶 Prijzen laden</button>
+    <button type="button" id="soLoadPricesBtn" style="display:none;">🔄 Prijzen verversen</button>
+  </div>
+  <button type="button" id="soBulkToggleBtn">▸ Bulk-acties</button>
+  <div id="soBulkPanel" style="display:none;">
+    <div id="soBulkActionsRow">
+      <button type="button" id="soFetchAllBtn">📥 Alle sets ophalen</button>
+      <button type="button" id="soFetchMissingBtn">📥 Alleen ontbrekende sets ophalen</button>
+      <button type="button" id="soFetchSerieBtn">📥 Deze serie ophalen</button>
+      <button type="button" id="soViewLogBtn" style="display:none;">📋 Logboek ophalen</button>
+    </div>
+  </div>
+  <div id="soAllProgressWrap" style="display:none;">
+    <div id="soAllBarTrack"><div id="soAllBarFill"></div></div>
+    <div id="soAllStatusText"></div>
+    <div id="soLiveCounter"></div>
   </div>
   <div id="soProgressWrap" style="display:none;">
     <div id="soBarTrack"><div id="soBarFill"></div></div>
     <div id="soStatusText"></div>
   </div>
   <div id="soStatus"></div>
+
+  <div id="soGaugeWrap" style="display:none;">
+    <svg viewBox="0 0 200 115" width="140">
+      <path d="M 15 100 A 85 85 0 0 1 185 100" fill="none" stroke="#dfe4ea" stroke-width="16" stroke-linecap="round"/>
+      <path id="soGaugeArc" d="M 15 100 A 85 85 0 0 1 185 100" fill="none" stroke="#3ecf8e" stroke-width="16" stroke-linecap="round" pathLength="100" stroke-dasharray="0 100"/>
+      <text id="soGaugePct" x="100" y="90" text-anchor="middle" style="font-size:22px;font-weight:800;fill:#2c3e50;">0%</text>
+    </svg>
+    <div id="soGaugeLabel">Verzameld: 0 / 0</div>
+  </div>
+
+  <span class="search-wrap" id="soSearchWrap">
+    <input type="text" id="soSearchInput" placeholder="Zoek op naam of nummer...">
+    <button type="button" id="soSearchClearBtn" title="Wis zoekopdracht">&times;</button>
+  </span>
+
+  <select id="soFilterOwned" class="visually-hidden-select">
+    <option value="alle">Alle kaarten</option>
+    <option value="bezit">Alleen in bezit</option>
+    <option value="mis">Alleen ontbrekend</option>
+  </select>
+  <div class="dropdown" id="soFilterDropdown">
+    <button type="button" class="dropdown-btn" id="soFilterDropdownBtn">Filter: Alle <span class="caret">▾</span></button>
+    <div class="dropdown-menu" id="soFilterDropdownMenu">
+      <button type="button" class="dropdown-item" data-value="alle">Alle kaarten</button>
+      <button type="button" class="dropdown-item" data-value="bezit">Alleen in bezit</button>
+      <button type="button" class="dropdown-item" data-value="mis">Alleen ontbrekend</button>
+    </div>
+  </div>
+
+  <select id="soSortMode" class="visually-hidden-select">
+    <option value="nummer">Sorteer op nummer</option>
+    <option value="naam">Sorteer op naam</option>
+  </select>
+  <div class="dropdown" id="soSortDropdown">
+    <button type="button" class="dropdown-btn" id="soSortDropdownBtn">Sorteer: Nummer <span class="caret">▾</span></button>
+    <div class="dropdown-menu" id="soSortDropdownMenu">
+      <button type="button" class="dropdown-item" data-value="nummer">Nummer</button>
+      <button type="button" class="dropdown-item" data-value="naam">Naam</button>
+    </div>
+  </div>
+
   <div class="grid" id="soGrid"></div>
 </div>
 
@@ -1080,34 +1187,45 @@
   <div class="modal-box">
     <button type="button" class="modal-close" id="extraDetailCloseBtn">&times;</button>
     <h3 id="extraDetailTitle">Item</h3>
-    <div id="extraArtFrame">
-      <img id="extraDetailImg" src="" alt="" style="display:none;">
-      <span id="extraDetailImgPlaceholder" class="placeholder-mark">🎴</span>
-    </div>
-    <div id="extraImgActions">
-      <button type="button" id="extraUploadBtn">📷 Nieuwe foto</button>
-      <button type="button" id="extraEditCurrentBtn" style="display:none;">✂️ Bewerk huidige foto</button>
-      <button type="button" id="extraResetImgBtn" style="display:none;">Foto verwijderen</button>
-    </div>
-    <label class="field-label">Naam</label>
-    <input type="text" class="field-input" id="eNaam" placeholder="Bijv. Poké Ball">
-    <div id="eTypeRow">
-      <label class="field-label">Type</label>
-      <select class="field-input" id="eType">
-        <option value="item">Item</option>
-        <option value="tool">Tool</option>
-        <option value="supporter">Supporter</option>
-        <option value="stadium">Stadium</option>
-      </select>
-    </div>
-    <div id="extraTotalValueLine">Totale waarde: &euro; 0,00</div>
 
-    <label class="field-label">Kaartexemplaren</label>
-    <div id="extraInstancesList"></div>
-    <button type="button" class="add-instance-btn" id="extraAddInstanceBtn">+ Exemplaar toevoegen</button>
+    <div class="detail-section">
+      <div id="extraArtFrame">
+        <img id="extraDetailImg" src="" alt="" style="display:none;">
+        <span id="extraDetailImgPlaceholder" class="placeholder-mark">🎴</span>
+      </div>
+      <div id="extraImgActions">
+        <button type="button" id="extraUploadBtn">📷 Nieuwe foto</button>
+        <button type="button" id="extraEditCurrentBtn" style="display:none;">✂️ Bewerk huidige foto</button>
+        <button type="button" id="extraResetImgBtn" style="display:none;">Foto verwijderen</button>
+      </div>
+    </div>
 
-    <label class="field-label">Notitie</label>
-    <textarea class="field-textarea" id="eNotitie" rows="3" placeholder="Bijv. conditie, set, opmerkingen..."></textarea>
+    <div class="detail-section">
+      <label class="field-label">Naam</label>
+      <input type="text" class="field-input" id="eNaam" placeholder="Bijv. Poké Ball">
+      <div id="eTypeRow">
+        <label class="field-label">Type</label>
+        <select class="field-input" id="eType">
+          <option value="item">Item</option>
+          <option value="tool">Tool</option>
+          <option value="supporter">Supporter</option>
+          <option value="stadium">Stadium</option>
+        </select>
+      </div>
+      <div id="extraTotalValueLine">Totale waarde: &euro; 0,00</div>
+    </div>
+
+    <div class="detail-section">
+      <label class="field-label">Kaartexemplaren</label>
+      <div id="extraInstancesList"></div>
+      <button type="button" class="add-instance-btn" id="extraAllPrintsBtn">🗂️ Alle bekende drukken</button>
+      <button type="button" class="add-instance-link" id="extraAddInstanceBtn">+ Handmatig toevoegen (kaart niet in de lijst?)</button>
+    </div>
+
+    <div class="detail-section" style="display:none;">
+      <label class="field-label">Notitie</label>
+      <textarea class="field-textarea" id="eNotitie" rows="3" placeholder="Bijv. conditie, set, opmerkingen..."></textarea>
+    </div>
     <div class="modal-actions">
       <button type="button" class="btn-danger" id="extraDeleteBtn">Verwijderen</button>
       <button type="button" class="btn-secondary" id="extraDoneBtn">Sluiten</button>
@@ -1203,6 +1321,36 @@
 
 <div id="highValuePrintArea"></div>
 
+<div class="modal-overlay" id="allPrintsModal">
+  <div class="modal-box modal-box-wide">
+    <button type="button" class="modal-close" id="allPrintsCloseBtn">&times;</button>
+    <h3 id="allPrintsTitle">Alle bekende drukken</h3>
+    <div id="allPrintsStatus"></div>
+    <span class="search-wrap" id="apSearchWrap">
+      <input type="text" id="apSearchInput" placeholder="Zoek op kaartnummer...">
+      <button type="button" id="apSearchClearBtn" title="Wis zoekopdracht">&times;</button>
+    </span>
+    <div class="grid" id="allPrintsGrid"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="soFetchLogModal">
+  <div class="modal-box">
+    <button type="button" class="modal-close" id="soFetchLogCloseBtn">&times;</button>
+    <h3>Logboek "Alle sets ophalen"</h3>
+    <div id="soFetchLogSummary"></div>
+    <div id="soFetchLogListWrap">
+      <table id="soFetchLogTable">
+        <thead><tr><th>Set</th><th>Serie</th><th>Resultaat</th></tr></thead>
+        <tbody id="soFetchLogTbody"></tbody>
+      </table>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn-primary" id="soFetchLogDoneBtn">Sluiten</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="noPriceModal">
   <div class="modal-box">
     <button type="button" class="modal-close" id="noPriceCloseBtn">&times;</button>
@@ -1286,7 +1434,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '2.36-debug';
+  const APP_VERSION = '2.52';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -1367,23 +1515,35 @@
 
   // ---------- Series / set / versie reference data ----------
   const CARD_SERIES = {
-    'Base Series': ['Base Set', 'Jungle', 'Fossil', 'Base Set 2', 'Team Rocket', 'Gym Heroes', 'Gym Challenge'],
+    'Base Series': ['Base Set', 'Jungle', 'Fossil', 'Base Set 2', 'Team Rocket', 'Gym Heroes', 'Gym Challenge', 'Wizards Black Star Promos'],
     'Neo Series': ['Neo Genesis', 'Neo Discovery', 'Neo Revelation', 'Neo Destiny'],
     'Legendary Collection': ['Legendary Collection'],
     'e-Card Series': ['Expedition Base Set', 'Aquapolis', 'Skyridge'],
-    'EX Series': ['EX Ruby & Sapphire', 'EX Sandstorm', 'EX Dragon', 'EX Team Magma vs Team Aqua', 'EX Hidden Legends', 'EX FireRed & LeafGreen', 'EX Team Rocket Returns', 'EX Deoxys', 'EX Emerald', 'EX Unseen Forces', 'EX Delta Species', 'EX Legend Maker', 'EX Holon Phantoms', 'EX Crystal Guardians', 'EX Dragon Frontiers', 'EX Power Keepers'],
-    'Diamond & Pearl Series': ['Diamond & Pearl', 'Mysterious Treasures', 'Secret Wonders', 'Great Encounters', 'Majestic Dawn', 'Legends Awakened', 'Stormfront'],
+    'EX Series': ['EX Ruby & Sapphire', 'EX Sandstorm', 'EX Dragon', 'EX Team Magma vs Team Aqua', 'EX Hidden Legends', 'EX FireRed & LeafGreen', 'EX Team Rocket Returns', 'EX Deoxys', 'EX Emerald', 'EX Unseen Forces', 'EX Delta Species', 'EX Legend Maker', 'EX Holon Phantoms', 'EX Crystal Guardians', 'EX Dragon Frontiers', 'EX Power Keepers', 'Nintendo Black Star Promos'],
+    'Diamond & Pearl Series': ['Diamond & Pearl', 'Mysterious Treasures', 'Secret Wonders', 'Great Encounters', 'Majestic Dawn', 'Legends Awakened', 'Stormfront', 'DP Black Star Promos'],
     'Platinum Series': ['Platinum', 'Rising Rivals', 'Supreme Victors', 'Arceus'],
-    'HeartGold & SoulSilver Series': ['HeartGold & SoulSilver', 'Unleashed', 'Undaunted', 'Triumphant', 'Call of Legends'],
-    'Black & White Series': ['Black & White', 'Emerging Powers', 'Noble Victories', 'Next Destinies', 'Dark Explorers', 'Dragons Exalted', 'Boundaries Crossed', 'Plasma Storm', 'Plasma Freeze', 'Plasma Blast', 'Legendary Treasures'],
-    'XY Series': ['XY', 'Flashfire', 'Furious Fists', 'Phantom Forces', 'Primal Clash', 'Roaring Skies', 'Ancient Origins', 'BREAKthrough', 'BREAKpoint', 'Generations', 'Fates Collide', 'Steam Siege', 'Evolutions'],
-    'Sun & Moon Series': ['Sun & Moon', 'Guardians Rising', 'Burning Shadows', 'Shining Legends', 'Crimson Invasion', 'Ultra Prism', 'Forbidden Light', 'Celestial Storm', 'Dragon Majesty', 'Lost Thunder', 'Team Up', 'Detective Pikachu', 'Unbroken Bonds', 'Unified Minds', 'Hidden Fates', 'Cosmic Eclipse'],
-    'Sword & Shield Series': ['Sword & Shield', 'Rebel Clash', 'Darkness Ablaze', "Champion's Path", 'Vivid Voltage', 'Shining Fates', 'Battle Styles', 'Chilling Reign', 'Evolving Skies', 'Celebrations', 'Fusion Strike', 'Brilliant Stars', 'Astral Radiance', 'Pokémon GO', 'Lost Origin', 'Silver Tempest', 'Crown Zenith'],
+    'HeartGold & SoulSilver Series': ['HeartGold & SoulSilver', 'Unleashed', 'Undaunted', 'Triumphant', 'Call of Legends', 'HGSS Black Star Promos'],
+    'Black & White Series': ['Black & White', 'Emerging Powers', 'Noble Victories', 'Next Destinies', 'Dark Explorers', 'Dragons Exalted', 'Boundaries Crossed', 'Plasma Storm', 'Plasma Freeze', 'Plasma Blast', 'Legendary Treasures', 'BW Black Star Promos'],
+    'XY Series': ['XY', 'Flashfire', 'Furious Fists', 'Phantom Forces', 'Primal Clash', 'Roaring Skies', 'Ancient Origins', 'BREAKthrough', 'BREAKpoint', 'Generations', 'Fates Collide', 'Steam Siege', 'Evolutions', 'XY Black Star Promos'],
+    'Sun & Moon Series': ['Sun & Moon', 'Guardians Rising', 'Burning Shadows', 'Shining Legends', 'Crimson Invasion', 'Ultra Prism', 'Forbidden Light', 'Celestial Storm', 'Dragon Majesty', 'Lost Thunder', 'Team Up', 'Detective Pikachu', 'Unbroken Bonds', 'Unified Minds', 'Hidden Fates', 'Cosmic Eclipse', 'SM Black Star Promos'],
+    'Sword & Shield Series': ['Sword & Shield', 'Rebel Clash', 'Darkness Ablaze', "Champion's Path", 'Vivid Voltage', 'Shining Fates', 'Battle Styles', 'Chilling Reign', 'Evolving Skies', 'Celebrations', 'Fusion Strike', 'Brilliant Stars', 'Brilliant Stars Trainer Gallery', 'Astral Radiance', 'Astral Radiance Trainer Gallery', 'Pokémon GO', 'Lost Origin', 'Lost Origin Trainer Gallery', 'Silver Tempest', 'Silver Tempest Trainer Gallery', 'Crown Zenith', 'SWSH Black Star Promos'],
     'Scarlet & Violet Series': ['Scarlet & Violet', 'Paldea Evolved', 'Obsidian Flames', 'Scarlet & Violet 151', 'Paradox Rift', 'Paldean Fates', 'Temporal Forces', 'Twilight Masquerade', 'Shrouded Fable', 'Stellar Crown', 'Surging Sparks', 'Prismatic Evolutions', 'Journey Together', 'Destined Rivals', 'Scarlet & Violet Promos'],
-    'Mega Evolution Series': ['Mega Evolution', 'Mega Evolution 3 - Perfect Order', 'Mega Evolution 4 - Chaos Rising', 'Mega Evolution 5 - Pitch Black', 'Mega Evolution 5.5 - 30th Celebration'],
-    "Overig / promo's": ["McDonald's Collection", '25th Anniversary Celebrations: Classic Collection', 'Trainer Gallery', 'Pokémon TCG Classic', 'Black Star Promo', 'Overig promo']
+    'Mega Evolution Series': ['Mega Evolution', 'Perfect Order', 'Chaos Rising', 'Pitch Black', '30th Anniversary', 'MEP Black Star Promos'],
+    "Overig / promo's": [
+      "McDonald's Collection", "McDonald's Collection 2011", "McDonald's Collection 2012", "McDonald's Collection 2013",
+      "McDonald's Collection 2014", "McDonald's Collection 2015", "McDonald's Collection 2016", "McDonald's Collection 2017",
+      "McDonald's Collection 2018", "McDonald's Collection 2019", "McDonald's Collection 2021", "McDonald's Collection 2022",
+      "McDonald's Collection 2023", "McDonald's Collection 2024",
+      '25th Anniversary Celebrations: Classic Collection',
+      'Trainer Gallery',
+      'Pokémon TCG Classic', 'Pokémon TCG Classic (Charizard)', 'Pokémon TCG Classic (Blastoise)', 'Pokémon TCG Classic (Venusaur)',
+      'Black Star Promo', 'Overig promo'
+    ]
   };
-  const CARD_VERSIES = ['Normaal', 'Holo', 'Reverse Holo'];
+  const CARD_VERSIES = ['Normaal', 'Holo', 'Reverse Holo']; // al gesplitst voor handmatige invoer
+  // Bijzondere/zeldzame varianten — verschijnen als suggestie in hetzelfde vrije tekstveld
+  // (typ bijv. "master" om Master Ball Holo te zien), niet als aparte stap.
+  const CARD_VERSIES_OVERIG = ['Poké Ball Holo', 'Master Ball Holo', 'Confetti Holo', 'Cosmos Holo', 'Cracked Ice Holo', '1st Edition'];
 
   function setupFieldPicker(pickerId, btnId, menuId, inputEl, getOptions) {
     const dropdown = document.getElementById(pickerId);
@@ -1470,7 +1630,7 @@
     if (merged.length > 0) return merged.sort((a, b) => a.localeCompare(b, 'nl'));
     return allSetsFlat;
   });
-  setupFieldPicker('iVersiePicker', 'iVersiePickerBtn', 'iVersieMenu', iVersieInput, () => [...CARD_VERSIES].sort((a, b) => a.localeCompare(b, 'nl')));
+  setupFieldPicker('iVersiePicker', 'iVersiePickerBtn', 'iVersieMenu', iVersieInput, () => [...CARD_VERSIES, ...CARD_VERSIES_OVERIG].sort((a, b) => a.localeCompare(b, 'nl')));
 
   // Set bepaalt de Serie ondubbelzinnig, dus zodra een (h)erkende Set is
   // ingevuld, vullen we de Serie er automatisch bij in — dat scheelt een stap.
@@ -1784,6 +1944,138 @@
 
   document.getElementById('detailCloseBtn').addEventListener('click', closeDetailModal);
   wireOverlayClickToClose(detailModal, closeDetailModal);
+
+  // ---------- "Alle bekende drukken" (per Pokémon, over alle opgehaalde sets heen) ----------
+  const allPrintsModal = document.getElementById('allPrintsModal');
+  const apSearchInput = document.getElementById('apSearchInput');
+  const apSearchWrap = document.getElementById('apSearchWrap');
+  const apSearchClearBtn = document.getElementById('apSearchClearBtn');
+  apSearchInput.addEventListener('input', () => {
+    apSearchWrap.classList.toggle('has-text', apSearchInput.value.length > 0);
+    renderAllPrintsGrid();
+  });
+  apSearchClearBtn.addEventListener('click', () => {
+    apSearchInput.value = '';
+    apSearchWrap.classList.remove('has-text');
+    renderAllPrintsGrid();
+  });
+  let apCachedRows = [];
+
+  function closeAllPrintsModal() { allPrintsModal.classList.remove('open'); }
+  document.getElementById('allPrintsCloseBtn').addEventListener('click', closeAllPrintsModal);
+  wireOverlayClickToClose(allPrintsModal, closeAllPrintsModal);
+
+  async function openAllPrintsModal(titelNaam, queryFilter, clientFilterFn, legeMelding) {
+    document.getElementById('allPrintsTitle').textContent = `Alle bekende drukken — ${titelNaam || ''}`;
+    const statusEl3 = document.getElementById('allPrintsStatus');
+    const grid3 = document.getElementById('allPrintsGrid');
+    apSearchInput.value = '';
+    apSearchWrap.classList.remove('has-text');
+    statusEl3.textContent = 'Bezig met laden...';
+    grid3.innerHTML = '';
+    allPrintsModal.classList.add('open');
+    try {
+      // Filteren doen we op de server (query string), niet door de hele tabel op
+      // te halen — die kan inmiddels duizenden rijen bevatten en Supabase/PostgREST
+      // geeft per verzoek maximaal 1000 rijen terug.
+      const res = await fetch(setKaartenRestUrl(`?${queryFilter}&order=serie.asc,set_naam.asc,kaartnummer.asc`), { headers: authHeaders() });
+      if (!res.ok) throw new Error(await res.text());
+      const alle = await res.json();
+      apCachedRows = clientFilterFn ? alle.filter(clientFilterFn) : alle;
+    } catch (err) {
+      statusEl3.textContent = 'Kon de drukken niet laden: ' + err.message;
+      return;
+    }
+    if (apCachedRows.length === 0) {
+      statusEl3.textContent = legeMelding;
+      return;
+    }
+    statusEl3.textContent = `${apCachedRows.length} bekende druk(ken) gevonden.`;
+    renderAllPrintsGrid();
+  }
+
+  document.getElementById('detailAllPrintsBtn').addEventListener('click', async () => {
+    const rec = getRec(currentDetailId);
+    if (!rec) return;
+    await openAllPrintsModal(
+      rec.naam,
+      `categorie=eq.pokemon&dexid=eq.${encodeURIComponent(rec.nummer)}`,
+      r => r.dexid != null && parseInt(r.dexid) === parseInt(rec.nummer),
+      'Nog geen drukken van deze Pokémon bekend — haal eerst een set op via de Serie/Set-tab.'
+    );
+  });
+
+  document.getElementById('extraAllPrintsBtn').addEventListener('click', async () => {
+    const item = getExtra(currentExtraId);
+    if (!item) return;
+    const naamLower = (item.naam || '').trim().toLowerCase();
+    // ilike zonder % is een exacte, hoofdletterongevoelige match op de server.
+    // De client-side check erna vangt op als de naam toevallig % of _ bevat.
+    await openAllPrintsModal(
+      item.naam,
+      `categorie=neq.pokemon&naam=ilike.${encodeURIComponent(item.naam || '')}`,
+      r => (r.naam || '').trim().toLowerCase() === naamLower,
+      'Nog geen drukken van deze kaart bekend — haal eerst een set op via de Serie/Set-tab.'
+    );
+  });
+
+  // Bij benadering chronologisch rangnummer, afgeleid uit de volgorde waarin
+  // series/sets al in CARD_SERIES staan (die volgorde is zelf al chronologisch
+  // opgebouwd, Base t/m Scarlet & Violet/Mega Evolution). Onbekende serie/set
+  // (bijv. dynamisch ontdekt, niet in onze eigen lijst) valt terug op "nieuwste".
+  const SERIE_ORDER_KEYS = Object.keys(CARD_SERIES);
+  function chronologicalRank(row) {
+    const serieIdx = SERIE_ORDER_KEYS.indexOf(row.serie);
+    const setsInSerie = CARD_SERIES[row.serie] || [];
+    const setIdx = setsInSerie.indexOf(row.set_naam);
+    const serieRank = serieIdx === -1 ? SERIE_ORDER_KEYS.length : serieIdx;
+    const setRank = setIdx === -1 ? setsInSerie.length : setIdx;
+    return serieRank * 1000 + setRank;
+  }
+
+  function renderAllPrintsGrid() {
+    const grid3 = document.getElementById('allPrintsGrid');
+    const zoekterm = apSearchInput.value.trim().toLowerCase();
+    const rows3 = zoekterm ? apCachedRows.filter(r => String(r.kaartnummer || '').toLowerCase().includes(zoekterm)) : [...apCachedRows];
+    // Nieuwste eerst: hoogste chronologische rang bovenaan, binnen dezelfde set op kaartnummer.
+    rows3.sort((a, b) => {
+      const diff = chronologicalRank(b) - chronologicalRank(a);
+      return diff !== 0 ? diff : soSortKey(a) - soSortKey(b);
+    });
+    grid3.innerHTML = rows3.map(row => {
+      const thumbHtml = row.afbeelding ? `<img src="${row.afbeelding}/low.png" alt="">` : `<span class="placeholder-mark">🎴</span>`;
+      const checks = [];
+      if (row.heeft_normaal) {
+        const inst = findInstanceForSetCard(row, 'Normaal');
+        checks.push(`<label class="so-check"><input type="checkbox" data-row-id="${row.id}" data-versie="Normaal" ${inst ? 'checked' : ''}> Normaal</label>`);
+      }
+      if (row.heeft_holo) {
+        const inst = findInstanceForSetCard(row, 'Holo');
+        checks.push(`<label class="so-check"><input type="checkbox" data-row-id="${row.id}" data-versie="Holo" ${inst ? 'checked' : ''}> Holo</label>`);
+      }
+      if (row.heeft_reverse) {
+        const inst = findInstanceForSetCard(row, 'Reverse Holo');
+        checks.push(`<label class="so-check"><input type="checkbox" data-row-id="${row.id}" data-versie="Reverse Holo" ${inst ? 'checked' : ''}> Reverse Holo</label>`);
+      }
+      return `
+        <div class="so-card" data-row-id="${row.id}">
+          <div class="so-thumb">${thumbHtml}</div>
+          <div class="so-info">
+            <div class="so-naam">${row.naam}</div>
+            <div class="ap-setlabel">${[row.serie ? row.serie.replace(/ Series$/, '') : null, row.set_naam].filter(Boolean).join(' · ')} #${row.kaartnummer}</div>
+            <div class="so-checks">${checks.join('')}</div>
+          </div>
+        </div>`;
+    }).join('');
+    grid3.querySelectorAll('input[type="checkbox"][data-row-id]').forEach(cb => {
+      cb.addEventListener('change', () => {
+        const row = apCachedRows.find(r => String(r.id) === cb.dataset.rowId);
+        if (!row) return;
+        if (cb.checked) onCheckSetCard(row, cb.dataset.versie, cb);
+        else onUncheckSetCard(row, cb.dataset.versie, cb);
+      });
+    });
+  }
 
   // ---------- Foto-lightbox: grote weergave + gegevens bij tikken op de foto ----------
   const photoLightbox = document.getElementById('photoLightbox');
@@ -2512,6 +2804,7 @@
       document.getElementById('pokemonSection').style.display = (tab === 'pokemon') ? '' : 'none';
       document.getElementById('extraSection').style.display = (tab === 'trainers' || tab === 'energy') ? '' : 'none';
       document.getElementById('setOverzichtSection').style.display = (tab === 'setoverzicht') ? '' : 'none';
+      if (tab === 'setoverzicht') loadSetOverview();
       document.getElementById('progressDashboard').style.display = (tab === 'pokemon') ? '' : 'none';
       // De Type-filter (Item/Tool/Supporter/Stadium) is alleen relevant op de
       // Trainers-tab; op Energy zijn alle kaarten toch al hetzelfde type.
@@ -3359,13 +3652,13 @@
       const rec = getRec(parentId);
       if (rec) {
         applyPokemonOwnedDerivation(parentId);
-        if (currentDetailId === parentId) refreshDetailModal();
+        if (String(currentDetailId) === String(parentId)) refreshDetailModal();
       }
       renderGrid();
       if (currentView === 'checklist') renderChecklist();
     } else {
       renderExtraGrid();
-      if (currentExtraId === parentId) refreshExtraDetailPreview();
+      if (String(currentExtraId) === String(parentId)) refreshExtraDetailPreview();
     }
     updateTotalsBar();
   }
@@ -3498,7 +3791,27 @@
 
   // Bekende afwijkingen tussen onze setnamen en de officiële TCGdex-naam
   const TCGDEX_NAME_OVERRIDES = {
-    'scarlet & violet 151': '151'
+    'scarlet & violet 151': '151',
+    // Serienaam was onderdeel geworden van de setnaam (zelfde patroon als Mega Evolution):
+    '25th anniversary celebrations: classic collection': 'Celebrations: Classic Collection',
+    'scarlet & violet promos': 'SVP Black Star Promos',
+    // EX Series: TCGdex laat het "EX "-voorvoegsel weg
+    'ex ruby & sapphire': 'Ruby & Sapphire',
+    'ex sandstorm': 'Sandstorm',
+    'ex dragon': 'Dragon',
+    'ex team magma vs team aqua': 'Team Magma vs Team Aqua',
+    'ex hidden legends': 'Hidden Legends',
+    'ex firered & leafgreen': 'FireRed & LeafGreen',
+    'ex team rocket returns': 'Team Rocket Returns',
+    'ex deoxys': 'Deoxys',
+    'ex emerald': 'Emerald',
+    'ex unseen forces': 'Unseen Forces',
+    'ex delta species': 'Delta Species',
+    'ex legend maker': 'Legend Maker',
+    'ex holon phantoms': 'Holon Phantoms',
+    'ex crystal guardians': 'Crystal Guardians',
+    'ex dragon frontiers': 'Dragon Frontiers',
+    'ex power keepers': 'Power Keepers'
   };
 
   async function findTcgdexSetId(setName) {
@@ -4530,7 +4843,32 @@
   function setKaartenRestUrl(path) { return `${config.url}/rest/v1/${SET_KAARTEN_TABLE}${path || ''}`; }
 
   const soSerieInput = document.getElementById('soSerieInput');
+  const soBulkToggleBtn = document.getElementById('soBulkToggleBtn');
+  const soBulkPanel = document.getElementById('soBulkPanel');
+  soBulkToggleBtn.addEventListener('click', () => {
+    const open = soBulkPanel.style.display !== 'none';
+    soBulkPanel.style.display = open ? 'none' : '';
+    soBulkToggleBtn.textContent = open ? '▸ Bulk-acties' : '▾ Bulk-acties';
+  });
   const soSetInput = document.getElementById('soSetInput');
+  const soSortMode = document.getElementById('soSortMode');
+  const soFilterOwned = document.getElementById('soFilterOwned');
+  const soSearchInput = document.getElementById('soSearchInput');
+  const soSearchWrap = document.getElementById('soSearchWrap');
+  const soSearchClearBtn = document.getElementById('soSearchClearBtn');
+  soSearchInput.addEventListener('input', () => {
+    soSearchWrap.classList.toggle('has-text', soSearchInput.value.length > 0);
+    renderSetOverviewGrid();
+  });
+  soSearchClearBtn.addEventListener('click', () => {
+    soSearchInput.value = '';
+    soSearchWrap.classList.remove('has-text');
+    renderSetOverviewGrid();
+  });
+  const soSortRefreshLabel = setupDropdown('soSortDropdown', soSortMode, 'Sorteer', { nummer: 'Nummer', naam: 'Naam' });
+  const soFilterRefreshLabel = setupDropdown('soFilterDropdown', soFilterOwned, 'Filter', { alle: 'Alle', bezit: 'In bezit', mis: 'Ontbrekend' });
+  soSortMode.addEventListener('change', () => renderSetOverviewGrid());
+  soFilterOwned.addEventListener('change', () => renderSetOverviewGrid());
   let soCachedRows = [];
 
   setupFieldPicker('soSeriePicker', 'soSeriePickerBtn', 'soSerieMenu', soSerieInput, () =>
@@ -4555,11 +4893,20 @@
     const pricesBtn = document.getElementById('soLoadPricesBtn');
     const statusEl2 = document.getElementById('soStatus');
     const grid2 = document.getElementById('soGrid');
+    const gaugeWrap = document.getElementById('soGaugeWrap');
+    // Sortering/filter/zoekopdracht resetten zodra een andere set gekozen wordt.
+    soSortMode.value = 'nummer';
+    soFilterOwned.value = 'alle';
+    soSearchInput.value = '';
+    soSearchWrap.classList.remove('has-text');
+    soSortRefreshLabel();
+    soFilterRefreshLabel();
     if (!setNaam) {
       fetchBtn.style.display = 'none';
       pricesBtn.style.display = 'none';
       statusEl2.textContent = '';
       grid2.innerHTML = '';
+      gaugeWrap.style.display = 'none';
       return;
     }
     fetchBtn.style.display = '';
@@ -4577,11 +4924,30 @@
       statusEl2.textContent = 'Deze set is nog niet opgehaald.';
       pricesBtn.style.display = 'none';
       grid2.innerHTML = '';
+      gaugeWrap.style.display = 'none';
       return;
     }
     pricesBtn.style.display = '';
-    statusEl2.textContent = `${soCachedRows.length} kaarten geladen (opgeslagen data — klik op "Prijzen laden" voor actuele prijzen).`;
+    statusEl2.textContent = `${soCachedRows.length} kaarten geladen (opgeslagen data — klik op "Prijzen verversen" voor actuele prijzen).`;
     renderSetOverviewGrid();
+  }
+
+  // Een set-rij telt als "in bezit" als er, ongeacht kaartversie, minstens
+  // één kaartexemplaar voor bestaat.
+  function rowIsOwned(row) {
+    return !!(findInstanceForSetCard(row, 'Normaal') || findInstanceForSetCard(row, 'Holo') || findInstanceForSetCard(row, 'Reverse Holo'));
+  }
+
+  function updateSetGauge() {
+    const gaugeWrap = document.getElementById('soGaugeWrap');
+    if (soCachedRows.length === 0) { gaugeWrap.style.display = 'none'; return; }
+    const owned = soCachedRows.filter(rowIsOwned).length;
+    const total = soCachedRows.length;
+    const pct = total ? Math.round((owned / total) * 100) : 0;
+    document.getElementById('soGaugeLabel').textContent = `Verzameld: ${owned} / ${total}`;
+    document.getElementById('soGaugePct').textContent = pct + '%';
+    document.getElementById('soGaugeArc').setAttribute('stroke-dasharray', `${pct} 100`);
+    gaugeWrap.style.display = '';
   }
 
   function soSortKey(row) {
@@ -4589,48 +4955,150 @@
     return isNaN(n) ? 999999 : n;
   }
 
+  // Zoekt (of maakt) de juiste Pokémon/Trainer/Energy-kaart waar dit
+  // set-overzicht-item bij hoort, zodat een vinkje er een exemplaar aan kan hangen.
+  async function findOrCreateParentForSetCard(row) {
+    if (row.categorie === 'pokemon') {
+      const rec = row.dexid != null ? records.find(r => parseInt(r.nummer) === parseInt(row.dexid)) : null;
+      if (!rec) return null;
+      return { parentType: 'pokemon', parentId: rec.id };
+    }
+    if (!extraLoaded) { extraLoaded = true; await loadAllExtraItems(); }
+    let item = extraItems.find(i => (i.naam || '').trim().toLowerCase() === (row.naam || '').trim().toLowerCase());
+    if (!item) {
+      const res = await fetch(extraRestUrl(), {
+        method: 'POST',
+        headers: authHeaders({ 'Prefer': 'return=representation' }),
+        body: JSON.stringify({ categorie: row.categorie, naam: row.naam, notitie: null })
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const created = await res.json();
+      item = created[0];
+      extraItems.unshift(item);
+    }
+    return { parentType: EXTRA_PARENT_TYPE, parentId: item.id };
+  }
+
+  async function onCheckSetCard(row, versie, checkboxEl) {
+    checkboxEl.disabled = true;
+    try {
+      const parent = await findOrCreateParentForSetCard(row);
+      if (!parent) {
+        alert(`Kon geen Pokémon vinden met Pokédexnummer ${row.dexid} voor "${row.naam}" — controleer of dat nummer in de Pokédex bestaat.`);
+        checkboxEl.checked = false;
+        return;
+      }
+      const payload = {
+        parent_type: parent.parentType, parent_id: parent.parentId,
+        serie: row.serie, set_naam: row.set_naam, versie, kaartnummer: row.kaartnummer,
+        waarde: null, aantal: 1
+      };
+      const res = await fetch(instRestUrl(), {
+        method: 'POST',
+        headers: authHeaders({ 'Prefer': 'return=representation' }),
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const created = await res.json();
+      allInstances.push(created[0]);
+      // Op de achtergrond meteen een foto en prijs proberen te vinden, net als
+      // bij een handmatig toegevoegd exemplaar.
+      tryAutoFetchGroupPhoto({
+        parentType: parent.parentType, parentId: parent.parentId,
+        serie: row.serie, set_naam: row.set_naam, kaartnummer: row.kaartnummer
+      }, false, true);
+      tryAutoFetchInstancePrice(created[0].id, true);
+      refreshParentUI(parent.parentType, parent.parentId);
+    } catch (err) {
+      alert('Kon kaartexemplaar niet aanmaken: ' + err.message);
+      checkboxEl.checked = false;
+    } finally {
+      checkboxEl.disabled = false;
+    }
+  }
+
+  async function onUncheckSetCard(row, versie, checkboxEl) {
+    const inst = findInstanceForSetCard(row, versie);
+    if (!inst) return;
+    const wantsDelete = confirm(
+      `Wil je het kaartexemplaar van "${row.naam}" (${versie}) ook verwijderen?\n\nKlik op Annuleren om het vinkje gewoon aan te laten staan (bijv. als je het per ongeluk aanraakte).`
+    );
+    if (!wantsDelete) { checkboxEl.checked = true; return; }
+    checkboxEl.disabled = true;
+    try {
+      const res = await fetch(instRestUrl(`?id=eq.${inst.id}`), { method: 'DELETE', headers: authHeaders() });
+      if (!res.ok) throw new Error(await res.text());
+      allInstances = allInstances.filter(i => String(i.id) !== String(inst.id));
+      refreshParentUI(inst.parent_type, inst.parent_id);
+    } catch (err) {
+      alert('Kon kaartexemplaar niet verwijderen: ' + err.message);
+      checkboxEl.checked = true;
+    } finally {
+      checkboxEl.disabled = false;
+    }
+  }
+
+  function findInstanceForSetCard(row, versie) {
+    const v = versie.toLowerCase();
+    return allInstances.find(i => (i.set_naam || '') === row.set_naam && String(i.kaartnummer || '') === String(row.kaartnummer) &&
+      (i.versie || '').toLowerCase() === v);
+  }
+
   function renderSetOverviewGrid() {
     const grid2 = document.getElementById('soGrid');
-    const rows = [...soCachedRows].sort((a, b) => soSortKey(a) - soSortKey(b));
-    console.log('[debug-so] renderSetOverviewGrid: aantal rijen:', rows.length, 'grid element gevonden:', !!grid2, 'sectie display:', document.getElementById('setOverzichtSection').style.display, 'huidige tab:', currentMainTab);
+    updateSetGauge();
+    let rows = [...soCachedRows];
+    if (soSortMode.value === 'naam') rows.sort((a, b) => (a.naam || '').localeCompare(b.naam || '', 'nl'));
+    else rows.sort((a, b) => soSortKey(a) - soSortKey(b));
+    if (soFilterOwned.value === 'bezit') rows = rows.filter(rowIsOwned);
+    else if (soFilterOwned.value === 'mis') rows = rows.filter(r => !rowIsOwned(r));
+    const zoekterm = soSearchInput.value.trim().toLowerCase();
+    if (zoekterm) rows = rows.filter(r => (r.naam || '').toLowerCase().includes(zoekterm) || String(r.kaartnummer || '').toLowerCase().includes(zoekterm));
     grid2.innerHTML = rows.map(row => {
-      const owned = allInstances.some(i => (i.set_naam || '') === row.set_naam && String(i.kaartnummer || '') === String(row.kaartnummer));
       const thumbHtml = row.afbeelding ? `<img src="${row.afbeelding}/low.png" alt="">` : `<span class="placeholder-mark">🎴</span>`;
-      const prices = [];
-      if (row.heeft_normaal) prices.push(`<span data-price-row="${row.id}" data-variant="normaal">Normaal: <em>nog niet geladen</em></span>`);
-      if (row.heeft_holo) prices.push(`<span data-price-row="${row.id}" data-variant="holo">Holo: <em>nog niet geladen</em></span>`);
+      const checks = [];
+      if (row.heeft_normaal) {
+        const inst = findInstanceForSetCard(row, 'Normaal');
+        const prijsHtml = row.prijs_normaal != null ? priceFreshnessDotHtml(row.prijs_updated) + `(&euro; ${fmtEuro(row.prijs_normaal)})` : '';
+        checks.push(`<label class="so-check"><input type="checkbox" data-row-id="${row.id}" data-versie="Normaal" ${inst ? 'checked' : ''}> Normaal <span data-price-row="${row.id}" data-variant="normaal">${prijsHtml}</span></label>`);
+      }
+      if (row.heeft_holo) {
+        const inst = findInstanceForSetCard(row, 'Holo');
+        const prijsHtml = row.prijs_holo != null ? priceFreshnessDotHtml(row.prijs_updated) + `(&euro; ${fmtEuro(row.prijs_holo)})` : '';
+        checks.push(`<label class="so-check"><input type="checkbox" data-row-id="${row.id}" data-versie="Holo" ${inst ? 'checked' : ''}> Holo <span data-price-row="${row.id}" data-variant="holo">${prijsHtml}</span></label>`);
+      }
+      if (row.heeft_reverse) {
+        const inst = findInstanceForSetCard(row, 'Reverse Holo');
+        const prijsHtml = row.prijs_reverse != null ? priceFreshnessDotHtml(row.prijs_updated) + `(&euro; ${fmtEuro(row.prijs_reverse)})` : '';
+        checks.push(`<label class="so-check"><input type="checkbox" data-row-id="${row.id}" data-versie="Reverse Holo" ${inst ? 'checked' : ''}> Reverse Holo <span data-price-row="${row.id}" data-variant="reverse">${prijsHtml}</span></label>`);
+      }
       return `
         <div class="so-card" data-row-id="${row.id}">
           <div class="so-thumb">${thumbHtml}</div>
           <div class="so-info">
             <div class="so-naam">${row.naam}</div>
-            <div class="so-nummer">#${row.kaartnummer}${owned ? ' · <span class="so-owned-badge">✓ in bezit</span>' : ''}</div>
-            <div class="so-prices">${prices.join('')}</div>
+            <div class="so-nummer">#${row.kaartnummer}</div>
+            <div class="so-checks">${checks.join('')}</div>
           </div>
         </div>`;
     }).join('');
-    console.log('[debug-so] grid2.innerHTML lengte na render:', grid2.innerHTML.length, '- eerste 300 tekens:', grid2.innerHTML.slice(0, 300));
+    grid2.querySelectorAll('input[type="checkbox"][data-row-id]').forEach(cb => {
+      cb.addEventListener('change', () => {
+        const row = soCachedRows.find(r => String(r.id) === cb.dataset.rowId);
+        if (!row) return;
+        if (cb.checked) onCheckSetCard(row, cb.dataset.versie, cb);
+        else onUncheckSetCard(row, cb.dataset.versie, cb);
+      });
+    });
   }
 
-  document.getElementById('soFetchSetBtn').addEventListener('click', async () => {
-    const setNaam = soSetInput.value.trim();
-    const serie = soSerieInput.value.trim();
-    if (!setNaam) return;
-    const fetchBtn = document.getElementById('soFetchSetBtn');
-    const progressWrap = document.getElementById('soProgressWrap');
-    const barFill = document.getElementById('soBarFill');
-    const statusText = document.getElementById('soStatusText');
-    const statusEl2 = document.getElementById('soStatus');
-
+  // Haalt één set volledig op bij TCGdex en slaat 'm op in tcg_set_kaarten
+  // (eerst verwijderen, dan opnieuw invoegen). Gedeeld door de losse
+  // "Deze set ophalen"-knop en de "Alle sets ophalen"-knop.
+  // onProgress(done, total) wordt per kaart aangeroepen voor een voortgangsbalk.
+  async function fetchAndSaveSet(setNaam, serie, onProgress) {
     const setId = await findTcgdexSetId(setNaam);
-    if (!setId) {
-      statusEl2.textContent = `TCGdex kent geen set met de naam "${setNaam}" — controleer de schrijfwijze.`;
-      return;
-    }
-    fetchBtn.disabled = true;
-    progressWrap.style.display = '';
-    barFill.style.width = '0%';
-    statusEl2.textContent = '';
+    if (!setId) return { ok: false, error: `TCGdex kent geen set met de naam "${setNaam}" — controleer de schrijfwijze.` };
 
     let briefCards;
     try {
@@ -4638,20 +5106,11 @@
       const setData = await setRes.json();
       briefCards = setData.cards || [];
     } catch (err) {
-      fetchBtn.disabled = false;
-      progressWrap.style.display = 'none';
-      statusEl2.textContent = 'Kon de setlijst niet ophalen bij TCGdex: ' + err.message;
-      return;
+      return { ok: false, error: 'Kon de setlijst niet ophalen bij TCGdex: ' + err.message };
     }
-    if (briefCards.length === 0) {
-      fetchBtn.disabled = false;
-      progressWrap.style.display = 'none';
-      statusEl2.textContent = 'TCGdex heeft geen kaarten voor deze set.';
-      return;
-    }
+    if (briefCards.length === 0) return { ok: false, error: 'TCGdex heeft geen kaarten voor deze set.' };
 
     const newRows = [];
-    const startTime = Date.now();
     for (let i = 0; i < briefCards.length; i++) {
       const brief = briefCards[i];
       try {
@@ -4670,20 +5129,16 @@
           categorie,
           dexid: (card.dexId && card.dexId[0]) || null,
           heeft_normaal: !!(card.variants && (card.variants.normal || card.variants.firstEdition || card.variants.wPromo)),
-          heeft_holo: !!(card.variants && (card.variants.holo || card.variants.reverse))
+          heeft_holo: !!(card.variants && card.variants.holo),
+          heeft_reverse: !!(card.variants && card.variants.reverse)
         });
       } catch (err) {
         console.error(`Kon kaart ${brief.localId} niet ophalen:`, err);
       }
-      const pct = Math.round(((i + 1) / briefCards.length) * 100);
-      const elapsedSec = (Date.now() - startTime) / 1000;
-      const etaSec = (elapsedSec / (i + 1)) * (briefCards.length - i - 1);
-      barFill.style.width = pct + '%';
-      statusText.textContent = `${i + 1} / ${briefCards.length} kaarten opgehaald (${pct}%) — nog ${fmtEta(etaSec)}`;
+      if (onProgress) onProgress(i + 1, briefCards.length);
     }
 
     try {
-      console.log('[debug-so] newRows opgebouwd, aantal:', newRows.length, '- eerste item:', newRows[0]);
       const delRes = await fetch(setKaartenRestUrl(`?set_naam=eq.${encodeURIComponent(setNaam)}`), { method: 'DELETE', headers: authHeaders() });
       if (!delRes.ok) throw new Error(await delRes.text());
       const insRes = await fetch(setKaartenRestUrl(), {
@@ -4692,21 +5147,193 @@
         body: JSON.stringify(newRows)
       });
       if (!insRes.ok) throw new Error(await insRes.text());
-      soCachedRows = await insRes.json();
-      console.log('[debug-so] insRes status:', insRes.status, '- soCachedRows na insert:', soCachedRows.length, '- eerste rij:', soCachedRows[0]);
+      const saved = await insRes.json();
+      return { ok: true, rows: saved };
     } catch (err) {
-      statusEl2.textContent = 'Kon de set niet opslaan in Supabase: ' + err.message;
-      fetchBtn.disabled = false;
-      progressWrap.style.display = 'none';
-      return;
+      return { ok: false, error: 'Kon de set niet opslaan in Supabase: ' + err.message };
     }
+  }
+
+  document.getElementById('soFetchSetBtn').addEventListener('click', async () => {
+    const setNaam = soSetInput.value.trim();
+    const serie = soSerieInput.value.trim();
+    if (!setNaam) return;
+    const fetchBtn = document.getElementById('soFetchSetBtn');
+    const progressWrap = document.getElementById('soProgressWrap');
+    const barFill = document.getElementById('soBarFill');
+    const statusText = document.getElementById('soStatusText');
+    const statusEl2 = document.getElementById('soStatus');
+
+    fetchBtn.disabled = true;
+    progressWrap.style.display = '';
+    barFill.style.width = '0%';
+    statusEl2.textContent = '';
+    const startTime = Date.now();
+
+    const result = await fetchAndSaveSet(setNaam, serie, (done, total) => {
+      const pct = Math.round((done / total) * 100);
+      const elapsedSec = (Date.now() - startTime) / 1000;
+      const etaSec = (elapsedSec / done) * (total - done);
+      barFill.style.width = pct + '%';
+      statusText.textContent = `${done} / ${total} kaarten opgehaald (${pct}%) — nog ${fmtEta(etaSec)}`;
+    });
 
     fetchBtn.disabled = false;
     progressWrap.style.display = 'none';
+    if (!result.ok) { statusEl2.textContent = result.error; return; }
+    soCachedRows = result.rows;
     statusEl2.textContent = `${soCachedRows.length} kaarten opgehaald en opgeslagen.`;
     document.getElementById('soLoadPricesBtn').style.display = '';
     renderSetOverviewGrid();
   });
+
+  let soFetchLog = []; // { setNaam, serie, ok, message } per set van de laatste bulk-run
+
+  // Haalt de set_naam's op die al minstens 1 kaart hebben in tcg_set_kaarten
+  // (voor "alleen ontbrekende sets ophalen" — dedupe gebeurt hier in JS).
+  async function loadExistingSetNames() {
+    // Per set een lichte "bestaat er iets van?"-check (limit=1) i.p.v. de hele
+    // tabel in één keer ophalen — die kan inmiddels duizenden rijen bevatten en
+    // Supabase/PostgREST geeft per verzoek maximaal 1000 rijen terug.
+    const results = await Promise.all(allSetsFlat.map(async setNaam => {
+      const res = await fetch(setKaartenRestUrl(`?set_naam=eq.${encodeURIComponent(setNaam)}&select=id&limit=1`), { headers: authHeaders() });
+      if (!res.ok) throw new Error(await res.text());
+      const rows = await res.json();
+      return rows.length > 0 ? setNaam : null;
+    }));
+    return new Set(results.filter(Boolean));
+  }
+
+  function setsForSerie(serie) {
+    const staticSets = CARD_SERIES[serie] || [];
+    const extraSets = dynamicSerieToSets[normalizeSerieKey(serie)];
+    return [...new Set([...staticSets, ...(extraSets ? [...extraSets] : [])])];
+  }
+
+  async function runBulkSetFetch(mode) {
+    let teVerwerken = allSetsFlat;
+    let overgeslagen = 0;
+    let serieNaam = null;
+
+    if (mode === 'serie') {
+      serieNaam = soSerieInput.value.trim();
+      if (!serieNaam) { alert('Kies eerst een serie.'); return; }
+      teVerwerken = setsForSerie(serieNaam);
+      if (teVerwerken.length === 0) { alert(`Geen bekende sets gevonden voor serie "${serieNaam}".`); return; }
+    } else if (mode === 'missing') {
+      let existingNames;
+      try {
+        existingNames = await loadExistingSetNames();
+      } catch (err) {
+        alert('Kon niet controleren welke sets al opgehaald zijn: ' + err.message);
+        return;
+      }
+      teVerwerken = allSetsFlat.filter(s => !existingNames.has(s));
+      overgeslagen = allSetsFlat.length - teVerwerken.length;
+      if (teVerwerken.length === 0) { alert('Alle bekende sets zijn al opgehaald — niets te doen.'); return; }
+    }
+
+    const vraag = mode === 'serie'
+      ? `Dit haalt de ${teVerwerken.length} sets van serie "${serieNaam}" op bij TCGdex. Doorgaan?`
+      : mode === 'missing'
+        ? `Dit haalt de ${teVerwerken.length} nog ontbrekende sets op bij TCGdex (${overgeslagen} sets zijn al aanwezig en worden overgeslagen) — dit kan lang duren. Doorgaan?`
+        : `Dit haalt alle ${teVerwerken.length} bekende sets één voor één op bij TCGdex — dit kan lang duren. Doorgaan?`;
+    if (!confirm(vraag)) return;
+
+    const allBtn = document.getElementById('soFetchAllBtn');
+    const missingBtn = document.getElementById('soFetchMissingBtn');
+    const serieBtn = document.getElementById('soFetchSerieBtn');
+    const fetchBtn = document.getElementById('soFetchSetBtn');
+    const pricesBtn = document.getElementById('soLoadPricesBtn');
+    const viewLogBtn = document.getElementById('soViewLogBtn');
+    const statusEl2 = document.getElementById('soStatus');
+    const progressWrap = document.getElementById('soProgressWrap');
+    const barFill = document.getElementById('soBarFill');
+    const statusText = document.getElementById('soStatusText');
+    const allProgressWrap = document.getElementById('soAllProgressWrap');
+    const allBarFill = document.getElementById('soAllBarFill');
+    const allStatusText = document.getElementById('soAllStatusText');
+    const liveCounter = document.getElementById('soLiveCounter');
+
+    allBtn.disabled = true;
+    missingBtn.disabled = true;
+    serieBtn.disabled = true;
+    fetchBtn.disabled = true;
+    progressWrap.style.display = '';
+    allProgressWrap.style.display = '';
+    statusEl2.textContent = '';
+    soFetchLog = [];
+    const startTime = Date.now();
+    const huidigeSet = soSetInput.value.trim();
+
+    for (let s = 0; s < teVerwerken.length; s++) {
+      const setNaam = teVerwerken[s];
+      const serie = findSerieForSetName(setNaam) || serieNaam || '';
+      barFill.style.width = '0%';
+      statusText.textContent = `"${setNaam}" wordt opgehaald...`;
+
+      const result = await fetchAndSaveSet(setNaam, serie, (done, total) => {
+        const pct = Math.round((done / total) * 100);
+        barFill.style.width = pct + '%';
+        statusText.textContent = `${setNaam}: ${done} / ${total} kaarten (${pct}%)`;
+      });
+      if (!result.ok) {
+        soFetchLog.push({ setNaam, serie, ok: false, message: result.error });
+      } else {
+        soFetchLog.push({ setNaam, serie, ok: true, message: `${result.rows.length} kaarten opgeslagen` });
+        if (setNaam === huidigeSet) soCachedRows = result.rows;
+      }
+
+      const geslaagd = soFetchLog.filter(l => l.ok).length;
+      const mislukt = soFetchLog.filter(l => !l.ok).length;
+      liveCounter.textContent = `✅ ${geslaagd} gelukt · ❌ ${mislukt} mislukt · bezig met set ${s + 1}/${teVerwerken.length}`;
+
+      const pctAll = Math.round(((s + 1) / teVerwerken.length) * 100);
+      const elapsedSec = (Date.now() - startTime) / 1000;
+      const etaSec = (elapsedSec / (s + 1)) * (teVerwerken.length - s - 1);
+      allBarFill.style.width = pctAll + '%';
+      allStatusText.textContent = `Set ${s + 1} / ${teVerwerken.length} (${pctAll}%) — nog ${fmtEta(etaSec)}`;
+    }
+
+    allBtn.disabled = false;
+    missingBtn.disabled = false;
+    serieBtn.disabled = false;
+    fetchBtn.disabled = false;
+    progressWrap.style.display = 'none';
+    allProgressWrap.style.display = 'none';
+    liveCounter.textContent = '';
+    const foutCount = soFetchLog.filter(l => !l.ok).length;
+    statusEl2.textContent = foutCount
+      ? `Klaar, met ${foutCount} probleem(en) — zie het logboek voor details.`
+      : `${teVerwerken.length} set(en) opgehaald en opgeslagen${overgeslagen ? ` (${overgeslagen} al aanwezig, overgeslagen)` : ''}.`;
+    viewLogBtn.style.display = '';
+    if (huidigeSet && soCachedRows.length) {
+      pricesBtn.style.display = '';
+      renderSetOverviewGrid();
+    }
+    if (foutCount) openSoFetchLog();
+  }
+
+  document.getElementById('soFetchAllBtn').addEventListener('click', () => runBulkSetFetch('all'));
+  document.getElementById('soFetchMissingBtn').addEventListener('click', () => runBulkSetFetch('missing'));
+  document.getElementById('soFetchSerieBtn').addEventListener('click', () => runBulkSetFetch('serie'));
+
+  function openSoFetchLog() {
+    const foutCount = soFetchLog.filter(l => !l.ok).length;
+    document.getElementById('soFetchLogSummary').textContent =
+      `${soFetchLog.length} sets verwerkt — ${foutCount} niet gevonden/opgeslagen, ${soFetchLog.length - foutCount} gelukt.`;
+    document.getElementById('soFetchLogTbody').innerHTML = soFetchLog.map(l => `
+      <tr class="${l.ok ? 'so-log-ok' : 'so-log-fout'}">
+        <td>${l.setNaam}</td>
+        <td>${l.serie || '—'}</td>
+        <td>${l.message}</td>
+      </tr>`).join('');
+    document.getElementById('soFetchLogModal').classList.add('open');
+  }
+  document.getElementById('soViewLogBtn').addEventListener('click', openSoFetchLog);
+  document.getElementById('soFetchLogCloseBtn').addEventListener('click', () => document.getElementById('soFetchLogModal').classList.remove('open'));
+  document.getElementById('soFetchLogDoneBtn').addEventListener('click', () => document.getElementById('soFetchLogModal').classList.remove('open'));
+  wireOverlayClickToClose(document.getElementById('soFetchLogModal'), () => document.getElementById('soFetchLogModal').classList.remove('open'));
 
   document.getElementById('soLoadPricesBtn').addEventListener('click', async () => {
     const pricesBtn = document.getElementById('soLoadPricesBtn');
@@ -4723,28 +5350,44 @@
       try {
         const pricing = await fetchTcgdexPricing(row.set_naam, row.kaartnummer);
         const cm = pricing ? pricing.cardmarket : null;
+        const nu = new Date().toISOString();
+        const patch = { prijs_updated: nu };
         if (row.heeft_normaal) {
+          const p = pickTcgdexPrice(cm, 'Normaal');
+          patch.prijs_normaal = p;
+          row.prijs_normaal = p;
           const el = document.querySelector(`[data-price-row="${row.id}"][data-variant="normaal"]`);
-          if (el) {
-            const p = pickTcgdexPrice(cm, 'Normaal');
-            el.innerHTML = `Normaal: ${p != null ? `&euro; ${fmtEuro(p)}` : '<em>onbekend</em>'}`;
-          }
+          if (el) el.innerHTML = p != null ? priceFreshnessDotHtml(nu) + `(&euro; ${fmtEuro(p)})` : '(onbekend)';
         }
         if (row.heeft_holo) {
+          const p = pickTcgdexPrice(cm, 'Holo');
+          patch.prijs_holo = p;
+          row.prijs_holo = p;
           const el = document.querySelector(`[data-price-row="${row.id}"][data-variant="holo"]`);
-          if (el) {
-            const p = pickTcgdexPrice(cm, 'Holo');
-            el.innerHTML = `Holo: ${p != null ? `&euro; ${fmtEuro(p)}` : '<em>onbekend</em>'}`;
-          }
+          if (el) el.innerHTML = p != null ? priceFreshnessDotHtml(nu) + `(&euro; ${fmtEuro(p)})` : '(onbekend)';
         }
+        if (row.heeft_reverse) {
+          // TCGdex kent geen apart "reverse"-prijsveld — zelfde holo-prijs als benadering.
+          const p = pickTcgdexPrice(cm, 'Reverse Holo');
+          patch.prijs_reverse = p;
+          row.prijs_reverse = p;
+          const el = document.querySelector(`[data-price-row="${row.id}"][data-variant="reverse"]`);
+          if (el) el.innerHTML = p != null ? priceFreshnessDotHtml(nu) + `(&euro; ${fmtEuro(p)})` : '(onbekend)';
+        }
+        row.prijs_updated = nu;
+        await fetch(setKaartenRestUrl(`?id=eq.${row.id}`), {
+          method: 'PATCH',
+          headers: authHeaders({ 'Prefer': 'return=minimal' }),
+          body: JSON.stringify(patch)
+        });
       } catch (err) {
-        console.error(`Kon prijs voor ${row.naam} niet laden:`, err);
+        console.error(`Kon prijs voor ${row.naam} niet laden/opslaan:`, err);
       }
       const pct = Math.round(((i + 1) / rows.length) * 100);
       const elapsedSec = (Date.now() - startTime) / 1000;
       const etaSec = (elapsedSec / (i + 1)) * (rows.length - i - 1);
       barFill.style.width = pct + '%';
-      statusText.textContent = `${i + 1} / ${rows.length} prijzen geladen (${pct}%) — nog ${fmtEta(etaSec)}`;
+      statusText.textContent = `${i + 1} / ${rows.length} prijzen ververst (${pct}%) — nog ${fmtEta(etaSec)}`;
     }
     pricesBtn.disabled = false;
     progressWrap.style.display = 'none';
