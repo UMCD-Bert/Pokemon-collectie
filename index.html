@@ -1441,7 +1441,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '2.56';
+  const APP_VERSION = '2.57';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -5034,6 +5034,14 @@
     });
   }
 
+  function stepperHtmlFor(inst) {
+    return `<div class="so-stepper" data-inst-id="${inst.id}">
+      <button type="button" class="so-stepper-btn" data-delta="-1">−</button>
+      <span class="so-stepper-count">${inst.aantal || 1}</span>
+      <button type="button" class="so-stepper-btn" data-delta="1">+</button>
+    </div>`;
+  }
+
   async function onCheckSetCard(row, versie, checkboxEl) {
     checkboxEl.disabled = true;
     try {
@@ -5059,6 +5067,14 @@
       if (!res.ok) throw new Error(await res.text());
       const created = await res.json();
       allInstances.push(created[0]);
+      // Stepper meteen tonen, zonder op een volledige her-render te wachten.
+      checkboxEl.dataset.instCheckboxId = created[0].id;
+      const label = checkboxEl.closest('label.so-check');
+      if (label) {
+        label.insertAdjacentHTML('afterend', stepperHtmlFor(created[0]));
+        const nieuweStepper = label.nextElementSibling;
+        if (nieuweStepper && nieuweStepper.classList.contains('so-stepper')) wireStepperButtons(nieuweStepper);
+      }
       // Op de achtergrond meteen een foto proberen te vinden, net als bij een
       // handmatig toegevoegd exemplaar. Prijs alleen apart opzoeken als de set
       // zelf nog geen (ververste) prijs had.
@@ -5089,6 +5105,8 @@
       if (!res.ok) throw new Error(await res.text());
       allInstances = allInstances.filter(i => String(i.id) !== String(inst.id));
       refreshParentUI(inst.parent_type, inst.parent_id);
+      document.querySelectorAll(`[data-inst-id="${inst.id}"]`).forEach(el => el.remove());
+      delete checkboxEl.dataset.instCheckboxId;
     } catch (err) {
       alert('Kon kaartexemplaar niet verwijderen: ' + err.message);
       checkboxEl.checked = true;
@@ -5115,13 +5133,7 @@
     const priceSpan = dataVariant
       ? `<span class="so-check-price" data-price-row="${row.id}" data-variant="${dataVariant}">${priceHtml || ''}</span>`
       : '';
-    const stepper = inst
-      ? `<div class="so-stepper" data-inst-id="${inst.id}">
-           <button type="button" class="so-stepper-btn" data-delta="-1">−</button>
-           <span class="so-stepper-count">${inst.aantal || 1}</span>
-           <button type="button" class="so-stepper-btn" data-delta="1">+</button>
-         </div>`
-      : '';
+    const stepper = inst ? stepperHtmlFor(inst) : '';
     return `<label class="so-check"><input type="checkbox" ${checkboxAttrs} ${inst ? 'checked' : ''}> <span>${versie}</span>${priceSpan}</label>${stepper}`;
   }
 
