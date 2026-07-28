@@ -85,7 +85,6 @@
   #appVersion { text-align: center; font-size: 11px; color: #b0b6bd; margin: -4px 0 4px 0; letter-spacing: 0.3px; }
   #gaugePct { font-size: 22px; font-weight: 800; fill: #2c3e50; }
   #gaugeLabel { font-weight: 700; color: #2c3e50; margin-top: -6px; font-size: 14px; }
-  #valueLabel { font-weight: 700; color: #1d7a4c; margin-top: 2px; font-size: 15px; }
   @media print { #progressDashboard { display: none; } }
 
   #status, #countStatus, #imgHint { text-align: center; font-size: 13px; color: #666; margin-bottom: 6px; }
@@ -149,6 +148,16 @@
     color: #666; font-size: 13px; cursor: pointer; flex-shrink: 0;
   }
   .crop-hint { font-size: 12px; color: #777; margin: 0 0 14px 0; }
+  .detail-photo-actions-row { display: flex; gap: 6px; margin-bottom: 8px; }
+  .photo-toggle-btn {
+    display: block; flex: 1; margin: 0; padding: 6px; border-radius: 8px;
+    border: 1px solid #ccc; background: #f5f5f5; color: #444; font-weight: 600; font-size: 12px; cursor: pointer;
+  }
+  .refresh-all-btn {
+    display: block; flex: 1; margin: 0; padding: 9px; border-radius: 8px;
+    border: none; background: #1d7a4c; color: white; font-weight: 700; font-size: 13px; cursor: pointer;
+  }
+  .refresh-all-btn:disabled { opacity: 0.6; cursor: default; }
   .crop-actions { display: flex; gap: 8px; justify-content: center; }
   .crop-actions button {
     padding: 10px 16px;
@@ -393,6 +402,16 @@
   .card-footer { text-align: center; font-size: 1.6mm; color: #5a3d00; min-height: 4mm; }
   .card-footer .value-row-readonly { display: block; font-weight: 700; font-size: 2.4mm; color: #1d7a4c; }
   .card-footer .card-count { font-weight: 600; font-size: 2mm; color: #5a3d00; }
+  .card-count-badge {
+    position: absolute; top: 1.5mm; left: 1.5mm; background: #2c3e50; color: #fff;
+    font-size: 2mm; font-weight: 700; padding: 0.4mm 1mm; border-radius: 3mm; z-index: 2;
+  }
+  .extra-count-badge { cursor: pointer; text-decoration: underline; text-decoration-style: dotted; }
+  .ci-empty { font-size: 11px; color: #888; text-align: center; margin: 4px 0; }
+  .ci-group { margin-bottom: 6px; }
+  .ci-group-title { font-size: 10px; color: #888; margin-bottom: 2px; }
+  .ci-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 11px; color: #444; padding: 1px 0; }
+  .ci-row .so-stepper { margin: 0; }
   .stepper { display: flex; flex-direction: column; }
   .stepper .step-btn {
     width: 3mm; height: 2.3mm; padding: 0; font-size: 1.6mm; line-height: 1;
@@ -561,6 +580,8 @@
   /* ---------- Hoge-waarde lijst ---------- */
   #highValueModal .modal-box { max-width: 480px; }
   .modal-box-wide { max-width: 900px !important; }
+  .modal-box-mini { max-width: 320px !important; }
+  #instancesPopupBody .ci-group:last-child { margin-bottom: 0; }
   #allPrintsStatus { font-size: 12px; color: #777; text-align: center; margin: 0 0 10px 0; }
   #allPrintsGrid { display: grid; grid-template-columns: repeat(auto-fill, 44mm); gap: 4mm; justify-content: center; }
   .ap-setlabel { font-size: 10px; color: #888; line-height: 1.25; white-space: normal; }
@@ -772,14 +793,14 @@
   .detail-section:last-child { border-bottom: none; padding-bottom: 0; }
   #detailInstancesList, #extraInstancesList { display: flex; flex-direction: column; gap: 6px; }
   .instance-group { margin-bottom: 10px; }
-  .instance-group-photo { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; flex-wrap: wrap; }
+  .instance-group-photo { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1.5px solid #ddd; }
   .group-thumb {
-    width: 32px; height: 32px; border-radius: 6px; background: #e8e8e8; flex-shrink: 0;
+    width: 48px; height: 48px; border-radius: 6px; background: #e8e8e8; flex-shrink: 0;
     position: relative; cursor: zoom-in;
   }
   .group-thumb-inner {
     width: 100%; height: 100%; border-radius: 6px; overflow: hidden;
-    display: flex; align-items: center; justify-content: center; font-size: 15px; color: #bbb;
+    display: flex; align-items: center; justify-content: center; font-size: 20px; color: #bbb;
   }
   .group-thumb-inner img { width: 100%; height: 100%; object-fit: cover; }
   .group-thumb-zoom {
@@ -788,25 +809,11 @@
     box-shadow: 0 4px 18px rgba(0,0,0,0.35);
   }
   .group-thumb-zoom img { width: 100%; height: auto; display: block; border-radius: 6px; object-fit: contain; }
-  .group-photo-upload {
-    flex: 1; text-align: left; padding: 6px 8px; border-radius: 6px; border: 1px dashed #b8860b;
-    background: #fffaf0; color: #8a5a1a; font-size: 11px; font-weight: 600; cursor: pointer;
-  }
-  .group-photo-edit {
-    flex-shrink: 0; width: 28px; height: 28px; border-radius: 6px; border: none;
-    background: #6a4c93; color: white; font-size: 12px; cursor: pointer;
-  }
-  .group-photo-tcgdex {
-    flex-basis: 100%; text-align: center; padding: 5px 8px; border-radius: 6px; border: 1px solid #457b9d;
-    background: #eef5fa; color: #2c5d7a; font-size: 11px; font-weight: 600; cursor: pointer;
-  }
-  .group-photo-tcgdex:disabled { opacity: 0.6; cursor: default; }
   .instance-group-header {
-    display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
-    padding: 4px 2px; border-bottom: 1.5px solid #ddd; margin-bottom: 5px;
+    display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; flex: 1;
   }
   .instance-group-title { font-size: 12.5px; font-weight: 700; color: #2c3e50; }
-  .instance-group-total { font-size: 11.5px; font-weight: 700; color: #1d7a4c; white-space: nowrap; flex-shrink: 0; }
+  .instance-group-total { font-size: 11.5px; font-weight: 700; color: #1d7a4c; white-space: nowrap; }
   .instance-group-rows { display: flex; flex-direction: column; gap: 5px; padding-left: 6px; }
   .instance-row {
     display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: #f7f7f7;
@@ -846,11 +853,7 @@
   #instanceValueRow .stepper .step-btn:first-child { border-radius: 4px 4px 0 0; border-bottom: none; }
   #instanceValueRow .stepper .step-btn:last-child { border-radius: 0 0 4px 4px; }
 
-  #instanceAantalRow { display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 4px; }
-  #instanceAantalRow .stepper { flex-direction: column; }
-  #instanceAantalRow .stepper .step-btn { width: 22px; height: 16px; font-size: 11px; border: 1px solid #b8860b; background: #fff4d6; color: #5a3d00; cursor: pointer; }
-  #instanceAantalRow .stepper .step-btn:first-child { border-radius: 4px 4px 0 0; border-bottom: none; }
-  #instanceAantalRow .stepper .step-btn:last-child { border-radius: 0 0 4px 4px; }
+  #instanceAantalRow { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 4px; }
   #iAantal { width: 50px; text-align: center; font-size: 15px; padding: 6px 4px; border: 1px solid #ccc; border-radius: 6px; }
 
   .field-with-picker { display: flex; gap: 6px; align-items: stretch; }
@@ -982,8 +985,7 @@
     <path id="gaugeArc" d="M 15 100 A 85 85 0 0 1 185 100" fill="none" stroke="#3ecf8e" stroke-width="16" stroke-linecap="round" pathLength="100" stroke-dasharray="0 100"/>
     <text id="gaugePct" x="100" y="90" text-anchor="middle">0%</text>
   </svg>
-  <div id="gaugeLabel">Verzameld: 0 / 0</div>
-  <div id="valueLabel">Totale waarde verzameling: &euro; 0,00</div>
+  <div id="gaugeLabel">0 / 0</div>
 </div>
 <div id="countStatus" style="display:none;"></div>
 <input type="file" id="globalImgFileInput" accept="image/*" style="display:none">
@@ -1026,19 +1028,22 @@
     <button type="button" id="detailCloseBtn">&times;</button>
 
     <div class="detail-section">
-      <div id="detailArtFrame">
-        <img id="detailImg" src="" alt="">
-      </div>
       <div id="detailHeaderRow">
         <span id="detailName"></span>
         <span id="detailNum"></span>
       </div>
-      <div id="detailImgActions">
+      <div id="detailArtFrame">
+        <img id="detailImg" src="" alt="">
+      </div>
+      <div class="detail-photo-actions-row">
+        <button type="button" class="refresh-all-btn" id="detailRefreshAllBtn">🔄 Ververs foto's &amp; prijzen</button>
+        <button type="button" class="photo-toggle-btn" id="detailPhotoToggleBtn">📷 Foto aanpassen ▾</button>
+      </div>
+      <div id="detailImgActions" style="display:none;">
         <button type="button" id="detailUploadBtn">📷 Nieuwe foto</button>
         <button type="button" id="detailEditCurrentBtn">✂️ Bewerk huidige foto</button>
         <button type="button" id="detailResetImgBtn">Standaardafbeelding</button>
       </div>
-      <p class="crop-hint">Tip: plak een gekopieerde afbeelding met Ctrl+V / Cmd+V terwijl dit venster open staat.</p>
     </div>
 
     <div class="detail-section">
@@ -1200,7 +1205,11 @@
         <img id="extraDetailImg" src="" alt="" style="display:none;">
         <span id="extraDetailImgPlaceholder" class="placeholder-mark">🎴</span>
       </div>
-      <div id="extraImgActions">
+      <div class="detail-photo-actions-row">
+        <button type="button" class="refresh-all-btn" id="extraRefreshAllBtn">🔄 Ververs foto's &amp; prijzen</button>
+        <button type="button" class="photo-toggle-btn" id="extraPhotoToggleBtn">📷 Foto aanpassen ▾</button>
+      </div>
+      <div id="extraImgActions" style="display:none;">
         <button type="button" id="extraUploadBtn">📷 Nieuwe foto</button>
         <button type="button" id="extraEditCurrentBtn" style="display:none;">✂️ Bewerk huidige foto</button>
         <button type="button" id="extraResetImgBtn" style="display:none;">Foto verwijderen</button>
@@ -1290,11 +1299,9 @@
     <div id="iPriceFetchStatus"></div>
     <label class="field-label">Aantal</label>
     <div id="instanceAantalRow">
+      <button type="button" class="so-stepper-btn" id="iAantalMin">−</button>
       <input type="text" inputmode="numeric" id="iAantal" value="1">
-      <span class="stepper aantal-stepper">
-        <button type="button" class="step-btn" id="iAantalPlus">▲</button>
-        <button type="button" class="step-btn" id="iAantalMin">▼</button>
-      </span>
+      <button type="button" class="so-stepper-btn" id="iAantalPlus">+</button>
     </div>
     <div class="modal-actions">
       <button type="button" class="btn-danger" id="instanceDeleteBtn" style="display:none;">Verwijderen</button>
@@ -1327,6 +1334,14 @@
 </div>
 
 <div id="highValuePrintArea"></div>
+
+<div class="modal-overlay" id="instancesPopupModal">
+  <div class="modal-box modal-box-mini">
+    <button type="button" class="modal-close" id="instancesPopupCloseBtn">&times;</button>
+    <h3 id="instancesPopupTitle">Exemplaren</h3>
+    <div id="instancesPopupBody"></div>
+  </div>
+</div>
 
 <div class="modal-overlay" id="allPrintsModal">
   <div class="modal-box modal-box-wide">
@@ -1441,7 +1456,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '2.57';
+  const APP_VERSION = '2.63';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -1516,7 +1531,6 @@
   const gaugeLabel = document.getElementById('gaugeLabel');
   const gaugePct = document.getElementById('gaugePct');
   const gaugeArc = document.getElementById('gaugeArc');
-  const valueLabel = document.getElementById('valueLabel');
 
   const CONFIG_KEY = 'supabase_pokemon_config_v1';
 
@@ -1813,6 +1827,34 @@
     return `https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/${num}.png`;
   }
 
+  function ownedInstancesPanelHtml(list) {
+    if (list.length === 0) {
+      return `<p class="ci-empty">Nog geen exemplaren geregistreerd. Open de kaart zelf om een specifieke druk toe te voegen.</p>`;
+    }
+    const groups = groupInstances(list);
+    return groups.map(group => {
+      const title = [group.serie, group.set_naam, group.kaartnummer ? `#${group.kaartnummer}` : ''].filter(Boolean).join(' · ') || '(geen serie/set)';
+      const rows = group.items.map(inst => `
+        <div class="ci-row" data-inst-id="${inst.id}">
+          <span class="ci-versie">${inst.versie || ''}</span>
+          ${stepperHtmlFor(inst)}
+        </div>`).join('');
+      return `<div class="ci-group"><div class="ci-group-title">${title}</div>${rows}</div>`;
+    }).join('');
+  }
+
+  const instancesPopupModal = document.getElementById('instancesPopupModal');
+  function openInstancesPopup(parentType, parentId, titel) {
+    document.getElementById('instancesPopupTitle').textContent = titel || 'Exemplaren';
+    const body = document.getElementById('instancesPopupBody');
+    body.innerHTML = ownedInstancesPanelHtml(instancesFor(parentType, parentId));
+    wireStepperButtons(body);
+    instancesPopupModal.classList.add('open');
+  }
+  function closeInstancesPopup() { instancesPopupModal.classList.remove('open'); }
+  document.getElementById('instancesPopupCloseBtn').addEventListener('click', closeInstancesPopup);
+  wireOverlayClickToClose(instancesPopupModal, closeInstancesPopup);
+
   function cardHtml(rec) {
     const num = String(rec.nummer || '');
     const naam = rec.naam || '(onbekend)';
@@ -1823,6 +1865,9 @@
     const artBlock = imgUrl
       ? `<img src="${imgUrl}" alt="${naam}" onerror="this.onerror=null; this.src='${fallbackUrl}'; this.onerror=function(){this.replaceWith(Object.assign(document.createElement('div'),{className:'placeholder-mark',textContent:'?'}))};">`
       : `<div class="placeholder-mark">?</div>`;
+    const list = instancesFor('pokemon', rec.id);
+    const countTotal = list.reduce((sum, i) => sum + (parseInt(i.aantal) || 1), 0);
+    const countHtml = countTotal ? `<div class="card-count-badge">${countTotal}x</div>` : '';
     return `
       <div class="card ${owned ? 'is-owned' : ''}" data-id="${rec.id}" data-name="${naam.toLowerCase()}" data-num="${num}">
         <div class="card-header">
@@ -1834,17 +1879,58 @@
           </label>
         </div>
         <div class="art-frame">${artBlock}</div>
+        ${countHtml}
         <div class="card-footer">
           <span class="value-row-readonly" id="cardValue-${rec.id}">&euro; 0,00</span>
         </div>
       </div>`;
   }
 
+  async function onMainOwnedToggle(id, checked, checkboxEl) {
+    const rec = getRec(id);
+    if (!rec) return;
+    const list = instancesFor('pokemon', id);
+    if (!checked) {
+      if (list.length === 0) {
+        await setOwned(id, false);
+        return;
+      }
+      if (list.length === 1) {
+        const wantsDelete = confirm(`Wil je het enige kaartexemplaar van "${rec.naam}" ook verwijderen?\n\nKlik op Annuleren om het vinkje aan te laten staan.`);
+        if (!wantsDelete) { checkboxEl.checked = true; return; }
+        try {
+          const res = await fetch(instRestUrl(`?id=eq.${list[0].id}`), { method: 'DELETE', headers: authHeaders() });
+          if (!res.ok) throw new Error(await res.text());
+          allInstances = allInstances.filter(i => String(i.id) !== String(list[0].id));
+          await setOwned(id, false);
+          refreshParentUI('pokemon', id);
+        } catch (err) {
+          alert('Kon kaartexemplaar niet verwijderen: ' + err.message);
+          checkboxEl.checked = true;
+        }
+        return;
+      }
+      checkboxEl.checked = true;
+      openInstancesPopup('pokemon', id, rec.naam);
+      return;
+    }
+    await setOwned(id, true);
+    openInstancesPopup('pokemon', id, rec.naam);
+  }
+
   function renderGrid() {
     grid.innerHTML = records.map(cardHtml).join('');
     grid.querySelectorAll('.card').forEach(card => {
       const id = card.dataset.id;
-      card.querySelector('.owned-check').addEventListener('change', (e) => setOwned(id, e.target.checked));
+      card.querySelector('.owned-check').addEventListener('change', (e) => onMainOwnedToggle(id, e.target.checked, e.target));
+      const badge = card.querySelector('.card-count-badge');
+      if (badge) {
+        badge.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const rec = getRec(id);
+          openInstancesPopup('pokemon', id, rec ? rec.naam : '');
+        });
+      }
       setupImageControls(card, id);
       updateCardValueDisplay(id);
     });
@@ -1928,8 +2014,6 @@
     detailOwnedCheck.checked = !!rec.inbezit;
     detailNotitie.value = rec.notitie || '';
     const list = instancesFor('pokemon', currentDetailId);
-    document.getElementById('detailOwnedHint').textContent = list.length
-      ? 'Dit vinkje staat automatisch aan zolang er exemplaren onder hangen.' : '';
     document.getElementById('detailTotalValueLine').innerHTML = `Totale waarde: &euro; ${fmtEuro(totalForInstanceList(list))}`;
     renderInstancesInto(document.getElementById('detailInstancesList'), 'pokemon', currentDetailId);
   }
@@ -2115,6 +2199,16 @@
 
   detailOwnedCheck.addEventListener('change', async (e) => {
     await setOwned(currentDetailId, e.target.checked);
+  });
+  document.getElementById('detailPhotoToggleBtn').addEventListener('click', () => {
+    const panel = document.getElementById('detailImgActions');
+    const btn = document.getElementById('detailPhotoToggleBtn');
+    const open = panel.style.display !== 'none';
+    panel.style.display = open ? 'none' : '';
+    btn.textContent = open ? '📷 Foto aanpassen ▾' : '📷 Foto aanpassen ▴';
+  });
+  document.getElementById('detailRefreshAllBtn').addEventListener('click', (e) => {
+    refreshAllPhotosAndPrices('pokemon', currentDetailId, e.currentTarget);
   });
   document.getElementById('detailUploadBtn').addEventListener('click', () => {
     cropContext = 'pokemon';
@@ -2650,10 +2744,9 @@
     const total = records.length;
     const owned = records.filter(r => r.inbezit).length;
     const pct = total > 0 ? Math.round((owned / total) * 100) : 0;
-    gaugeLabel.textContent = `Verzameld: ${owned} / ${total}`;
+    gaugeLabel.textContent = `${owned} / ${total}`;
     gaugePct.textContent = pct + '%';
     gaugeArc.setAttribute('stroke-dasharray', `${pct} 100`);
-    valueLabel.innerHTML = `Totale waarde verzameling: &euro; ${fmtEuro(totalForParentType('pokemon'))}`;
   }
 
   function matchesSerieSet(parentType, id, serieFilter, setFilter) {
@@ -2866,7 +2959,7 @@
     const dotHtml = freshDate ? priceFreshnessDotHtml(freshDate) : '';
     const waardeHtml = total > 0 ? `<div class="extra-waarde">${dotHtml}&euro; ${fmtEuro(total)}</div>` : '';
     const countTotal = list.reduce((sum, i) => sum + (parseInt(i.aantal) || 1), 0);
-    const countHtml = countTotal ? `<div class="extra-set">${countTotal} ${countTotal === 1 ? 'exemplaar' : 'exemplaren'}</div>` : '';
+    const countHtml = countTotal ? `<div class="extra-set extra-count-badge">${countTotal} ${countTotal === 1 ? 'exemplaar' : 'exemplaren'}</div>` : '';
     const typeLabel = currentMainTab === 'trainers' ? (EXTRA_TYPE_LABELS[item.categorie] || item.categorie || '') : '';
     return `
       <div class="extra-card" data-id="${item.id}" data-naam="${(item.naam || '').toLowerCase()}" data-type="${item.categorie || ''}">
@@ -2886,6 +2979,14 @@
     grid2.innerHTML = list.map(extraCardHtml).join('');
     grid2.querySelectorAll('.extra-card').forEach(card => {
       card.addEventListener('click', () => openExtraDetailModal(card.dataset.id));
+      const badge = card.querySelector('.extra-count-badge');
+      if (badge) {
+        badge.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const item = getExtra(card.dataset.id);
+          openInstancesPopup(EXTRA_PARENT_TYPE, card.dataset.id, item ? item.naam : '');
+        });
+      }
     });
     applyExtraFilter();
   }
@@ -3185,6 +3286,16 @@
     }
   }
 
+  document.getElementById('extraPhotoToggleBtn').addEventListener('click', () => {
+    const panel = document.getElementById('extraImgActions');
+    const btn = document.getElementById('extraPhotoToggleBtn');
+    const open = panel.style.display !== 'none';
+    panel.style.display = open ? 'none' : '';
+    btn.textContent = open ? '📷 Foto aanpassen ▾' : '📷 Foto aanpassen ▴';
+  });
+  document.getElementById('extraRefreshAllBtn').addEventListener('click', (e) => {
+    refreshAllPhotosAndPrices(EXTRA_PARENT_TYPE, currentExtraId, e.currentTarget);
+  });
   document.getElementById('extraUploadBtn').addEventListener('click', async () => {
     if (currentExtraId === null) {
       if (!eNaam.value.trim()) { alert('Vul eerst een naam in voordat je een foto toevoegt.'); return; }
@@ -3476,7 +3587,7 @@
     const dotHtml = (!isPending && inst.prijs_bron_datum) ? priceFreshnessDotHtml(inst.prijs_bron_datum) : '';
     const valueHtml = isPending
       ? `<span class="inst-value-pending">⏳ prijs ophalen...</span>`
-      : `${dotHtml}&euro; ${fmtEuro(instanceLineValue(inst))}`;
+      : `${dotHtml}&euro; ${fmtEuro(parseFloat(inst.waarde) || 0)}`;
     return `
       <div class="instance-row" data-inst-id="${inst.id}">
         <div class="inst-info">
@@ -3521,20 +3632,16 @@
       const thumbHtml = photoUrl
         ? `<div class="group-thumb-inner"><img src="${photoUrl}" alt=""></div><div class="group-thumb-zoom"><img src="${photoUrl}" alt=""></div>`
         : `<div class="group-thumb-inner">🎴</div>`;
-      const canTryTcgdex = !!(group.set_naam && group.kaartnummer);
       const groupFreshDate = oldestFreshnessDate(group.items);
       const groupDotHtml = groupFreshDate ? priceFreshnessDotHtml(groupFreshDate) : '';
       return `
         <div class="instance-group">
           <div class="instance-group-photo">
             <div class="group-thumb">${thumbHtml}</div>
-            <button type="button" class="group-photo-upload">📷 ${photoUrl ? 'Vervang groepsfoto' : 'Groepsfoto toevoegen'}</button>
-            ${photoUrl ? `<button type="button" class="group-photo-edit">✂️</button>` : ''}
-            ${canTryTcgdex ? `<button type="button" class="group-photo-tcgdex">🔍 Foto ophalen (TCGdex)</button>` : ''}
-          </div>
-          <div class="instance-group-header">
-            <span class="instance-group-title">${title}</span>
-            <span class="instance-group-total">${countLabel} &middot; ${groupDotHtml}&euro; ${fmtEuro(groupValue)}</span>
+            <div class="instance-group-header">
+              <span class="instance-group-title">${title}</span>
+              <span class="instance-group-total">${countLabel} &middot; ${groupDotHtml}&euro; ${fmtEuro(groupValue)}</span>
+            </div>
           </div>
           <div class="instance-group-rows">${group.items.map(instanceRowHtml).join('')}</div>
         </div>`;
@@ -3566,8 +3673,6 @@
       });
     });
     containerEl.querySelectorAll('.instance-group').forEach((groupEl, idx) => {
-      const group = groups[idx];
-      const target = { parentType, parentId, serie: group.serie, set_naam: group.set_naam, kaartnummer: group.kaartnummer };
       const thumb = groupEl.querySelector('.group-thumb');
       const zoom = groupEl.querySelector('.group-thumb-zoom');
       if (thumb && zoom) {
@@ -3590,41 +3695,6 @@
           });
         });
         thumb.addEventListener('mouseleave', () => { zoom.style.display = 'none'; });
-      }
-      const uploadBtn = groupEl.querySelector('.group-photo-upload');
-      uploadBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        cropContext = 'group';
-        cropGroupTarget = target;
-        globalImgFileInput.click();
-      });
-      const editBtn = groupEl.querySelector('.group-photo-edit');
-      if (editBtn) {
-        editBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          cropContext = 'group';
-          cropGroupTarget = target;
-          const photoUrl = (group.items.find(i => i.afbeelding) || {}).afbeelding;
-          if (photoUrl) openCropModalFromUrl(photoUrl, null);
-        });
-      }
-      const tcgdexBtn = groupEl.querySelector('.group-photo-tcgdex');
-      if (tcgdexBtn) {
-        tcgdexBtn.addEventListener('click', async (e) => {
-          e.stopPropagation();
-          const originalLabel = tcgdexBtn.textContent;
-          tcgdexBtn.disabled = true;
-          tcgdexBtn.textContent = '🔍 Bezig met zoeken...';
-          const result = await tryAutoFetchGroupPhoto(target, true);
-          if (result === 'found') {
-            tcgdexBtn.textContent = '✓ Foto gevonden';
-          } else if (result === 'not-found') {
-            tcgdexBtn.textContent = '✗ Niets gevonden bij TCGdex';
-          } else {
-            tcgdexBtn.textContent = '✗ Mislukt, probeer opnieuw';
-          }
-          setTimeout(() => { tcgdexBtn.disabled = false; tcgdexBtn.textContent = originalLabel; }, 3000);
-        });
       }
     });
   }
@@ -3862,6 +3932,33 @@
   // Probeert automatisch een foto op te halen voor een groep (serie+set+
   // kaartnummer), maar alleen als die groep nog geen eigen foto heeft — een
   // handmatig toegevoegde/bewerkte foto wordt dus nooit overschreven.
+  // Haalt voor alle exemplaargroepen van deze kaart in één keer ontbrekende
+  // foto's (TCGdex) en actuele prijzen op. Gedeeld door het Pokémon- en het
+  // Trainers/Energy-detailvenster.
+  async function refreshAllPhotosAndPrices(parentType, parentId, btnEl) {
+    const list = instancesFor(parentType, parentId);
+    if (list.length === 0) { alert('Nog geen exemplaren om te verversen.'); return; }
+    const origText = btnEl.textContent;
+    btnEl.disabled = true;
+    try {
+      const groups = groupInstances(list);
+      for (let i = 0; i < groups.length; i++) {
+        const group = groups[i];
+        btnEl.textContent = `🔄 Bezig (${i + 1}/${groups.length})...`;
+        await tryAutoFetchGroupPhoto({
+          parentType, parentId, serie: group.serie, set_naam: group.set_naam, kaartnummer: group.kaartnummer
+        }, false, true);
+        for (const inst of group.items) {
+          await tryAutoFetchInstancePrice(inst.id, true);
+        }
+      }
+      refreshParentUI(parentType, parentId);
+    } finally {
+      btnEl.disabled = false;
+      btnEl.textContent = origText;
+    }
+  }
+
   async function tryAutoFetchGroupPhoto(groupTarget, force, skipRefresh) {
     if (!groupTarget.set_naam || !groupTarget.kaartnummer) return 'missing-data';
     if (!force) {
@@ -4365,6 +4462,13 @@
         const cb = c.querySelector('.owned-check'); if (cb) cb.checked = true;
       });
       try { await patchRecord(pokemonId, { inbezit: true }); } catch (e) {}
+    } else if (!hasInstances && rec.inbezit) {
+      rec.inbezit = false;
+      document.querySelectorAll(`.card[data-id="${pokemonId}"]`).forEach(c => {
+        c.classList.remove('is-owned');
+        const cb = c.querySelector('.owned-check'); if (cb) cb.checked = false;
+      });
+      try { await patchRecord(pokemonId, { inbezit: false }); } catch (e) {}
     }
   }
 
