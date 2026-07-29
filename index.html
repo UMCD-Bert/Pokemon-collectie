@@ -399,13 +399,9 @@
     border-radius: 1.2mm; margin: 1.2mm 0; display: flex; align-items: center; justify-content: center; overflow: hidden;
   }
   .art-frame img { max-width: 90%; max-height: 90%; width: auto; height: auto; object-fit: contain; }
-  .card-footer { text-align: center; font-size: 1.6mm; color: #5a3d00; min-height: 4mm; }
+  .card-footer { text-align: center; font-size: 1.6mm; color: #5a3d00; min-height: 4mm; cursor: pointer; }
   .card-footer .value-row-readonly { display: block; font-weight: 700; font-size: 2.4mm; color: #1d7a4c; }
   .card-footer .card-count { font-weight: 600; font-size: 2mm; color: #5a3d00; }
-  .card-count-badge {
-    position: absolute; top: 1.5mm; left: 1.5mm; background: #2c3e50; color: #fff;
-    font-size: 2mm; font-weight: 700; padding: 0.4mm 1mm; border-radius: 3mm; z-index: 2;
-  }
   .extra-count-badge { cursor: pointer; text-decoration: underline; text-decoration-style: dotted; }
   .ci-empty { font-size: 11px; color: #888; text-align: center; margin: 4px 0; }
   .ci-group { margin-bottom: 6px; }
@@ -581,6 +577,12 @@
   #highValueModal .modal-box { max-width: 480px; }
   .modal-box-wide { max-width: 900px !important; }
   .modal-box-mini { max-width: 320px !important; }
+  .so-card-modal-photo {
+    width: 100%; aspect-ratio: 3/4; border-radius: 8px; background: #e8e8e8;
+    display: flex; align-items: center; justify-content: center; overflow: hidden;
+    margin-bottom: 10px; font-size: 40px; color: #bbb;
+  }
+  .so-card-modal-photo img { width: 100%; height: 100%; object-fit: contain; }
   #instancesPopupBody .ci-group:last-child { margin-bottom: 0; }
   #allPrintsStatus { font-size: 12px; color: #777; text-align: center; margin: 0 0 10px 0; }
   #allPrintsGrid { display: grid; grid-template-columns: repeat(auto-fill, 44mm); gap: 4mm; justify-content: center; }
@@ -813,7 +815,7 @@
     display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; flex: 1;
   }
   .instance-group-title { font-size: 12.5px; font-weight: 700; color: #2c3e50; }
-  .instance-group-total { font-size: 11.5px; font-weight: 700; color: #1d7a4c; white-space: nowrap; }
+  .instance-group-total { font-size: 11.5px; font-weight: 700; color: #1d7a4c; white-space: nowrap; align-self: stretch; text-align: center; }
   .instance-group-rows { display: flex; flex-direction: column; gap: 5px; padding-left: 6px; }
   .instance-row {
     display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: #f7f7f7;
@@ -936,15 +938,6 @@
       <button type="button" class="dropdown-item" data-value="bezit">Alleen in bezit</button>
       <button type="button" class="dropdown-item" data-value="mis">Alleen ontbrekend</button>
     </div>
-  </div>
-
-  <div class="dropdown" id="pokemonSerieDropdown">
-    <button type="button" class="dropdown-btn" id="pokemonSerieDropdownBtn">Serie: Alle <span class="caret">▾</span></button>
-    <div class="dropdown-menu" id="pokemonSerieMenu"></div>
-  </div>
-  <div class="dropdown" id="pokemonSetDropdown">
-    <button type="button" class="dropdown-btn" id="pokemonSetDropdownBtn">Set: Alle <span class="caret">▾</span></button>
-    <div class="dropdown-menu" id="pokemonSetMenu"></div>
   </div>
 
   <select id="sortMode" class="visually-hidden-select">
@@ -1096,14 +1089,6 @@
         <button type="button" class="dropdown-item" data-value="supporter">Supporter</button>
         <button type="button" class="dropdown-item" data-value="stadium">Stadium</button>
       </div>
-    </div>
-    <div class="dropdown" id="extraSerieDropdown">
-      <button type="button" class="dropdown-btn" id="extraSerieDropdownBtn">Serie: Alle <span class="caret">▾</span></button>
-      <div class="dropdown-menu" id="extraSerieMenu"></div>
-    </div>
-    <div class="dropdown" id="extraSetDropdown">
-      <button type="button" class="dropdown-btn" id="extraSetDropdownBtn">Set: Alle <span class="caret">▾</span></button>
-      <div class="dropdown-menu" id="extraSetMenu"></div>
     </div>
   </div>
   <div id="extraCountStatus"></div>
@@ -1370,6 +1355,19 @@
     <div class="modal-actions">
       <button type="button" class="btn-primary" id="soFetchLogDoneBtn">Sluiten</button>
     </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="soCardModal">
+  <div class="modal-box modal-box-mini">
+    <button type="button" class="modal-close" id="soCardCloseBtn">&times;</button>
+    <div class="so-card-modal-photo" id="soCardModalPhoto"></div>
+    <h3 id="soCardModalNaam"></h3>
+    <div id="soCardModalSetInfo" style="font-size:12px;color:#888;margin-bottom:10px;"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn-primary" id="soCardModalRefreshBtn">🔄 Ververs deze kaart</button>
+    </div>
+    <div id="soCardModalStatus" style="font-size:12px;margin-top:8px;text-align:center;"></div>
   </div>
 </div>
 
@@ -1866,8 +1864,6 @@
       ? `<img src="${imgUrl}" alt="${naam}" onerror="this.onerror=null; this.src='${fallbackUrl}'; this.onerror=function(){this.replaceWith(Object.assign(document.createElement('div'),{className:'placeholder-mark',textContent:'?'}))};">`
       : `<div class="placeholder-mark">?</div>`;
     const list = instancesFor('pokemon', rec.id);
-    const countTotal = list.reduce((sum, i) => sum + (parseInt(i.aantal) || 1), 0);
-    const countHtml = countTotal ? `<div class="card-count-badge">${countTotal}x</div>` : '';
     return `
       <div class="card ${owned ? 'is-owned' : ''}" data-id="${rec.id}" data-name="${naam.toLowerCase()}" data-num="${num}">
         <div class="card-header">
@@ -1879,7 +1875,6 @@
           </label>
         </div>
         <div class="art-frame">${artBlock}</div>
-        ${countHtml}
         <div class="card-footer">
           <span class="value-row-readonly" id="cardValue-${rec.id}">&euro; 0,00</span>
         </div>
@@ -1923,14 +1918,14 @@
     grid.querySelectorAll('.card').forEach(card => {
       const id = card.dataset.id;
       card.querySelector('.owned-check').addEventListener('change', (e) => onMainOwnedToggle(id, e.target.checked, e.target));
-      const badge = card.querySelector('.card-count-badge');
-      if (badge) {
-        badge.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const rec = getRec(id);
-          openInstancesPopup('pokemon', id, rec ? rec.naam : '');
-        });
-      }
+      const footer = card.querySelector('.card-footer');
+      footer.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const list = instancesFor('pokemon', id);
+        if (list.length === 0) return;
+        const rec = getRec(id);
+        openInstancesPopup('pokemon', id, rec ? rec.naam : '');
+      });
       setupImageControls(card, id);
       updateCardValueDisplay(id);
     });
@@ -2749,13 +2744,6 @@
     gaugeArc.setAttribute('stroke-dasharray', `${pct} 100`);
   }
 
-  function matchesSerieSet(parentType, id, serieFilter, setFilter) {
-    if (!serieFilter && !setFilter) return true;
-    return instancesFor(parentType, id).some(i =>
-      (!serieFilter || i.serie === serieFilter) && (!setFilter || i.set_naam === setFilter)
-    );
-  }
-
   function applyFilter() {
     const q = search.value.toLowerCase();
     const mode = filterOwned.value;
@@ -2769,8 +2757,7 @@
       let matchesOwned = true;
       if (mode === 'bezit') matchesOwned = owned;
       if (mode === 'mis') matchesOwned = !owned;
-      const matchesSerieSetFilter = matchesSerieSet('pokemon', el.dataset.id, pokemonSerieFilter, pokemonSetFilter);
-      const show = matchesText && matchesOwned && matchesSerieSetFilter;
+      const show = matchesText && matchesOwned;
       el.classList.toggle('hidden', !show);
       if (show) visible++;
     });
@@ -2907,7 +2894,6 @@
           loadAllExtraItems();
         } else {
           renderExtraGrid();
-          refreshSerieSetFilterDropdowns();
         }
       }
     });
@@ -2922,7 +2908,6 @@
       if (!res.ok) throw new Error(`status ${res.status}`);
       extraItems = await res.json();
       renderExtraGrid();
-      refreshSerieSetFilterDropdowns();
     } catch (err) {
       statusEl2.textContent = 'Kon niet laden: ' + err.message;
     }
@@ -2997,8 +2982,7 @@
     document.querySelectorAll('.extra-card').forEach(card => {
       total++;
       const matchesText = card.dataset.naam.includes(q);
-      const matchesSerieSetFilter = matchesSerieSet(EXTRA_PARENT_TYPE, card.dataset.id, extraSerieFilter, extraSetFilter);
-      const show = matchesText && matchesSerieSetFilter;
+      const show = matchesText;
       card.classList.toggle('hidden', !show);
       if (show) visible++;
     });
@@ -3339,7 +3323,6 @@
       renderGrid();
       if (currentView === 'checklist') renderChecklist();
       if (extraLoaded) renderExtraGrid();
-      refreshSerieSetFilterDropdowns();
       applyFilter();
       if (extraLoaded) applyExtraFilter();
     } catch (err) {
@@ -3417,74 +3400,10 @@
     }
   }
 
-  // ---------- Serie/set filter dropdowns ----------
-  let pokemonSerieFilter = '', pokemonSetFilter = '';
-  let extraSerieFilter = '', extraSetFilter = '';
-
   const SERIE_ORDER_INDEX = {};
   Object.keys(CARD_SERIES).forEach((serie, i) => { SERIE_ORDER_INDEX[serie] = i; });
   const SET_ORDER_INDEX = {};
   Object.values(CARD_SERIES).forEach(sets => sets.forEach((s, i) => { if (!(s in SET_ORDER_INDEX)) SET_ORDER_INDEX[s] = Object.keys(SET_ORDER_INDEX).length; }));
-
-  function distinctValues(parentType, field) {
-    const set = new Set();
-    allInstances.filter(i => i.parent_type === parentType).forEach(i => { if (i[field]) set.add(i[field]); });
-    const orderIndex = field === 'serie' ? SERIE_ORDER_INDEX : SET_ORDER_INDEX;
-    return Array.from(set).sort((a, b) => {
-      const ia = orderIndex[a], ib = orderIndex[b];
-      if (ia !== undefined && ib !== undefined) return ib - ia; // newest (highest index) first
-      if (ia !== undefined) return -1; // known values before unknown/custom ones
-      if (ib !== undefined) return 1;
-      return a.localeCompare(b, 'nl');
-    });
-  }
-
-  function populateFilterDropdown(menuId, btnId, values, currentVal, label, onSelect) {
-    const menu = document.getElementById(menuId);
-    const btn = document.getElementById(btnId);
-    menu.innerHTML = `<button type="button" class="dropdown-item${currentVal === '' ? ' active' : ''}" data-value="">Alle</button>` +
-      values.map(v => `<button type="button" class="dropdown-item${v === currentVal ? ' active' : ''}" data-value="${v}">${v}</button>`).join('');
-    btn.innerHTML = `${label}: ${currentVal || 'Alle'} <span class="caret">▾</span>`;
-    menu.querySelectorAll('.dropdown-item').forEach(item => {
-      item.addEventListener('click', () => {
-        menu.closest('.dropdown').classList.remove('open');
-        onSelect(item.dataset.value);
-      });
-    });
-  }
-
-  function refreshSerieSetFilterDropdowns() {
-    populateFilterDropdown('pokemonSerieMenu', 'pokemonSerieDropdownBtn', distinctValues('pokemon', 'serie'), pokemonSerieFilter, 'Serie', (v) => {
-      pokemonSerieFilter = v;
-      refreshSerieSetFilterDropdowns();
-      applyFilter();
-    });
-    populateFilterDropdown('pokemonSetMenu', 'pokemonSetDropdownBtn', distinctValues('pokemon', 'set_naam'), pokemonSetFilter, 'Set', (v) => {
-      pokemonSetFilter = v;
-      refreshSerieSetFilterDropdowns();
-      applyFilter();
-    });
-    populateFilterDropdown('extraSerieMenu', 'extraSerieDropdownBtn', distinctValues(EXTRA_PARENT_TYPE, 'serie'), extraSerieFilter, 'Serie', (v) => {
-      extraSerieFilter = v;
-      refreshSerieSetFilterDropdowns();
-      applyExtraFilter();
-    });
-    populateFilterDropdown('extraSetMenu', 'extraSetDropdownBtn', distinctValues(EXTRA_PARENT_TYPE, 'set_naam'), extraSetFilter, 'Set', (v) => {
-      extraSetFilter = v;
-      refreshSerieSetFilterDropdowns();
-      applyExtraFilter();
-    });
-  }
-
-  ['pokemonSerieDropdown', 'pokemonSetDropdown', 'extraSerieDropdown', 'extraSetDropdown'].forEach(id => {
-    const dropdown = document.getElementById(id);
-    dropdown.querySelector('.dropdown-btn').addEventListener('click', (e) => {
-      e.stopPropagation();
-      const wasOpen = dropdown.classList.contains('open');
-      document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
-      if (!wasOpen) dropdown.classList.add('open');
-    });
-  });
 
   function instancesFor(parentType, parentId) {
     return allInstances.filter(i => i.parent_type === parentType && String(i.parent_id) === String(parentId));
@@ -3912,8 +3831,8 @@
       const setRes = await fetch(`https://api.tcgdex.net/v2/en/sets/${encodeURIComponent(setId)}`);
       if (!setRes.ok) return null;
       const setData = await setRes.json();
-      const target = String(kaartnummer).trim().replace(/^0+(?=\d)/, '');
-      const match = (setData.cards || []).find(c => String(c.localId).trim().replace(/^0+(?=\d)/, '') === target);
+      const target = String(kaartnummer).trim().replace(/^([A-Za-z]*)0+(?=\d)/, '$1');
+      const match = (setData.cards || []).find(c => String(c.localId).trim().replace(/^([A-Za-z]*)0+(?=\d)/, '$1') === target);
       if (!match) return null;
       const fullRes = await fetch(`https://api.tcgdex.net/v2/en/sets/${encodeURIComponent(setId)}/${encodeURIComponent(match.localId)}`);
       if (!fullRes.ok) return null;
@@ -4747,7 +4666,6 @@
     // Eén keer alles verversen na afloop, in plaats van bij elke losse match.
     renderGrid();
     renderExtraGrid();
-    refreshSerieSetFilterDropdowns();
     applyFilter();
     applyExtraFilter();
     updateTotalsBar();
@@ -5221,8 +5139,10 @@
 
   // Voorloopnullen negeren (TCGdex geeft soms "034", handmatig ingevoerde
   // exemplaren hebben vaak "34") — anders mist het vinkje ten onrechte.
+  // Ook na een lettervoorvoegsel (bijv. "H03" vs TCGdex' "H3" bij holo-
+  // kaarten uit Aquapolis/Skyridge).
   function normalizeKaartnummer(n) {
-    return String(n || '').trim().replace(/^0+(?=\d)/, '');
+    return String(n || '').trim().replace(/^([A-Za-z]*)0+(?=\d)/, '$1');
   }
   function findInstanceForSetCard(row, versie) {
     const v = versie.toLowerCase();
@@ -5285,7 +5205,70 @@
       });
     });
     wireStepperButtons(grid2);
+    grid2.querySelectorAll('.so-card').forEach(card => {
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('.so-checks')) return;
+        const row = soCachedRows.find(r => String(r.id) === card.dataset.rowId);
+        if (row) openSoCardModal(row);
+      });
+    });
   }
+
+  const soCardModal = document.getElementById('soCardModal');
+  let soCardModalRow = null;
+  function renderSoCardModalPhoto(row) {
+    const photoEl = document.getElementById('soCardModalPhoto');
+    photoEl.innerHTML = row.afbeelding ? `<img src="${row.afbeelding}/high.png" alt="">` : `<span class="placeholder-mark">🎴</span>`;
+  }
+  function openSoCardModal(row) {
+    soCardModalRow = row;
+    document.getElementById('soCardModalNaam').textContent = row.naam || '(onbekend)';
+    document.getElementById('soCardModalSetInfo').textContent =
+      [row.serie, row.set_naam].filter(Boolean).join(' · ') + ` #${row.kaartnummer}`;
+    document.getElementById('soCardModalStatus').textContent = '';
+    renderSoCardModalPhoto(row);
+    soCardModal.classList.add('open');
+  }
+  function closeSoCardModal() { soCardModal.classList.remove('open'); soCardModalRow = null; }
+  document.getElementById('soCardCloseBtn').addEventListener('click', closeSoCardModal);
+  wireOverlayClickToClose(soCardModal, closeSoCardModal);
+
+  document.getElementById('soCardModalRefreshBtn').addEventListener('click', async () => {
+    const row = soCardModalRow;
+    if (!row) return;
+    const btn = document.getElementById('soCardModalRefreshBtn');
+    const statusEl = document.getElementById('soCardModalStatus');
+    btn.disabled = true;
+    statusEl.textContent = 'Bezig met zoeken bij TCGdex...';
+    try {
+      const card = await fetchTcgdexCard(row.set_naam, row.kaartnummer);
+      if (!card) {
+        statusEl.textContent = 'Niet gevonden bij TCGdex.';
+        return;
+      }
+      const nu = new Date().toISOString();
+      const patch = { prijs_updated: nu };
+      if (card.image) { patch.afbeelding = card.image; row.afbeelding = card.image; }
+      const cm = card.pricing ? card.pricing.cardmarket : null;
+      if (row.heeft_normaal) { const p = pickTcgdexPrice(cm, 'Normaal'); patch.prijs_normaal = p; row.prijs_normaal = p; }
+      if (row.heeft_holo) { const p = pickTcgdexPrice(cm, 'Holo'); patch.prijs_holo = p; row.prijs_holo = p; }
+      if (row.heeft_reverse) { const p = pickTcgdexPrice(cm, 'Reverse Holo'); patch.prijs_reverse = p; row.prijs_reverse = p; }
+      row.prijs_updated = nu;
+      const res = await fetch(setKaartenRestUrl(`?id=eq.${row.id}`), {
+        method: 'PATCH',
+        headers: authHeaders({ 'Prefer': 'return=minimal' }),
+        body: JSON.stringify(patch)
+      });
+      if (!res.ok) throw new Error(await res.text());
+      renderSoCardModalPhoto(row);
+      statusEl.textContent = card.image ? 'Gevonden ✓' : 'Prijs gevonden, geen foto bij TCGdex ✓';
+      renderSetOverviewGrid();
+    } catch (err) {
+      statusEl.textContent = 'Mislukt: ' + err.message;
+    } finally {
+      btn.disabled = false;
+    }
+  });
 
   // Haalt één set volledig op bij TCGdex en slaat 'm op in tcg_set_kaarten
   // (eerst verwijderen, dan opnieuw invoegen). Gedeeld door de losse
