@@ -358,6 +358,23 @@
   .so-naam { font-weight: 700; color: #2c3e50; font-size: 12.5px; }
   .so-nummer { color: #888; font-size: 11px; }
   .so-prices { font-size: 11px; color: #1d7a4c; margin-top: 4px; display: flex; flex-direction: column; gap: 1px; }
+
+  #sealedTotalsBar { text-align: center; font-size: 13px; color: #444; margin: 10px auto; }
+  #sealedAddBtn { display: block; margin: 0 auto 12px auto; }
+  #sealedStatus { font-size: 12px; color: #777; text-align: center; margin: 8px 0; }
+  .sealed-empty-msg { font-size: 12px; color: #777; text-align: center; margin: 8px 0; }
+  #sealedList { max-width: 700px; margin: 0 auto; display: flex; flex-direction: column; gap: 6px; }
+  .sealed-row {
+    background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    padding: 8px 10px; display: flex; align-items: center; gap: 10px; cursor: pointer;
+  }
+  .sealed-row-info { flex: 1; min-width: 0; }
+  .sealed-row-naam { font-weight: 700; color: #2c3e50; font-size: 13px; }
+  .sealed-row-setinfo { color: #888; font-size: 11px; }
+  .sealed-row-prices { font-size: 11px; color: #444; text-align: right; white-space: nowrap; }
+  .sealed-row-resultaat-pos { color: #1d7a4c; font-weight: 700; }
+  .sealed-row-resultaat-neg { color: #c0392b; font-weight: 700; }
+  .sealed-row-delete { background: none; border: none; color: #c0392b; font-size: 16px; cursor: pointer; padding: 4px; }
   .so-checks { display: flex; flex-direction: column; gap: 3px; margin-top: 4px; }
   .so-check { display: grid; grid-template-columns: auto 1fr auto; align-items: center; column-gap: 5px; font-size: 11px; color: #444; cursor: pointer; }
   .so-check input[type="checkbox"] { flex-shrink: 0; }
@@ -873,6 +890,7 @@
   <button type="button" class="tab-btn" data-tab="trainers">Trainers</button>
   <button type="button" class="tab-btn" data-tab="energy">Energy</button>
   <button type="button" class="tab-btn" data-tab="setoverzicht">Serie/Set</button>
+  <button type="button" class="tab-btn" data-tab="sealed">Sealed</button>
 </div>
 
 <div id="totalsBarRow">
@@ -1180,6 +1198,13 @@
   <div class="grid" id="soGrid"></div>
 </div>
 
+<div id="sealedSection" style="display:none;">
+  <div id="sealedTotalsBar">Aankoop: &euro; 0,00 &nbsp;·&nbsp; Waarde: &euro; 0,00 &nbsp;·&nbsp; <strong>Resultaat: &euro; 0,00</strong></div>
+  <button type="button" id="sealedAddBtn">+ Toevoegen</button>
+  <div id="sealedStatus"></div>
+  <div id="sealedList"></div>
+</div>
+
 <div class="modal-overlay" id="extraDetailModal">
   <div class="modal-box">
     <button type="button" class="modal-close" id="extraDetailCloseBtn">&times;</button>
@@ -1371,6 +1396,47 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="sealedModal">
+  <div class="modal-box">
+    <button type="button" class="modal-close" id="sealedCloseBtn">&times;</button>
+    <h3 id="sealedModalTitle">Sealed product</h3>
+    <label class="field-label">Naam</label>
+    <input type="text" class="field-input" id="sealedNaam" placeholder="bijv. Elite Trainer Box - Mega Evolution">
+    <label class="field-label">Set</label>
+    <div class="field-with-picker">
+      <input type="text" class="field-input" id="sealedSet" placeholder="Typ of kies rechts...">
+      <div class="dropdown mini-picker" id="sealedSetPicker">
+        <button type="button" class="dropdown-btn picker-btn" id="sealedSetPickerBtn">▾</button>
+        <div class="dropdown-menu" id="sealedSetMenu"></div>
+      </div>
+    </div>
+    <label class="field-label">Serie</label>
+    <div class="field-with-picker">
+      <input type="text" class="field-input" id="sealedSerie" placeholder="Typ of kies rechts...">
+      <div class="dropdown mini-picker" id="sealedSeriePicker">
+        <button type="button" class="dropdown-btn picker-btn" id="sealedSeriePickerBtn">▾</button>
+        <div class="dropdown-menu" id="sealedSerieMenu"></div>
+      </div>
+    </div>
+    <label class="field-label">Aantal</label>
+    <div id="sealedAantalRow">
+      <button type="button" class="so-stepper-btn" id="sealedAantalMin">−</button>
+      <input type="text" inputmode="numeric" id="sealedAantal" value="1">
+      <button type="button" class="so-stepper-btn" id="sealedAantalPlus">+</button>
+    </div>
+    <label class="field-label">Aankoopprijs (per stuk)</label>
+    <input type="text" inputmode="decimal" class="field-input" id="sealedAankoopprijs" placeholder="0,00">
+    <label class="field-label">Huidige waarde (per stuk)</label>
+    <input type="text" inputmode="decimal" class="field-input" id="sealedHuidigeWaarde" placeholder="0,00">
+    <label class="field-label">Notitie</label>
+    <input type="text" class="field-input" id="sealedNotitie" placeholder="optioneel">
+    <div class="modal-actions">
+      <button type="button" class="btn-danger" id="sealedDeleteBtn" style="display:none;">Verwijderen</button>
+      <button type="button" class="btn-primary" id="sealedSaveBtn">Opslaan</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="noPriceModal">
   <div class="modal-box">
     <button type="button" class="modal-close" id="noPriceCloseBtn">&times;</button>
@@ -1547,7 +1613,7 @@
     'Sun & Moon Series': ['Sun & Moon', 'Guardians Rising', 'Burning Shadows', 'Shining Legends', 'Crimson Invasion', 'Ultra Prism', 'Forbidden Light', 'Celestial Storm', 'Dragon Majesty', 'Lost Thunder', 'Team Up', 'Detective Pikachu', 'Unbroken Bonds', 'Unified Minds', 'Hidden Fates', 'Cosmic Eclipse', 'SM Black Star Promos'],
     'Sword & Shield Series': ['Sword & Shield', 'Rebel Clash', 'Darkness Ablaze', "Champion's Path", 'Vivid Voltage', 'Shining Fates', 'Battle Styles', 'Chilling Reign', 'Evolving Skies', 'Celebrations', 'Fusion Strike', 'Brilliant Stars', 'Brilliant Stars Trainer Gallery', 'Astral Radiance', 'Astral Radiance Trainer Gallery', 'Pokémon GO', 'Lost Origin', 'Lost Origin Trainer Gallery', 'Silver Tempest', 'Silver Tempest Trainer Gallery', 'Crown Zenith', 'SWSH Black Star Promos'],
     'Scarlet & Violet Series': ['Scarlet & Violet', 'Paldea Evolved', 'Obsidian Flames', 'Scarlet & Violet 151', 'Paradox Rift', 'Paldean Fates', 'Temporal Forces', 'Twilight Masquerade', 'Shrouded Fable', 'Stellar Crown', 'Surging Sparks', 'Prismatic Evolutions', 'Journey Together', 'Destined Rivals', 'Scarlet & Violet Promos'],
-    'Mega Evolution Series': ['Mega Evolution', 'Perfect Order', 'Chaos Rising', 'Pitch Black', '30th Anniversary', 'MEP Black Star Promos'],
+    'Mega Evolution Series': ['Mega Evolution', 'Phantasmal Flames', 'Ascended Heroes', 'Perfect Order', 'Chaos Rising', 'Pitch Black', '30th Celebration', 'MEP Black Star Promos'],
     "Overig / promo's": [
       "McDonald's Collection", "McDonald's Collection 2011", "McDonald's Collection 2012", "McDonald's Collection 2013",
       "McDonald's Collection 2014", "McDonald's Collection 2015", "McDonald's Collection 2016", "McDonald's Collection 2017",
@@ -2691,7 +2757,7 @@
     }).join('');
     checklistTable.querySelectorAll('.check-row').forEach(row => {
       const id = row.dataset.id;
-      row.querySelector('input[type="checkbox"]').addEventListener('change', (e) => setOwned(id, e.target.checked));
+      row.querySelector('input[type="checkbox"]').addEventListener('change', (e) => onMainOwnedToggle(id, e.target.checked, e.target));
       updateChecklistValueDisplay(id);
     });
   }
@@ -2883,7 +2949,9 @@
       document.getElementById('pokemonSection').style.display = (tab === 'pokemon') ? '' : 'none';
       document.getElementById('extraSection').style.display = (tab === 'trainers' || tab === 'energy') ? '' : 'none';
       document.getElementById('setOverzichtSection').style.display = (tab === 'setoverzicht') ? '' : 'none';
+      document.getElementById('sealedSection').style.display = (tab === 'sealed') ? '' : 'none';
       if (tab === 'setoverzicht') loadSetOverview();
+      if (tab === 'sealed' && !sealedLoaded) { sealedLoaded = true; loadSealedItems(); }
       document.getElementById('progressDashboard').style.display = (tab === 'pokemon') ? '' : 'none';
       // De Type-filter (Item/Tool/Supporter/Stadium) is alleen relevant op de
       // Trainers-tab; op Energy zijn alle kaarten toch al hetzelfde type.
@@ -5569,6 +5637,177 @@
     }
     pricesBtn.disabled = false;
     progressWrap.style.display = 'none';
+  });
+
+  // ---------- Sealed producten ----------
+  const SEALED_TABLE = 'sealed_producten';
+  function sealedRestUrl(path) { return `${config.url}/rest/v1/${SEALED_TABLE}${path || ''}`; }
+  let sealedItems = [];
+  let sealedLoaded = false;
+  let sealedEditId = null;
+
+  function parseSealedMoney(raw) {
+    const t = String(raw).trim();
+    if (t === '') return null;
+    const v = parseFloat(t.replace(',', '.'));
+    return isNaN(v) ? null : v;
+  }
+
+  async function loadSealedItems() {
+    if (!config) return;
+    const statusEl3 = document.getElementById('sealedStatus');
+    statusEl3.textContent = 'Bezig met laden...';
+    try {
+      const res = await fetch(sealedRestUrl('?select=*&order=id.desc'), { headers: authHeaders() });
+      if (!res.ok) throw new Error(`status ${res.status}`);
+      sealedItems = await res.json();
+      statusEl3.textContent = '';
+      renderSealedList();
+    } catch (err) {
+      statusEl3.textContent = 'Kon niet laden: ' + err.message;
+    }
+  }
+
+  function renderSealedList() {
+    const list = document.getElementById('sealedList');
+    let totAankoop = 0, totWaarde = 0;
+    sealedItems.forEach(it => {
+      const aantal = parseInt(it.aantal, 10) || 1;
+      totAankoop += (parseFloat(it.aankoopprijs) || 0) * aantal;
+      totWaarde += (parseFloat(it.huidige_waarde) || 0) * aantal;
+    });
+    const totResultaat = totWaarde - totAankoop;
+    document.getElementById('sealedTotalsBar').innerHTML =
+      `Aankoop: &euro; ${fmtEuro(totAankoop)} &nbsp;&middot;&nbsp; Waarde: &euro; ${fmtEuro(totWaarde)} &nbsp;&middot;&nbsp; <strong class="${totResultaat >= 0 ? 'sealed-row-resultaat-pos' : 'sealed-row-resultaat-neg'}">Resultaat: &euro; ${fmtEuro(totResultaat)}</strong>`;
+
+    if (sealedItems.length === 0) {
+      list.innerHTML = '<div class="sealed-empty-msg">Nog geen sealed producten toegevoegd.</div>';
+      return;
+    }
+    list.innerHTML = sealedItems.map(it => {
+      const aantal = parseInt(it.aantal, 10) || 1;
+      const aankoop = parseFloat(it.aankoopprijs) || 0;
+      const waarde = parseFloat(it.huidige_waarde) || 0;
+      const res = (waarde - aankoop) * aantal;
+      const setInfo = [it.serie, it.set_naam].filter(Boolean).join(' &middot; ');
+      return `<div class="sealed-row" data-id="${it.id}">
+        <div class="sealed-row-info">
+          <div class="sealed-row-naam">${it.naam}${aantal > 1 ? ` (${aantal}x)` : ''}</div>
+          ${setInfo ? `<div class="sealed-row-setinfo">${setInfo}</div>` : ''}
+        </div>
+        <div class="sealed-row-prices">
+          Aankoop: &euro; ${fmtEuro(aankoop)}<br>
+          Waarde: &euro; ${fmtEuro(waarde)}<br>
+          <span class="${res >= 0 ? 'sealed-row-resultaat-pos' : 'sealed-row-resultaat-neg'}">&euro; ${fmtEuro(res)}</span>
+        </div>
+        <button type="button" class="sealed-row-delete" data-id="${it.id}" title="Verwijderen">&times;</button>
+      </div>`;
+    }).join('');
+
+    list.querySelectorAll('.sealed-row').forEach(row => {
+      row.addEventListener('click', (e) => {
+        if (e.target.closest('.sealed-row-delete')) return;
+        openSealedModal(row.dataset.id);
+      });
+    });
+    list.querySelectorAll('.sealed-row-delete').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        try {
+          const res = await fetch(sealedRestUrl(`?id=eq.${btn.dataset.id}`), { method: 'DELETE', headers: authHeaders() });
+          if (!res.ok) throw new Error(await res.text());
+          sealedItems = sealedItems.filter(it => String(it.id) !== String(btn.dataset.id));
+          renderSealedList();
+        } catch (err) {
+          alert('Verwijderen mislukt: ' + err.message);
+        }
+      });
+    });
+  }
+
+  const sealedModal = document.getElementById('sealedModal');
+  function openSealedModal(id) {
+    sealedEditId = id || null;
+    const it = id ? sealedItems.find(x => String(x.id) === String(id)) : null;
+    document.getElementById('sealedModalTitle').textContent = it ? 'Sealed product bewerken' : 'Sealed product toevoegen';
+    document.getElementById('sealedNaam').value = it ? (it.naam || '') : '';
+    document.getElementById('sealedSet').value = it ? (it.set_naam || '') : '';
+    document.getElementById('sealedSerie').value = it ? (it.serie || '') : '';
+    document.getElementById('sealedAantal').value = it ? (it.aantal || 1) : 1;
+    document.getElementById('sealedAankoopprijs').value = it && it.aankoopprijs != null ? formatValue(it.aankoopprijs) : '';
+    document.getElementById('sealedHuidigeWaarde').value = it && it.huidige_waarde != null ? formatValue(it.huidige_waarde) : '';
+    document.getElementById('sealedNotitie').value = it ? (it.notitie || '') : '';
+    document.getElementById('sealedDeleteBtn').style.display = it ? '' : 'none';
+    sealedModal.classList.add('open');
+  }
+  function closeSealedModal() { sealedModal.classList.remove('open'); sealedEditId = null; }
+  document.getElementById('sealedCloseBtn').addEventListener('click', closeSealedModal);
+  wireOverlayClickToClose(sealedModal, closeSealedModal);
+  document.getElementById('sealedAddBtn').addEventListener('click', () => openSealedModal(null));
+
+  document.getElementById('sealedAantalMin').addEventListener('click', () => {
+    const inp = document.getElementById('sealedAantal');
+    inp.value = Math.max(1, (parseInt(inp.value, 10) || 1) - 1);
+  });
+  document.getElementById('sealedAantalPlus').addEventListener('click', () => {
+    const inp = document.getElementById('sealedAantal');
+    inp.value = (parseInt(inp.value, 10) || 1) + 1;
+  });
+
+  setupFieldPicker('sealedSetPicker', 'sealedSetPickerBtn', 'sealedSetMenu', document.getElementById('sealedSet'), () => allSetsFlat);
+  setupFieldPicker('sealedSeriePicker', 'sealedSeriePickerBtn', 'sealedSerieMenu', document.getElementById('sealedSerie'), () => Object.keys(CARD_SERIES));
+
+  document.getElementById('sealedSaveBtn').addEventListener('click', async () => {
+    const naam = document.getElementById('sealedNaam').value.trim();
+    if (!naam) { alert('Naam is verplicht.'); return; }
+    const payload = {
+      naam,
+      set_naam: document.getElementById('sealedSet').value.trim() || null,
+      serie: document.getElementById('sealedSerie').value.trim() || null,
+      aantal: parseInt(document.getElementById('sealedAantal').value, 10) || 1,
+      aankoopprijs: parseSealedMoney(document.getElementById('sealedAankoopprijs').value),
+      huidige_waarde: parseSealedMoney(document.getElementById('sealedHuidigeWaarde').value),
+      notitie: document.getElementById('sealedNotitie').value.trim() || null
+    };
+    try {
+      if (sealedEditId) {
+        const res = await fetch(sealedRestUrl(`?id=eq.${sealedEditId}`), {
+          method: 'PATCH',
+          headers: authHeaders({ 'Prefer': 'return=representation' }),
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error(await res.text());
+        const updated = await res.json();
+        const idx = sealedItems.findIndex(x => String(x.id) === String(sealedEditId));
+        if (idx > -1) sealedItems[idx] = updated[0];
+      } else {
+        const res = await fetch(sealedRestUrl(), {
+          method: 'POST',
+          headers: authHeaders({ 'Prefer': 'return=representation' }),
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error(await res.text());
+        const created = await res.json();
+        sealedItems.unshift(created[0]);
+      }
+      closeSealedModal();
+      renderSealedList();
+    } catch (err) {
+      alert('Opslaan mislukt: ' + err.message);
+    }
+  });
+
+  document.getElementById('sealedDeleteBtn').addEventListener('click', async () => {
+    if (!sealedEditId) return;
+    try {
+      const res = await fetch(sealedRestUrl(`?id=eq.${sealedEditId}`), { method: 'DELETE', headers: authHeaders() });
+      if (!res.ok) throw new Error(await res.text());
+      sealedItems = sealedItems.filter(x => String(x.id) !== String(sealedEditId));
+      closeSealedModal();
+      renderSealedList();
+    } catch (err) {
+      alert('Verwijderen mislukt: ' + err.message);
+    }
   });
 
   (function init() {
