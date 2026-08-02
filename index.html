@@ -540,7 +540,8 @@
   @media print {
     body { background: white; padding: 0; }
     h1, .toolbar, #status, #countStatus { display: none; }
-    .grid.active { grid-template-columns: repeat(5, 36mm); grid-auto-rows: 54mm; gap: 2mm; align-content: start; }
+    .grid.active { grid-template-columns: repeat(3, 63mm); grid-auto-rows: 88mm; gap: 0; align-content: start; }
+    .card { width: 63mm; height: 88mm; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
     .card { box-shadow: none; }
     #checklistView { box-shadow: none; padding: 0; max-width: 100%; }
     #checklistTable { column-count: 3; column-gap: 16px; }
@@ -574,21 +575,36 @@
   #totalsBar { text-align: center; font-size: 13px; color: #444; margin-bottom: 12px; }
   #totalsBarRow { display: flex; align-items: center; justify-content: center; gap: 8px; }
   #totalsBarRow #totalsBar { margin-bottom: 0; }
-  #pieToggleBtn {
-    border: none; background: none; font-size: 16px; cursor: pointer; padding: 2px 4px; line-height: 1; margin-bottom: 12px;
-  }
   #pieChartSection {
-    display: none; flex-direction: column; align-items: center; gap: 8px;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
     max-width: 260px; margin: -4px auto 14px auto; background: white; border-radius: 12px; padding: 14px;
     box-shadow: 0 1px 4px rgba(0,0,0,0.08);
   }
-  #pieChartSection.open { display: flex; }
   #pieChartLegend { width: 100%; font-size: 12px; color: #444; }
   #pieChartLegend .pie-legend-row { display: flex; align-items: center; gap: 6px; padding: 2px 0; }
   #pieChartLegend .pie-legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
   #pieChartLegend .pie-legend-label { flex: 1; }
   #pieChartLegend .pie-legend-value { color: #888; white-space: nowrap; }
   @media print { #totalsBarRow, #pieChartSection { display: none !important; } }
+
+  .dash-section {
+    max-width: 500px; margin: 0 auto 14px auto; background: white; border-radius: 12px;
+    padding: 14px 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+  .dash-section h3 { margin: 0 0 10px 0; font-size: 14px; color: #2c3e50; }
+  .dash-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 13px; border-bottom: 1px solid #f0f0f0; }
+  .dash-row:last-child { border-bottom: none; }
+  .dash-row-rank { color: #aaa; font-weight: 700; width: 18px; flex-shrink: 0; }
+  .dash-row-naam { flex: 1; min-width: 0; color: #2c3e50; font-weight: 600; }
+  .dash-row-meta { color: #888; font-size: 11px; }
+  .dash-row-value { font-weight: 700; color: #1d7a4c; white-space: nowrap; }
+  .dash-empty { font-size: 12px; color: #999; text-align: center; padding: 6px 0; }
+  .dash-bar-track { flex: 1; height: 8px; background: #eee; border-radius: 4px; overflow: hidden; }
+  .dash-bar-fill { height: 100%; background: #3ecf8e; }
+  .dash-counts-grid { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; text-align: center; }
+  .dash-counts-grid .dash-count-item { min-width: 100px; }
+  .dash-counts-grid .dash-count-num { font-size: 20px; font-weight: 700; color: #2c3e50; }
+  .dash-counts-grid .dash-count-label { font-size: 11px; color: #888; }
 
   /* ---------- Hoge-waarde lijst ---------- */
   #highValueModal .modal-box { max-width: 480px; }
@@ -891,20 +907,10 @@
   <button type="button" class="tab-btn" data-tab="energy">Energy</button>
   <button type="button" class="tab-btn" data-tab="setoverzicht">Serie/Set</button>
   <button type="button" class="tab-btn" data-tab="sealed">Sealed</button>
+  <button type="button" class="tab-btn" data-tab="dashboard">Dashboard</button>
 </div>
 
-<div id="totalsBarRow">
-  <div id="totalsBar">Pokémon: &euro; 0,00 &nbsp;·&nbsp; Item: &euro; 0,00 &nbsp;·&nbsp; <strong>Totaal: &euro; 0,00</strong></div>
-  <button type="button" id="pieToggleBtn" title="Verdeling van de waarde per categorie">🥧</button>
-</div>
-<div id="pieChartSection">
-  <svg id="pieChartSvg" viewBox="0 0 100 100" width="170" height="170">
-    <g id="pieChartGroup" transform="rotate(-90 50 50)">
-      <circle cx="50" cy="50" r="40" fill="none" stroke="#e4e8ec" stroke-width="18"/>
-    </g>
-  </svg>
-  <div id="pieChartLegend"></div>
-</div>
+
 
 <button id="settingsBtn" title="Supabase-instellingen">⚙️</button>
 <button id="highValueBtn" title="Lijst kaarten boven drempelwaarde">💎</button>
@@ -1203,6 +1209,50 @@
   <button type="button" id="sealedAddBtn">+ Toevoegen</button>
   <div id="sealedStatus"></div>
   <div id="sealedList"></div>
+</div>
+
+<div id="dashboardSection" style="display:none;">
+  <div id="totalsBarRow">
+    <div id="totalsBar">Pokémon: &euro; 0,00 &nbsp;·&nbsp; Item: &euro; 0,00 &nbsp;·&nbsp; <strong>Totaal: &euro; 0,00</strong></div>
+  </div>
+  <div id="pieChartSection">
+    <svg id="pieChartSvg" viewBox="0 0 100 100" width="170" height="170">
+      <g id="pieChartGroup" transform="rotate(-90 50 50)">
+        <circle cx="50" cy="50" r="40" fill="none" stroke="#e4e8ec" stroke-width="18"/>
+      </g>
+    </svg>
+    <div id="pieChartLegend"></div>
+  </div>
+
+  <div class="dash-section">
+    <h3>🔢 Aantallen</h3>
+    <div id="dashCounts"></div>
+  </div>
+
+  <div class="dash-section">
+    <h3>💎 Duurste kaarten (top 10)</h3>
+    <div id="dashTopExpensive"></div>
+  </div>
+
+  <div class="dash-section">
+    <h3>📦 Meeste exemplaren van 1 kaart</h3>
+    <div id="dashMostCopies"></div>
+  </div>
+
+  <div class="dash-section">
+    <h3>📊 Voortgang per set</h3>
+    <div id="dashSetProgress"></div>
+  </div>
+
+  <div class="dash-section">
+    <h3>✨ Normaal / Holo / Reverse Holo</h3>
+    <div id="dashVersieSplit"></div>
+  </div>
+
+  <div class="dash-section">
+    <h3>🆕 Recent toegevoegd</h3>
+    <div id="dashRecent"></div>
+  </div>
 </div>
 
 <div class="modal-overlay" id="extraDetailModal">
@@ -1520,7 +1570,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '2.63';
+  const APP_VERSION = '2.64';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -2950,8 +3000,10 @@
       document.getElementById('extraSection').style.display = (tab === 'trainers' || tab === 'energy') ? '' : 'none';
       document.getElementById('setOverzichtSection').style.display = (tab === 'setoverzicht') ? '' : 'none';
       document.getElementById('sealedSection').style.display = (tab === 'sealed') ? '' : 'none';
+      document.getElementById('dashboardSection').style.display = (tab === 'dashboard') ? '' : 'none';
       if (tab === 'setoverzicht') loadSetOverview();
       if (tab === 'sealed' && !sealedLoaded) { sealedLoaded = true; loadSealedItems(); }
+      if (tab === 'dashboard') openDashboard();
       document.getElementById('progressDashboard').style.display = (tab === 'pokemon') ? '' : 'none';
       // De Type-filter (Item/Tool/Supporter/Stadium) is alleen relevant op de
       // Trainers-tab; op Energy zijn alle kaarten toch al hetzelfde type.
@@ -3508,19 +3560,25 @@
       .reduce((sum, i) => sum + instanceLineValue(i), 0);
   }
 
-  function totalForTab(tab) {
-    return tab === 'pokemon' ? totalForParentType('pokemon') : totalForExtraType(tab);
+  function totalForSealed() {
+    return sealedItems.reduce((sum, it) => sum + ((parseFloat(it.huidige_waarde) || 0) * (parseInt(it.aantal, 10) || 1)), 0);
   }
 
-  const TAB_LABELS = { pokemon: 'Pokémon', item: 'Item', tool: 'Tool', supporter: 'Supporter', stadium: 'Stadium', energy: 'Energy' };
-  const TAB_COLORS = { pokemon: '#3ecf8e', item: '#f5a623', tool: '#4a90d9', supporter: '#e94f64', stadium: '#9b59b6', energy: '#f1c40f' };
+  function totalForTab(tab) {
+    if (tab === 'pokemon') return totalForParentType('pokemon');
+    if (tab === 'sealed') return totalForSealed();
+    return totalForExtraType(tab);
+  }
+
+  const TAB_LABELS = { pokemon: 'Pokémon', item: 'Item', tool: 'Tool', supporter: 'Supporter', stadium: 'Stadium', energy: 'Energy', sealed: 'Sealed' };
+  const TAB_COLORS = { pokemon: '#3ecf8e', item: '#f5a623', tool: '#4a90d9', supporter: '#e94f64', stadium: '#9b59b6', energy: '#f1c40f', sealed: '#95a5a6' };
 
   function updateTotalsBar() {
     const parts = Object.keys(TAB_LABELS).map(tab => {
       const total = totalForTab(tab);
       return `${TAB_LABELS[tab]}: &euro; ${fmtEuro(total)}`;
     });
-    const grandTotal = allInstances.reduce((sum, i) => sum + instanceLineValue(i), 0);
+    const grandTotal = allInstances.reduce((sum, i) => sum + instanceLineValue(i), 0) + totalForSealed();
     document.getElementById('totalsBar').innerHTML =
       parts.join(' &nbsp;&middot;&nbsp; ') + ` &nbsp;&middot;&nbsp; <strong>Totaal: &euro; ${fmtEuro(grandTotal)}</strong>`;
     renderPieChart(grandTotal);
@@ -3562,10 +3620,6 @@
     });
     legend.innerHTML = legendRows.join('');
   }
-
-  document.getElementById('pieToggleBtn').addEventListener('click', () => {
-    document.getElementById('pieChartSection').classList.toggle('open');
-  });
 
   function instanceRowHtml(inst) {
     const subParts = [inst.versie, `${inst.aantal || 1}x`].filter(Boolean).join(' · ') || `${inst.aantal || 1}x`;
@@ -5810,6 +5864,186 @@
       alert('Verwijderen mislukt: ' + err.message);
     }
   });
+
+  // ---------- Dashboard ----------
+  let dashSetKaartenCache = null;
+
+  function resolveInstanceInfo(inst) {
+    if (inst.parent_type === 'pokemon') {
+      const rec = getRec(inst.parent_id);
+      return { naam: rec ? rec.naam : '(onbekend)' };
+    }
+    const item = getExtra(inst.parent_id);
+    return { naam: item ? item.naam : '(onbekend)' };
+  }
+
+  async function openDashboard() {
+    if (!extraLoaded) { extraLoaded = true; await loadAllExtraItems(); }
+    if (!sealedLoaded) { sealedLoaded = true; await loadSealedItems(); }
+    updateTotalsBar();
+    renderDashCounts();
+    renderDashTopExpensive();
+    renderDashMostCopies();
+    renderDashVersieSplit();
+    renderDashRecent();
+    renderDashSetProgress();
+  }
+
+  function renderDashCounts() {
+    const totalAantal = allInstances.reduce((sum, i) => sum + (parseInt(i.aantal, 10) || 1), 0);
+    const totalWaarde = allInstances.reduce((sum, i) => sum + instanceLineValue(i), 0);
+    const gemiddelde = totalAantal > 0 ? totalWaarde / totalAantal : 0;
+    const uniekeKaarten = new Set(allInstances.map(i => `${i.parent_type}-${i.parent_id}`)).size;
+    document.getElementById('dashCounts').innerHTML = `
+      <div class="dash-counts-grid">
+        <div class="dash-count-item"><div class="dash-count-num">${totalAantal}</div><div class="dash-count-label">Totaal aantal kaarten</div></div>
+        <div class="dash-count-item"><div class="dash-count-num">${uniekeKaarten}</div><div class="dash-count-label">Unieke kaarten</div></div>
+        <div class="dash-count-item"><div class="dash-count-num">&euro; ${fmtEuro(gemiddelde)}</div><div class="dash-count-label">Gem. prijs per kaart</div></div>
+      </div>`;
+  }
+
+  function renderDashTopExpensive() {
+    const rows = allInstances
+      .map(inst => ({ inst, value: parseFloat(inst.waarde) || 0 }))
+      .filter(r => r.value > 0)
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 10);
+    const el = document.getElementById('dashTopExpensive');
+    if (rows.length === 0) { el.innerHTML = '<div class="dash-empty">Nog geen prijzen geregistreerd.</div>'; return; }
+    el.innerHTML = rows.map((r, idx) => {
+      const info = resolveInstanceInfo(r.inst);
+      const meta = [r.inst.versie, r.inst.set_naam].filter(Boolean).join(' &middot; ');
+      const aantal = parseInt(r.inst.aantal, 10) || 1;
+      return `<div class="dash-row">
+        <span class="dash-row-rank">${idx + 1}</span>
+        <div class="dash-row-naam">${info.naam}${aantal > 1 ? ` (${aantal}x)` : ''}<div class="dash-row-meta">${meta}</div></div>
+        <span class="dash-row-value">&euro; ${fmtEuro(r.value)}</span>
+      </div>`;
+    }).join('');
+  }
+
+  function renderDashMostCopies() {
+    const groups = new Map();
+    allInstances.forEach(inst => {
+      const key = `${inst.parent_type}-${inst.parent_id}`;
+      const g = groups.get(key) || { aantal: 0, inst };
+      g.aantal += (parseInt(inst.aantal, 10) || 1);
+      groups.set(key, g);
+    });
+    const rows = Array.from(groups.values()).sort((a, b) => b.aantal - a.aantal).slice(0, 5);
+    const el = document.getElementById('dashMostCopies');
+    if (rows.length === 0) { el.innerHTML = '<div class="dash-empty">Nog geen kaarten geregistreerd.</div>'; return; }
+    el.innerHTML = rows.map((r, idx) => {
+      const info = resolveInstanceInfo(r.inst);
+      return `<div class="dash-row">
+        <span class="dash-row-rank">${idx + 1}</span>
+        <div class="dash-row-naam">${info.naam}</div>
+        <span class="dash-row-value">${r.aantal}x</span>
+      </div>`;
+    }).join('');
+  }
+
+  function renderDashVersieSplit() {
+    const counts = {};
+    let total = 0;
+    allInstances.forEach(inst => {
+      const v = inst.versie || 'Onbekend';
+      const aantal = parseInt(inst.aantal, 10) || 1;
+      counts[v] = (counts[v] || 0) + aantal;
+      total += aantal;
+    });
+    const el = document.getElementById('dashVersieSplit');
+    if (total === 0) { el.innerHTML = '<div class="dash-empty">Nog geen kaarten geregistreerd.</div>'; return; }
+    const order = ['Normaal', 'Holo', 'Reverse Holo'];
+    const keys = Object.keys(counts).sort((a, b) => {
+      const ia = order.indexOf(a), ib = order.indexOf(b);
+      if (ia === -1 && ib === -1) return a.localeCompare(b, 'nl');
+      if (ia === -1) return 1;
+      if (ib === -1) return -1;
+      return ia - ib;
+    });
+    el.innerHTML = keys.map(k => {
+      const pct = (counts[k] / total) * 100;
+      return `<div class="dash-row">
+        <div class="dash-row-naam" style="flex:0 0 110px;">${k}</div>
+        <div class="dash-bar-track"><div class="dash-bar-fill" style="width:${pct.toFixed(1)}%"></div></div>
+        <span class="dash-row-value">${pct.toFixed(1)}%</span>
+      </div>`;
+    }).join('');
+  }
+
+  function renderDashRecent() {
+    const rows = [...allInstances].sort((a, b) => (parseInt(b.id, 10) || 0) - (parseInt(a.id, 10) || 0)).slice(0, 8);
+    const el = document.getElementById('dashRecent');
+    if (rows.length === 0) { el.innerHTML = '<div class="dash-empty">Nog geen kaarten toegevoegd.</div>'; return; }
+    el.innerHTML = rows.map(inst => {
+      const info = resolveInstanceInfo(inst);
+      const meta = [inst.versie, inst.set_naam].filter(Boolean).join(' &middot; ');
+      const aantal = parseInt(inst.aantal, 10) || 1;
+      return `<div class="dash-row">
+        <div class="dash-row-naam">${info.naam}${aantal > 1 ? ` (${aantal}x)` : ''}<div class="dash-row-meta">${meta}</div></div>
+      </div>`;
+    }).join('');
+  }
+
+  // Haalt de hele tcg_set_kaarten-tabel op (alleen serie/set/kaartnummer,
+  // gepagineerd zodat de standaard 1000-rijen-limiet niet stilletjes knipt).
+  async function fetchAllSetKaartenSlim() {
+    let all = [];
+    let offset = 0;
+    const pageSize = 1000;
+    while (true) {
+      const res = await fetch(setKaartenRestUrl(`?select=serie,set_naam,kaartnummer&order=id.asc&limit=${pageSize}&offset=${offset}`), { headers: authHeaders() });
+      if (!res.ok) break;
+      const batch = await res.json();
+      all = all.concat(batch);
+      if (batch.length < pageSize) break;
+      offset += pageSize;
+    }
+    return all;
+  }
+
+  async function renderDashSetProgress() {
+    const el = document.getElementById('dashSetProgress');
+    el.innerHTML = '<div class="dash-empty">Bezig met laden...</div>';
+    if (!dashSetKaartenCache) dashSetKaartenCache = await fetchAllSetKaartenSlim();
+    const totalPerSet = new Map();
+    dashSetKaartenCache.forEach(row => {
+      const key = row.set_naam;
+      if (!key) return;
+      if (!totalPerSet.has(key)) totalPerSet.set(key, new Set());
+      totalPerSet.get(key).add(normalizeKaartnummer(row.kaartnummer));
+    });
+    const ownedPerSet = new Map();
+    allInstances.forEach(inst => {
+      if (!inst.set_naam) return;
+      if (!ownedPerSet.has(inst.set_naam)) ownedPerSet.set(inst.set_naam, new Set());
+      ownedPerSet.get(inst.set_naam).add(normalizeKaartnummer(inst.kaartnummer));
+    });
+    const stats = [];
+    totalPerSet.forEach((cardSet, setNaam) => {
+      const owned = ownedPerSet.get(setNaam);
+      const ownedCount = owned ? Array.from(owned).filter(n => cardSet.has(n)).length : 0;
+      const total = cardSet.size;
+      if (total === 0 || ownedCount === 0) return;
+      stats.push({ setNaam, ownedCount, total, pct: (ownedCount / total) * 100 });
+    });
+    if (stats.length === 0) {
+      el.innerHTML = '<div class="dash-empty">Nog geen sets opgehaald via Serie/Set, of nog niets van bezit.</div>';
+      return;
+    }
+    const meestCompleet = [...stats].sort((a, b) => b.pct - a.pct).slice(0, 5);
+    const minstCompleet = [...stats].sort((a, b) => a.pct - b.pct).slice(0, 5);
+    function rowsHtml(list) {
+      return list.map(s => `<div class="dash-row">
+        <div class="dash-row-naam">${s.setNaam}<div class="dash-row-meta">${s.ownedCount} / ${s.total}</div></div>
+        <div class="dash-bar-track"><div class="dash-bar-fill" style="width:${s.pct.toFixed(1)}%"></div></div>
+        <span class="dash-row-value">${s.pct.toFixed(0)}%</span>
+      </div>`).join('');
+    }
+    el.innerHTML = `<div style="font-size:12px;color:#888;margin-bottom:4px;">Meest compleet</div>${rowsHtml(meestCompleet)}
+      <div style="font-size:12px;color:#888;margin:10px 0 4px 0;">Minst compleet (nog te gaan)</div>${rowsHtml(minstCompleet)}`;
+  }
 
   (function init() {
     config = loadConfig();
