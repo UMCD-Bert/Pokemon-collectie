@@ -869,6 +869,11 @@
     display: flex; align-items: center; justify-content: center; font-size: 20px; color: #bbb;
   }
   .group-thumb-inner img { width: 100%; height: 100%; object-fit: cover; }
+  .group-thumb-edit-btn {
+    position: absolute; bottom: -4px; right: -4px; width: 22px; height: 22px; border-radius: 50%;
+    border: 1.5px solid white; background: var(--color-accent-blue); color: white; font-size: 11px;
+    line-height: 1; cursor: pointer; padding: 0; display: flex; align-items: center; justify-content: center;
+  }
   .group-thumb-zoom {
     display: none; position: fixed; z-index: 1200;
     width: 200px; border: 2px solid var(--color-gold-border); border-radius: 8px; background: white; padding: 4px;
@@ -1287,6 +1292,15 @@
       <h3>🆕 Recent toegevoegd</h3>
       <div id="dashRecent"></div>
     </div>
+
+    <div class="dash-section" id="dashIntegritySection" style="grid-column: 1 / -1;">
+      <h3>⚠️ Aangevinkt zonder exemplaar</h3>
+      <div id="dashIntegrityIntro" style="font-size:12px;color:#888;margin-bottom:8px;"></div>
+      <div id="dashIntegrityList"></div>
+      <div class="modal-actions" id="dashIntegrityActions" style="display:none;">
+        <button type="button" class="btn-secondary" id="dashIntegrityCopyBtn">📋 Kopieer rapport</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1606,7 +1620,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '2.68';
+  const APP_VERSION = '2.70';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -2061,6 +2075,15 @@
       openInstancesPopup('pokemon', id, rec.naam);
       return;
     }
+    if (list.length === 0) {
+      // Nog geen exemplaren: niet alvast 'inbezit' zetten (dat zou het los
+      // van de werkelijkheid maken als de gebruiker hierna niets toevoegt).
+      // De lege mini-popup zei toch al "open de kaart zelf" — dat doen we
+      // dan nu meteen, en 'inbezit' volgt vanzelf zodra er een exemplaar bijkomt.
+      checkboxEl.checked = false;
+      openDetailModal(id);
+      return;
+    }
     await setOwned(id, true);
     openInstancesPopup('pokemon', id, rec.naam);
   }
@@ -2345,7 +2368,7 @@
   });
 
   detailOwnedCheck.addEventListener('change', async (e) => {
-    await setOwned(currentDetailId, e.target.checked);
+    await onMainOwnedToggle(currentDetailId, e.target.checked, detailOwnedCheck);
   });
   document.getElementById('detailPhotoToggleBtn').addEventListener('click', () => {
     const panel = document.getElementById('detailImgActions');
@@ -3687,9 +3710,10 @@
       const groupValue = group.items.reduce((sum, i) => sum + instanceLineValue(i), 0);
       const countLabel = `${groupCount} ${groupCount === 1 ? 'exemplaar' : 'exemplaren'}`;
       const photoUrl = (group.items.find(i => i.afbeelding) || {}).afbeelding;
-      const thumbHtml = photoUrl
+      const thumbHtml = (photoUrl
         ? `<div class="group-thumb-inner"><img src="${photoUrl}" alt=""></div><div class="group-thumb-zoom"><img src="${photoUrl}" alt=""></div>`
-        : `<div class="group-thumb-inner">🎴</div>`;
+        : `<div class="group-thumb-inner">🎴</div>`)
+        + `<button type="button" class="group-thumb-edit-btn" title="Foto voor deze druk aanpassen">📷</button>`;
       const groupFreshDate = oldestFreshnessDate(group.items);
       const groupDotHtml = groupFreshDate ? priceFreshnessDotHtml(groupFreshDate) : '';
       return `
@@ -3733,6 +3757,16 @@
     containerEl.querySelectorAll('.instance-group').forEach((groupEl, idx) => {
       const thumb = groupEl.querySelector('.group-thumb');
       const zoom = groupEl.querySelector('.group-thumb-zoom');
+      const editBtn = groupEl.querySelector('.group-thumb-edit-btn');
+      if (editBtn) {
+        editBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const group = groups[idx];
+          cropContext = 'group';
+          cropGroupTarget = { parentType, parentId, serie: group.serie || null, set_naam: group.set_naam || null, kaartnummer: group.kaartnummer || null };
+          globalImgFileInput.click();
+        });
+      }
       if (thumb && zoom) {
         thumb.addEventListener('mouseenter', () => {
           const rect = thumb.getBoundingClientRect();
@@ -5910,6 +5944,7 @@
     renderDashVersieSplit();
     renderDashRecent();
     renderDashSetProgress();
+    renderDashIntegrityReport();
   }
 
   function renderDashCounts() {
@@ -6008,6 +6043,63 @@
       </div>`;
     }).join('');
   }
+
+  function renderDashIntegrityReport() {
+    const intro = document.getElementById('dashIntegrityIntro');
+    const list = document.getElementById('dashIntegrityList');
+    const actions = document.getElementById('dashIntegrityActions');
+    const affected = records.filter(r => r.inbezit && instancesFor('pokemon', r.id).length === 0);
+    if (affected.length === 0) {
+      intro.textContent = '';
+      list.innerHTML = '<div class="dash-empty">Niets gevonden — elke aangevinkte kaart heeft minstens één exemplaar. 👍</div>';
+      actions.style.display = 'none';
+      return;
+    }
+    intro.textContent = `${affected.length} kaart${affected.length === 1 ? '' : 'en'} staat/staan op "in bezit" maar heeft/hebben geen enkel exemplaar. Vermoedelijk aangevinkt zonder het opvolgende venster af te maken.`;
+    list.innerHTML = affected.map(r => {
+      const num = String(r.nummer || '').padStart(4, '0');
+      const hasLeftoverPhoto = r.afbeelding && r.afbeelding !== defaultArtUrl(String(r.nummer || ''));
+      const hasLeftoverValue = r.waarde !== undefined && r.waarde !== null && !isNaN(parseFloat(r.waarde)) && parseFloat(r.waarde) > 0;
+      const sporen = [hasLeftoverPhoto ? 'eigen foto' : null, hasLeftoverValue ? `waarde €${fmtEuro(parseFloat(r.waarde))}` : null].filter(Boolean).join(', ');
+      return `<div class="dash-row" data-rec-id="${r.id}">
+        <div class="dash-row-naam">${r.naam || '(onbekend)'} <span class="dash-row-meta">#${num}</span>${sporen ? `<div class="dash-row-meta">sporen: ${sporen}</div>` : ''}</div>
+        <button type="button" class="btn-secondary dash-integrity-open" data-id="${r.id}" style="padding:6px 10px;font-size:12px;">Open</button>
+        <button type="button" class="btn-danger dash-integrity-uncheck" data-id="${r.id}" style="padding:6px 10px;font-size:12px;">Vinkje uit</button>
+      </div>`;
+    }).join('');
+    actions.style.display = '';
+    list.querySelectorAll('.dash-integrity-open').forEach(btn => {
+      btn.addEventListener('click', () => openDetailModal(btn.dataset.id));
+    });
+    list.querySelectorAll('.dash-integrity-uncheck').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        btn.disabled = true;
+        await setOwned(btn.dataset.id, false);
+        renderDashIntegrityReport();
+      });
+    });
+  }
+
+  document.getElementById('dashIntegrityCopyBtn').addEventListener('click', async () => {
+    const affected = records.filter(r => r.inbezit && instancesFor('pokemon', r.id).length === 0);
+    const regels = affected.map(r => {
+      const num = String(r.nummer || '').padStart(4, '0');
+      const hasLeftoverPhoto = r.afbeelding && r.afbeelding !== defaultArtUrl(String(r.nummer || ''));
+      const hasLeftoverValue = r.waarde !== undefined && r.waarde !== null && !isNaN(parseFloat(r.waarde)) && parseFloat(r.waarde) > 0;
+      const sporen = [hasLeftoverPhoto ? 'eigen foto' : null, hasLeftoverValue ? `waarde €${fmtEuro(parseFloat(r.waarde))}` : null].filter(Boolean).join(', ') || 'geen sporen';
+      return `#${num} ${r.naam || '(onbekend)'} — id ${r.id} — ${sporen}`;
+    });
+    const tekst = `Aangevinkt zonder exemplaar (${affected.length}):\n` + regels.join('\n');
+    const btn = document.getElementById('dashIntegrityCopyBtn');
+    try {
+      await navigator.clipboard.writeText(tekst);
+      const origLabel = btn.textContent;
+      btn.textContent = '✓ Gekopieerd';
+      setTimeout(() => { btn.textContent = origLabel; }, 2000);
+    } catch (err) {
+      alert('Kopiëren naar klembord is mislukt. Hier is de tekst om zelf te selecteren:\n\n' + tekst);
+    }
+  });
 
   // Haalt de hele tcg_set_kaarten-tabel op (alleen serie/set/kaartnummer,
   // gepagineerd zodat de standaard 1000-rijen-limiet niet stilletjes knipt).
