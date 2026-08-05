@@ -1042,6 +1042,12 @@
 <div id="countStatus" style="display:none;"></div>
 <input type="file" id="globalImgFileInput" accept="image/*" style="display:none">
 
+<div id="status">Nog niet verbonden met Supabase. Klik op "⚙️ Supabase-instellingen" om te starten.</div>
+
+<div class="grid active" id="grid"></div>
+<div id="checklistView"><div id="checklistTable"></div></div>
+</div>
+
 <div id="cropModal">
   <div id="cropModalInner">
     <h3>Foto bijsnijden</h3>
@@ -1118,11 +1124,6 @@
       <textarea id="detailNotitie" rows="3" placeholder="Bijv. conditie, aankoopdatum, opmerkingen..."></textarea>
     </div>
   </div>
-</div>
-<div id="status">Nog niet verbonden met Supabase. Klik op "⚙️ Supabase-instellingen" om te starten.</div>
-
-<div class="grid active" id="grid"></div>
-<div id="checklistView"><div id="checklistTable"></div></div>
 </div>
 
 <div id="extraSection" style="display:none;">
@@ -1620,7 +1621,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '2.70';
+  const APP_VERSION = '2.71';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
