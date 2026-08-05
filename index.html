@@ -1621,7 +1621,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '2.71';
+  const APP_VERSION = '2.72';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -1923,7 +1923,7 @@
     try {
       while (true) {
         const url = restUrl(`?select=*&order=id.asc&limit=${pageSize}&offset=${offset}`);
-        const res = await fetch(url, { headers: authHeaders() });
+        const res = await fetch(url, { headers: authHeaders(), cache: 'no-store' });
         if (!res.ok) {
           const errBody = await res.text();
           throw new Error(`Supabase gaf status ${res.status}. ${errBody}`);
@@ -1952,6 +1952,7 @@
     try {
       const res = await fetch(restUrl(`?id=eq.${id}`), {
         method: 'PATCH',
+        cache: 'no-store',
         headers: authHeaders({ 'Prefer': 'return=minimal' }),
         body: JSON.stringify(fields)
       });
@@ -2061,7 +2062,7 @@
         const wantsDelete = confirm(`Wil je het enige kaartexemplaar van "${rec.naam}" ook verwijderen?\n\nKlik op Annuleren om het vinkje aan te laten staan.`);
         if (!wantsDelete) { checkboxEl.checked = true; return; }
         try {
-          const res = await fetch(instRestUrl(`?id=eq.${list[0].id}`), { method: 'DELETE', headers: authHeaders() });
+          const res = await fetch(instRestUrl(`?id=eq.${list[0].id}`), { method: 'DELETE', headers: authHeaders(), cache: 'no-store' });
           if (!res.ok) throw new Error(await res.text());
           allInstances = allInstances.filter(i => String(i.id) !== String(list[0].id));
           await setOwned(id, false);
@@ -2240,7 +2241,7 @@
       // Filteren doen we op de server (query string), niet door de hele tabel op
       // te halen — die kan inmiddels duizenden rijen bevatten en Supabase/PostgREST
       // geeft per verzoek maximaal 1000 rijen terug.
-      const res = await fetch(setKaartenRestUrl(`?${queryFilter}&order=serie.asc,set_naam.asc,kaartnummer.asc`), { headers: authHeaders() });
+      const res = await fetch(setKaartenRestUrl(`?${queryFilter}&order=serie.asc,set_naam.asc,kaartnummer.asc`), { headers: authHeaders(), cache: 'no-store' });
       if (!res.ok) throw new Error(await res.text());
       const alle = await res.json();
       apCachedRows = clientFilterFn ? alle.filter(clientFilterFn) : alle;
@@ -2492,6 +2493,7 @@
     const uploadUrl = `${config.url}/storage/v1/object/${STORAGE_BUCKET}/${path}`;
     const res = await fetch(uploadUrl, {
       method: 'POST',
+      cache: 'no-store',
       headers: {
         'apikey': config.key,
         'Authorization': `Bearer ${config.key}`,
@@ -3080,7 +3082,7 @@
     const statusEl2 = document.getElementById('extraCountStatus');
     statusEl2.textContent = 'Bezig met laden...';
     try {
-      const res = await fetch(extraRestUrl(`?select=*&order=id.desc`), { headers: authHeaders() });
+      const res = await fetch(extraRestUrl(`?select=*&order=id.desc`), { headers: authHeaders(), cache: 'no-store' });
       if (!res.ok) throw new Error(`status ${res.status}`);
       extraItems = await res.json();
       renderExtraGrid();
@@ -3336,6 +3338,7 @@
       try {
         const res = await fetch(extraRestUrl(), {
           method: 'POST',
+          cache: 'no-store',
           headers: authHeaders({ 'Prefer': 'return=representation' }),
           body: JSON.stringify(payload)
         });
@@ -3358,6 +3361,7 @@
       try {
         const res = await fetch(extraRestUrl(`?id=eq.${currentExtraId}`), {
           method: 'PATCH',
+          cache: 'no-store',
           headers: authHeaders({ 'Prefer': 'return=minimal' }),
           body: JSON.stringify(payload)
         });
@@ -3377,7 +3381,7 @@
     const item = getExtra(currentExtraId);
     if (!confirm(`"${item.naam || 'Dit item'}" definitief verwijderen?`)) return;
     try {
-      const res = await fetch(extraRestUrl(`?id=eq.${currentExtraId}`), { method: 'DELETE', headers: authHeaders() });
+      const res = await fetch(extraRestUrl(`?id=eq.${currentExtraId}`), { method: 'DELETE', headers: authHeaders(), cache: 'no-store' });
       if (!res.ok) throw new Error(`status ${res.status}`);
       extraItems = extraItems.filter(i => String(i.id) !== String(currentExtraId));
       extraDetailModal.classList.remove('open');
@@ -3393,6 +3397,7 @@
     const uploadUrl = `${config.url}/storage/v1/object/${STORAGE_BUCKET}/${path}`;
     const res = await fetch(uploadUrl, {
       method: 'POST',
+      cache: 'no-store',
       headers: { 'apikey': config.key, 'Authorization': `Bearer ${config.key}`, 'Content-Type': 'image/jpeg', 'x-upsert': 'true' },
       body: blob
     });
@@ -3409,6 +3414,7 @@
     try {
       const res = await fetch(extraRestUrl(`?id=eq.${id}`), {
         method: 'PATCH',
+        cache: 'no-store',
         headers: authHeaders({ 'Prefer': 'return=minimal' }),
         body: JSON.stringify({ afbeelding: url })
       });
@@ -3427,6 +3433,7 @@
     try {
       const res = await fetch(extraRestUrl(`?id=eq.${id}`), {
         method: 'PATCH',
+        cache: 'no-store',
         headers: authHeaders({ 'Prefer': 'return=minimal' }),
         body: JSON.stringify({ afbeelding: null })
       });
@@ -3479,7 +3486,7 @@
         extraLoaded = true;
         await loadAllExtraItems();
       }
-      const res = await fetch(instRestUrl('?select=*&order=id.asc'), { headers: authHeaders() });
+      const res = await fetch(instRestUrl('?select=*&order=id.asc'), { headers: authHeaders(), cache: 'no-store' });
       if (!res.ok) throw new Error(`status ${res.status}`);
       allInstances = await res.json();
       await migrateExtraInstanceParentTypes();
@@ -3511,6 +3518,7 @@
       const filter = `parent_type=in.(${legacyTypes.join(',')})`;
       const res = await fetch(instRestUrl(`?${filter}`), {
         method: 'PATCH',
+        cache: 'no-store',
         headers: authHeaders({ 'Prefer': 'return=minimal' }),
         body: JSON.stringify({ parent_type: EXTRA_PARENT_TYPE })
       });
@@ -3552,6 +3560,7 @@
     try {
       const res = await fetch(instRestUrl(), {
         method: 'POST',
+        cache: 'no-store',
         headers: authHeaders({ 'Prefer': 'return=representation' }),
         body: JSON.stringify(payload)
       });
@@ -3921,7 +3930,7 @@
     );
     if (!stale) return;
     try {
-      const res = await fetch(instRestUrl(`?id=eq.${stale.id}`), { method: 'DELETE', headers: authHeaders() });
+      const res = await fetch(instRestUrl(`?id=eq.${stale.id}`), { method: 'DELETE', headers: authHeaders(), cache: 'no-store' });
       if (!res.ok) throw new Error(await res.text());
       allInstances = allInstances.filter(i => String(i.id) !== String(stale.id));
     } catch (err) {
@@ -4340,6 +4349,7 @@
         }
         const res = await fetch(instRestUrl(`?id=eq.${instId}`), {
           method: 'PATCH',
+          cache: 'no-store',
           headers: authHeaders({ 'Prefer': 'return=minimal' }),
           body: JSON.stringify({ waarde: price, prijs_bron_datum: updatedAt, prijs_handmatig_datum: null })
         });
@@ -4380,6 +4390,7 @@
         if (sibling) payload.afbeelding = sibling.afbeelding;
         const res = await fetch(instRestUrl(), {
           method: 'POST',
+          cache: 'no-store',
           headers: authHeaders({ 'Prefer': 'return=representation' }),
           body: JSON.stringify(payload)
         });
@@ -4393,6 +4404,7 @@
       } else {
         const res = await fetch(instRestUrl(`?id=eq.${currentInstanceId}`), {
           method: 'PATCH',
+          cache: 'no-store',
           headers: authHeaders({ 'Prefer': 'return=minimal' }),
           body: JSON.stringify(payload)
         });
@@ -4449,7 +4461,7 @@
     if (currentInstanceId === null) return;
     if (!confirm('Dit kaartexemplaar definitief verwijderen?')) return;
     try {
-      const res = await fetch(instRestUrl(`?id=eq.${currentInstanceId}`), { method: 'DELETE', headers: authHeaders() });
+      const res = await fetch(instRestUrl(`?id=eq.${currentInstanceId}`), { method: 'DELETE', headers: authHeaders(), cache: 'no-store' });
       if (!res.ok) throw new Error(`status ${res.status}`);
       allInstances = allInstances.filter(i => String(i.id) !== String(currentInstanceId));
       const pt = currentInstanceParentType, pid = currentInstanceParentId;
@@ -4492,6 +4504,7 @@
     ];
     const patchRes = await fetch(instRestUrl(`?${filters.join('&')}`), {
       method: 'PATCH',
+      cache: 'no-store',
       headers: authHeaders({ 'Prefer': 'return=representation' }),
       body: JSON.stringify({ afbeelding: url })
     });
@@ -4511,6 +4524,7 @@
     const uploadUrl = `${config.url}/storage/v1/object/${STORAGE_BUCKET}/${path}`;
     const res = await fetch(uploadUrl, {
       method: 'POST',
+      cache: 'no-store',
       headers: { 'apikey': config.key, 'Authorization': `Bearer ${config.key}`, 'Content-Type': 'image/jpeg', 'x-upsert': 'true' },
       body: blob
     });
@@ -4524,6 +4538,7 @@
     const uploadUrl = `${config.url}/storage/v1/object/${STORAGE_BUCKET}/${path}`;
     const res = await fetch(uploadUrl, {
       method: 'POST',
+      cache: 'no-store',
       headers: { 'apikey': config.key, 'Authorization': `Bearer ${config.key}`, 'Content-Type': 'image/jpeg', 'x-upsert': 'true' },
       body: blob
     });
@@ -4540,7 +4555,7 @@
     instanceEditCurrentBtn.style.display = 'inline-block';
     try {
       const res = await fetch(instRestUrl(`?id=eq.${id}`), {
-        method: 'PATCH', headers: authHeaders({ 'Prefer': 'return=minimal' }),
+        method: 'PATCH', cache: 'no-store', headers: authHeaders({ 'Prefer': 'return=minimal' }),
         body: JSON.stringify({ afbeelding: url })
       });
       if (!res.ok) throw new Error(`status ${res.status}`);
@@ -4707,6 +4722,7 @@
     while (true) {
       const res = await fetch(`${config.url}/storage/v1/object/list/${STORAGE_BUCKET}`, {
         method: 'POST',
+        cache: 'no-store',
         headers: authHeaders(),
         body: JSON.stringify({ prefix, limit: 1000, offset, sortBy: { column: 'name', order: 'asc' } })
       });
@@ -4780,6 +4796,7 @@
   async function applyBulkPrice(inst, price, updatedAt) {
     const res = await fetch(instRestUrl(`?id=eq.${inst.id}`), {
       method: 'PATCH',
+      cache: 'no-store',
       headers: authHeaders({ 'Prefer': 'return=minimal' }),
       body: JSON.stringify({ waarde: price, prijs_bron_datum: updatedAt, prijs_handmatig_datum: null })
     });
@@ -5119,7 +5136,7 @@
     fetchBtn.textContent = '📥 Deze set (opnieuw) ophalen';
     statusEl2.textContent = 'Bezig met laden...';
     try {
-      const res = await fetch(setKaartenRestUrl(`?set_naam=eq.${encodeURIComponent(setNaam)}&order=id.asc`), { headers: authHeaders() });
+      const res = await fetch(setKaartenRestUrl(`?set_naam=eq.${encodeURIComponent(setNaam)}&order=id.asc`), { headers: authHeaders(), cache: 'no-store' });
       if (!res.ok) throw new Error(`status ${res.status}`);
       soCachedRows = await res.json();
     } catch (err) {
@@ -5174,6 +5191,7 @@
     if (!item) {
       const res = await fetch(extraRestUrl(), {
         method: 'POST',
+        cache: 'no-store',
         headers: authHeaders({ 'Prefer': 'return=representation' }),
         body: JSON.stringify({ categorie: row.categorie, naam: row.naam, notitie: null })
       });
@@ -5201,7 +5219,7 @@
       const wantsDelete = confirm('Dit haalt het laatste exemplaar van deze versie weg — ook echt verwijderen?\n\nKlik op Annuleren om het aantal op 1 te laten staan.');
       if (!wantsDelete) return;
       try {
-        const res = await fetch(instRestUrl(`?id=eq.${instId}`), { method: 'DELETE', headers: authHeaders() });
+        const res = await fetch(instRestUrl(`?id=eq.${instId}`), { method: 'DELETE', headers: authHeaders(), cache: 'no-store' });
         if (!res.ok) throw new Error(await res.text());
         allInstances = allInstances.filter(i => String(i.id) !== String(instId));
         refreshParentUI(inst.parent_type, inst.parent_id);
@@ -5215,6 +5233,7 @@
     try {
       const res = await fetch(instRestUrl(`?id=eq.${instId}`), {
         method: 'PATCH',
+        cache: 'no-store',
         headers: authHeaders({ 'Prefer': 'return=minimal' }),
         body: JSON.stringify({ aantal: nieuwAantal })
       });
@@ -5264,6 +5283,7 @@
       };
       const res = await fetch(instRestUrl(), {
         method: 'POST',
+        cache: 'no-store',
         headers: authHeaders({ 'Prefer': 'return=representation' }),
         body: JSON.stringify(payload)
       });
@@ -5304,7 +5324,7 @@
     if (!wantsDelete) { checkboxEl.checked = true; return; }
     checkboxEl.disabled = true;
     try {
-      const res = await fetch(instRestUrl(`?id=eq.${inst.id}`), { method: 'DELETE', headers: authHeaders() });
+      const res = await fetch(instRestUrl(`?id=eq.${inst.id}`), { method: 'DELETE', headers: authHeaders(), cache: 'no-store' });
       if (!res.ok) throw new Error(await res.text());
       allInstances = allInstances.filter(i => String(i.id) !== String(inst.id));
       refreshParentUI(inst.parent_type, inst.parent_id);
@@ -5437,6 +5457,7 @@
       row.prijs_updated = nu;
       const res = await fetch(setKaartenRestUrl(`?id=eq.${row.id}`), {
         method: 'PATCH',
+        cache: 'no-store',
         headers: authHeaders({ 'Prefer': 'return=minimal' }),
         body: JSON.stringify(patch)
       });
@@ -5498,10 +5519,11 @@
     }
 
     try {
-      const delRes = await fetch(setKaartenRestUrl(`?set_naam=eq.${encodeURIComponent(setNaam)}`), { method: 'DELETE', headers: authHeaders() });
+      const delRes = await fetch(setKaartenRestUrl(`?set_naam=eq.${encodeURIComponent(setNaam)}`), { method: 'DELETE', headers: authHeaders(), cache: 'no-store' });
       if (!delRes.ok) throw new Error(await delRes.text());
       const insRes = await fetch(setKaartenRestUrl(), {
         method: 'POST',
+        cache: 'no-store',
         headers: authHeaders({ 'Prefer': 'return=representation' }),
         body: JSON.stringify(newRows)
       });
@@ -5555,7 +5577,7 @@
     // tabel in één keer ophalen — die kan inmiddels duizenden rijen bevatten en
     // Supabase/PostgREST geeft per verzoek maximaal 1000 rijen terug.
     const results = await Promise.all(allSetsFlat.map(async setNaam => {
-      const res = await fetch(setKaartenRestUrl(`?set_naam=eq.${encodeURIComponent(setNaam)}&select=id&limit=1`), { headers: authHeaders() });
+      const res = await fetch(setKaartenRestUrl(`?set_naam=eq.${encodeURIComponent(setNaam)}&select=id&limit=1`), { headers: authHeaders(), cache: 'no-store' });
       if (!res.ok) throw new Error(await res.text());
       const rows = await res.json();
       return rows.length > 0 ? setNaam : null;
@@ -5736,6 +5758,7 @@
         row.prijs_updated = nu;
         await fetch(setKaartenRestUrl(`?id=eq.${row.id}`), {
           method: 'PATCH',
+          cache: 'no-store',
           headers: authHeaders({ 'Prefer': 'return=minimal' }),
           body: JSON.stringify(patch)
         });
@@ -5771,7 +5794,7 @@
     const statusEl3 = document.getElementById('sealedStatus');
     statusEl3.textContent = 'Bezig met laden...';
     try {
-      const res = await fetch(sealedRestUrl('?select=*&order=id.desc'), { headers: authHeaders() });
+      const res = await fetch(sealedRestUrl('?select=*&order=id.desc'), { headers: authHeaders(), cache: 'no-store' });
       if (!res.ok) throw new Error(`status ${res.status}`);
       sealedItems = await res.json();
       statusEl3.textContent = '';
@@ -5827,7 +5850,7 @@
       btn.addEventListener('click', async (e) => {
         e.stopPropagation();
         try {
-          const res = await fetch(sealedRestUrl(`?id=eq.${btn.dataset.id}`), { method: 'DELETE', headers: authHeaders() });
+          const res = await fetch(sealedRestUrl(`?id=eq.${btn.dataset.id}`), { method: 'DELETE', headers: authHeaders(), cache: 'no-store' });
           if (!res.ok) throw new Error(await res.text());
           sealedItems = sealedItems.filter(it => String(it.id) !== String(btn.dataset.id));
           renderSealedList();
@@ -5886,6 +5909,7 @@
       if (sealedEditId) {
         const res = await fetch(sealedRestUrl(`?id=eq.${sealedEditId}`), {
           method: 'PATCH',
+          cache: 'no-store',
           headers: authHeaders({ 'Prefer': 'return=representation' }),
           body: JSON.stringify(payload)
         });
@@ -5896,6 +5920,7 @@
       } else {
         const res = await fetch(sealedRestUrl(), {
           method: 'POST',
+          cache: 'no-store',
           headers: authHeaders({ 'Prefer': 'return=representation' }),
           body: JSON.stringify(payload)
         });
@@ -5913,7 +5938,7 @@
   document.getElementById('sealedDeleteBtn').addEventListener('click', async () => {
     if (!sealedEditId) return;
     try {
-      const res = await fetch(sealedRestUrl(`?id=eq.${sealedEditId}`), { method: 'DELETE', headers: authHeaders() });
+      const res = await fetch(sealedRestUrl(`?id=eq.${sealedEditId}`), { method: 'DELETE', headers: authHeaders(), cache: 'no-store' });
       if (!res.ok) throw new Error(await res.text());
       sealedItems = sealedItems.filter(x => String(x.id) !== String(sealedEditId));
       closeSealedModal();
@@ -6109,7 +6134,7 @@
     let offset = 0;
     const pageSize = 1000;
     while (true) {
-      const res = await fetch(setKaartenRestUrl(`?select=serie,set_naam,kaartnummer&order=id.asc&limit=${pageSize}&offset=${offset}`), { headers: authHeaders() });
+      const res = await fetch(setKaartenRestUrl(`?select=serie,set_naam,kaartnummer&order=id.asc&limit=${pageSize}&offset=${offset}`), { headers: authHeaders(), cache: 'no-store' });
       if (!res.ok) break;
       const batch = await res.json();
       all = all.concat(batch);
