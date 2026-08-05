@@ -1302,6 +1302,15 @@
         <button type="button" class="btn-secondary" id="dashIntegrityCopyBtn">📋 Kopieer rapport</button>
       </div>
     </div>
+
+    <div class="dash-section" id="dashDupeSection" style="grid-column: 1 / -1;">
+      <h3>🧹 Dubbele exemplaren</h3>
+      <div id="dashDupeIntro" style="font-size:12px;color:#888;margin-bottom:8px;"></div>
+      <div id="dashDupeList"></div>
+      <div class="modal-actions" id="dashDupeActions" style="display:none;">
+        <button type="button" class="btn-danger" id="dashDupeCleanBtn">🧹 Verwijder alle duplicaten</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1621,7 +1630,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '2.72';
+  const APP_VERSION = '2.74';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -3082,9 +3091,17 @@
     const statusEl2 = document.getElementById('extraCountStatus');
     statusEl2.textContent = 'Bezig met laden...';
     try {
-      const res = await fetch(extraRestUrl(`?select=*&order=id.desc`), { headers: authHeaders(), cache: 'no-store' });
-      if (!res.ok) throw new Error(`status ${res.status}`);
-      extraItems = await res.json();
+      extraItems = [];
+      const pageSize = 1000;
+      let offset = 0;
+      while (true) {
+        const res = await fetch(extraRestUrl(`?select=*&order=id.desc&limit=${pageSize}&offset=${offset}`), { headers: authHeaders(), cache: 'no-store' });
+        if (!res.ok) throw new Error(`status ${res.status}`);
+        const batch = await res.json();
+        extraItems = extraItems.concat(batch);
+        if (batch.length < pageSize) break;
+        offset += pageSize;
+      }
       renderExtraGrid();
     } catch (err) {
       statusEl2.textContent = 'Kon niet laden: ' + err.message;
@@ -3486,9 +3503,17 @@
         extraLoaded = true;
         await loadAllExtraItems();
       }
-      const res = await fetch(instRestUrl('?select=*&order=id.asc'), { headers: authHeaders(), cache: 'no-store' });
-      if (!res.ok) throw new Error(`status ${res.status}`);
-      allInstances = await res.json();
+      allInstances = [];
+      const pageSize = 1000;
+      let offset = 0;
+      while (true) {
+        const res = await fetch(instRestUrl(`?select=*&order=id.asc&limit=${pageSize}&offset=${offset}`), { headers: authHeaders(), cache: 'no-store' });
+        if (!res.ok) throw new Error(`status ${res.status}`);
+        const batch = await res.json();
+        allInstances = allInstances.concat(batch);
+        if (batch.length < pageSize) break;
+        offset += pageSize;
+      }
       await migrateExtraInstanceParentTypes();
       await migrateLegacyOwnedToInstances();
       updateTotalsBar();
@@ -5794,9 +5819,17 @@
     const statusEl3 = document.getElementById('sealedStatus');
     statusEl3.textContent = 'Bezig met laden...';
     try {
-      const res = await fetch(sealedRestUrl('?select=*&order=id.desc'), { headers: authHeaders(), cache: 'no-store' });
-      if (!res.ok) throw new Error(`status ${res.status}`);
-      sealedItems = await res.json();
+      sealedItems = [];
+      const pageSize = 1000;
+      let offset = 0;
+      while (true) {
+        const res = await fetch(sealedRestUrl(`?select=*&order=id.desc&limit=${pageSize}&offset=${offset}`), { headers: authHeaders(), cache: 'no-store' });
+        if (!res.ok) throw new Error(`status ${res.status}`);
+        const batch = await res.json();
+        sealedItems = sealedItems.concat(batch);
+        if (batch.length < pageSize) break;
+        offset += pageSize;
+      }
       statusEl3.textContent = '';
       renderSealedList();
     } catch (err) {
@@ -5971,6 +6004,7 @@
     renderDashRecent();
     renderDashSetProgress();
     renderDashIntegrityReport();
+    renderDashDupeReport();
   }
 
   function renderDashCounts() {
@@ -6124,6 +6158,82 @@
       setTimeout(() => { btn.textContent = origLabel; }, 2000);
     } catch (err) {
       alert('Kopiëren naar klembord is mislukt. Hier is de tekst om zelf te selecteren:\n\n' + tekst);
+    }
+  });
+
+  function findDuplicateGroups() {
+    const map = new Map();
+    allInstances.forEach(inst => {
+      const key = [inst.parent_type, inst.parent_id, inst.serie || '', inst.set_naam || '', inst.kaartnummer || '', inst.versie || ''].join('|||');
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(inst);
+    });
+    const groups = [];
+    map.forEach(items => {
+      if (items.length > 1) {
+        items.sort((a, b) => (parseInt(a.id, 10) || 0) - (parseInt(b.id, 10) || 0));
+        groups.push(items);
+      }
+    });
+    return groups;
+  }
+
+  function renderDashDupeReport() {
+    const intro = document.getElementById('dashDupeIntro');
+    const list = document.getElementById('dashDupeList');
+    const actions = document.getElementById('dashDupeActions');
+    const groups = findDuplicateGroups();
+    if (groups.length === 0) {
+      intro.textContent = '';
+      list.innerHTML = '<div class="dash-empty">Geen duplicaten gevonden. 👍</div>';
+      actions.style.display = 'none';
+      return;
+    }
+    const totalExtra = groups.reduce((sum, g) => sum + (g.length - 1), 0);
+    intro.textContent = `${groups.length} kaart(en) hebben dubbele exemplaren — samen ${totalExtra} overtollige rij(en). Bij opruimen blijft steeds de oudste rij staan (id ${groups[0][0].id} bijv.), de rest wordt verwijderd.`;
+    list.innerHTML = groups.map(g => {
+      const info = resolveInstanceInfo(g[0]);
+      const meta = [g[0].serie, g[0].set_naam, g[0].kaartnummer ? `#${g[0].kaartnummer}` : '', g[0].versie].filter(Boolean).join(' · ');
+      return `<div class="dash-row">
+        <div class="dash-row-naam">${info.naam}<div class="dash-row-meta">${meta} — ${g.length}x (id's: ${g.map(i => i.id).join(', ')})</div></div>
+      </div>`;
+    }).join('');
+    actions.style.display = '';
+  }
+
+  document.getElementById('dashDupeCleanBtn').addEventListener('click', async () => {
+    const groups = findDuplicateGroups();
+    if (groups.length === 0) return;
+    const totalExtra = groups.reduce((sum, g) => sum + (g.length - 1), 0);
+    const wantsDelete = confirm(`Dit verwijdert ${totalExtra} dubbele kaartexemplaren (de oudste rij per kaart blijft altijd staan, aantal blijft ongewijzigd). Dit kan niet ongedaan gemaakt worden. Doorgaan?`);
+    if (!wantsDelete) return;
+    const btn = document.getElementById('dashDupeCleanBtn');
+    btn.disabled = true;
+    const origText = btn.textContent;
+    btn.textContent = 'Bezig...';
+    try {
+      const idsToDelete = [];
+      groups.forEach(g => { for (let i = 1; i < g.length; i++) idsToDelete.push(g[i].id); });
+      const chunkSize = 100;
+      for (let i = 0; i < idsToDelete.length; i += chunkSize) {
+        const chunk = idsToDelete.slice(i, i + chunkSize);
+        const res = await fetch(instRestUrl(`?id=in.(${chunk.join(',')})`), {
+          method: 'DELETE',
+          cache: 'no-store',
+          headers: authHeaders()
+        });
+        if (!res.ok) throw new Error(await res.text());
+      }
+      allInstances = allInstances.filter(i => !idsToDelete.includes(i.id));
+      renderDashDupeReport();
+      renderDashIntegrityReport();
+      updateTotalsBar();
+      renderDashCounts();
+    } catch (err) {
+      alert('Opruimen mislukt: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = origText;
     }
   });
 
