@@ -1631,7 +1631,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '2.75';
+  const APP_VERSION = '2.76';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -3854,6 +3854,7 @@
       }
       renderGrid();
       if (currentView === 'checklist') renderChecklist();
+      updateProgress();
     } else {
       renderExtraGrid();
       if (String(currentExtraId) === String(parentId)) refreshExtraDetailPreview();
