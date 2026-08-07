@@ -899,6 +899,7 @@
   .instance-row .inst-title { font-size: 12.5px; font-weight: 600; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .instance-row .inst-sub { font-size: 11px; color: #888; }
   .instance-row .inst-value { font-size: 12.5px; font-weight: 700; color: var(--color-value-positive); flex-shrink: 0; }
+  .instance-row .so-stepper { margin: 0; flex-shrink: 0; }
   .inst-value-pending { color: #999; font-weight: 500; font-style: italic; }
   .inst-price-refresh {
     flex-shrink: 0; padding: 4px 8px; border-radius: 6px; border: none;
@@ -1630,7 +1631,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '2.74';
+  const APP_VERSION = '2.75';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -3697,7 +3698,6 @@
   }
 
   function instanceRowHtml(inst) {
-    const subParts = [inst.versie, `${inst.aantal || 1}x`].filter(Boolean).join(' · ') || `${inst.aantal || 1}x`;
     const canTryPrice = !!(inst.set_naam && inst.kaartnummer);
     const isPending = pendingPriceFetchIds.has(inst.id);
     const dotHtml = (!isPending && inst.prijs_bron_datum) ? priceFreshnessDotHtml(inst.prijs_bron_datum) : '';
@@ -3707,8 +3707,9 @@
     return `
       <div class="instance-row" data-inst-id="${inst.id}">
         <div class="inst-info">
-          <div class="inst-sub">${subParts}</div>
+          <div class="inst-sub">${inst.versie || ''}</div>
         </div>
+        ${stepperHtmlFor(inst)}
         <div class="inst-value">${valueHtml}</div>
         ${canTryPrice ? `<button type="button" class="inst-price-refresh" title="Marktprijs ophalen (Cardmarket via TCGdex)" data-inst-id="${inst.id}" ${isPending ? 'disabled' : ''}>💶 Prijs</button>` : ''}
       </div>`;
@@ -3766,6 +3767,7 @@
     containerEl.querySelectorAll('.instance-row').forEach(row => {
       row.addEventListener('click', () => openInstanceModal(parentType, parentId, row.dataset.instId));
     });
+    wireStepperButtons(containerEl);
     containerEl.querySelectorAll('.inst-price-refresh').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         e.stopPropagation();
@@ -5275,6 +5277,7 @@
     container.querySelectorAll('.so-stepper-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.preventDefault();
+        e.stopPropagation();
         const wrap = btn.closest('.so-stepper');
         onAdjustAantal(wrap.dataset.instId, parseInt(btn.dataset.delta, 10));
       });
