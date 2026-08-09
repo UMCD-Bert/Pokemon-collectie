@@ -76,7 +76,6 @@
   }
   #printBtn { background: var(--color-accent-blue); }
   #printMancoBtn { background: none; }
-  #resetOwnedBtn { background: var(--color-text-muted); }
   #viewToggleBtn { background: #2a9d8f; }
   #settingsBtn {
     background: var(--color-primary); position: fixed; top: 10px; right: 10px; z-index: 50;
@@ -533,7 +532,6 @@
     cursor: pointer;
   }
   .dropdown-checkbox-item input { width: 16px; height: 16px; cursor: pointer; }
-  #resetOwnedBtn { width: 42px; font-size: 16px; padding: 9px; }
   #viewToggleBtn { white-space: nowrap; }
 
   @media (max-width: 480px) {
@@ -1028,7 +1026,6 @@
       <button type="button" class="dropdown-item" id="printMancoBtn">Mancolijst printen (compact)</button>
     </div>
   </div>
-  <button id="resetOwnedBtn" title="Wis alle vinkjes">🗑️</button>
 </div>
 
 <div id="appVersion"></div>
@@ -1631,7 +1628,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '2.77';
+  const APP_VERSION = '2.78';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -1723,7 +1720,7 @@
     'XY Series': ['XY', 'Flashfire', 'Furious Fists', 'Phantom Forces', 'Primal Clash', 'Roaring Skies', 'Ancient Origins', 'BREAKthrough', 'BREAKpoint', 'Generations', 'Fates Collide', 'Steam Siege', 'Evolutions', 'XY Black Star Promos'],
     'Sun & Moon Series': ['Sun & Moon', 'Guardians Rising', 'Burning Shadows', 'Shining Legends', 'Crimson Invasion', 'Ultra Prism', 'Forbidden Light', 'Celestial Storm', 'Dragon Majesty', 'Lost Thunder', 'Team Up', 'Detective Pikachu', 'Unbroken Bonds', 'Unified Minds', 'Hidden Fates', 'Hidden Fates Shiny Vault', 'Cosmic Eclipse', 'SM Black Star Promos'],
     'Sword & Shield Series': ['Sword & Shield', 'Rebel Clash', 'Darkness Ablaze', "Champion's Path", 'Vivid Voltage', 'Shining Fates', 'Shining Fates Shiny Vault', 'Battle Styles', 'Chilling Reign', 'Evolving Skies', 'Celebrations', 'Fusion Strike', 'Brilliant Stars', 'Brilliant Stars Trainer Gallery', 'Astral Radiance', 'Astral Radiance Trainer Gallery', 'Pokémon GO', 'Lost Origin', 'Lost Origin Trainer Gallery', 'Silver Tempest', 'Silver Tempest Trainer Gallery', 'Crown Zenith', 'Crown Zenith Galarian Gallery', 'SWSH Black Star Promos'],
-    'Scarlet & Violet Series': ['Scarlet & Violet', 'Paldea Evolved', 'Obsidian Flames', 'Scarlet & Violet 151', 'Paradox Rift', 'Paldean Fates', 'Temporal Forces', 'Twilight Masquerade', 'Shrouded Fable', 'Stellar Crown', 'Surging Sparks', 'Prismatic Evolutions', 'Journey Together', 'Destined Rivals', 'Scarlet & Violet Promos'],
+    'Scarlet & Violet Series': ['Scarlet & Violet', 'Paldea Evolved', 'Obsidian Flames', 'Scarlet & Violet 151', 'Paradox Rift', 'Paldean Fates', 'Temporal Forces', 'Twilight Masquerade', 'Shrouded Fable', 'Stellar Crown', 'Surging Sparks', 'Prismatic Evolutions', 'Journey Together', 'Destined Rivals', 'Black Bolt', 'White Flare', 'Scarlet & Violet Promos'],
     'Mega Evolution Series': ['Mega Evolution', 'Phantasmal Flames', 'Ascended Heroes', 'Perfect Order', 'Chaos Rising', 'Pitch Black', '30th Celebration', 'Mega Evolution Promos'],
     "Overig / promo's": [
       "McDonald's Collection", "McDonald's Collection 2011", "McDonald's Collection 2012", "McDonald's Collection 2013",
@@ -2964,28 +2961,6 @@
     search.focus();
   });
   filterOwned.addEventListener('change', applyFilter);
-
-  document.getElementById('resetOwnedBtn').addEventListener('click', async () => {
-    const ownedCount = records.filter(r => r.inbezit).length;
-    const message = ownedCount > 0
-      ? `Je hebt momenteel ${ownedCount} kaart(en) aangevinkt in Supabase. Weet je zeker dat je deze allemaal wilt wissen? Dit kan niet ongedaan gemaakt worden.`
-      : 'Je hebt nog geen kaarten aangevinkt. Toch doorgaan?';
-    if (!confirm(message)) return;
-    statusEl.style.display = 'block';
-    statusEl.textContent = 'Bezig met wissen...';
-    for (const rec of records) {
-      if (rec.inbezit) {
-        rec.inbezit = false;
-        await patchRecord(rec.id, { inbezit: false });
-      }
-    }
-    renderGrid();
-    if (currentView === 'checklist') renderChecklist();
-    applyFilter();
-    updateProgress();
-    statusEl.textContent = 'Alle vinkjes gewist.';
-    setTimeout(() => statusEl.style.display = 'none', 2000);
-  });
 
   document.getElementById('printNowBtn').addEventListener('click', () => {
     const onlyVisible = document.getElementById('printOnlyVisible').checked;
