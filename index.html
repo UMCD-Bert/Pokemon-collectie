@@ -1247,16 +1247,6 @@
     </div>
 
     <div class="dash-section">
-      <h3>💎 Duurste kaarten</h3>
-      <div id="dashTopExpensive"></div>
-      <div class="dash-pager">
-        <button type="button" class="btn-secondary dash-pager-btn" id="dashTopExpensivePrev">← Vorige</button>
-        <span id="dashTopExpensivePageLabel" class="dash-pager-label"></span>
-        <button type="button" class="btn-secondary dash-pager-btn" id="dashTopExpensiveNext">Volgende →</button>
-      </div>
-    </div>
-
-    <div class="dash-section">
       <h3>📦 Meeste exemplaren van 1 kaart</h3>
       <div id="dashMostCopies"></div>
     </div>
@@ -1281,21 +1271,13 @@
       </div>
     </div>
 
-    <div class="dash-section" id="dashIntegritySection" style="grid-column: 1 / -1;">
-      <h3>⚠️ Aangevinkt zonder exemplaar</h3>
-      <div id="dashIntegrityIntro" style="font-size:12px;color:#888;margin-bottom:8px;"></div>
-      <div id="dashIntegrityList"></div>
-      <div class="modal-actions" id="dashIntegrityActions" style="display:none;">
-        <button type="button" class="btn-secondary" id="dashIntegrityCopyBtn">📋 Kopieer rapport</button>
-      </div>
-    </div>
-
-    <div class="dash-section" id="dashDupeSection" style="grid-column: 1 / -1;">
-      <h3>🧹 Dubbele exemplaren</h3>
-      <div id="dashDupeIntro" style="font-size:12px;color:#888;margin-bottom:8px;"></div>
-      <div id="dashDupeList"></div>
-      <div class="modal-actions" id="dashDupeActions" style="display:none;">
-        <button type="button" class="btn-danger" id="dashDupeCleanBtn">🧹 Verwijder alle duplicaten</button>
+    <div class="dash-section">
+      <h3>💎 Duurste kaarten</h3>
+      <div id="dashTopExpensive"></div>
+      <div class="dash-pager">
+        <button type="button" class="btn-secondary dash-pager-btn" id="dashTopExpensivePrev">← Vorige</button>
+        <span id="dashTopExpensivePageLabel" class="dash-pager-label"></span>
+        <button type="button" class="btn-secondary dash-pager-btn" id="dashTopExpensiveNext">Volgende →</button>
       </div>
     </div>
   </div>
@@ -1592,7 +1574,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '2.85';
+  const APP_VERSION = '2.86';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -5940,8 +5922,6 @@
     renderDashMostCopies();
     renderDashSetProgress();
     renderDashSetValue();
-    renderDashIntegrityReport();
-    renderDashDupeReport();
   }
 
   function computeBinderValue() {
@@ -6034,138 +6014,6 @@
     }).join('');
   }
 
-  function renderDashIntegrityReport() {
-    const intro = document.getElementById('dashIntegrityIntro');
-    const list = document.getElementById('dashIntegrityList');
-    const actions = document.getElementById('dashIntegrityActions');
-    const affected = records.filter(r => r.inbezit && instancesFor('pokemon', r.id).length === 0);
-    if (affected.length === 0) {
-      intro.textContent = '';
-      list.innerHTML = '<div class="dash-empty">Niets gevonden — elke aangevinkte kaart heeft minstens één exemplaar. 👍</div>';
-      actions.style.display = 'none';
-      return;
-    }
-    intro.textContent = `${affected.length} kaart${affected.length === 1 ? '' : 'en'} staat/staan op "in bezit" maar heeft/hebben geen enkel exemplaar. Vermoedelijk aangevinkt zonder het opvolgende venster af te maken.`;
-    list.innerHTML = affected.map(r => {
-      const num = String(r.nummer || '').padStart(4, '0');
-      const hasLeftoverPhoto = r.afbeelding && r.afbeelding !== defaultArtUrl(String(r.nummer || ''));
-      const hasLeftoverValue = r.waarde !== undefined && r.waarde !== null && !isNaN(parseFloat(r.waarde)) && parseFloat(r.waarde) > 0;
-      const sporen = [hasLeftoverPhoto ? 'eigen foto' : null, hasLeftoverValue ? `waarde €${fmtEuro(parseFloat(r.waarde))}` : null].filter(Boolean).join(', ');
-      return `<div class="dash-row" data-rec-id="${r.id}">
-        <div class="dash-row-naam">${r.naam || '(onbekend)'} <span class="dash-row-meta">#${num}</span>${sporen ? `<div class="dash-row-meta">sporen: ${sporen}</div>` : ''}</div>
-        <button type="button" class="btn-secondary dash-integrity-open" data-id="${r.id}" style="padding:6px 10px;font-size:12px;">Open</button>
-        <button type="button" class="btn-danger dash-integrity-uncheck" data-id="${r.id}" style="padding:6px 10px;font-size:12px;">Vinkje uit</button>
-      </div>`;
-    }).join('');
-    actions.style.display = '';
-    list.querySelectorAll('.dash-integrity-open').forEach(btn => {
-      btn.addEventListener('click', () => openDetailModal(btn.dataset.id));
-    });
-    list.querySelectorAll('.dash-integrity-uncheck').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        btn.disabled = true;
-        await setOwned(btn.dataset.id, false);
-        renderDashIntegrityReport();
-      });
-    });
-  }
-
-  document.getElementById('dashIntegrityCopyBtn').addEventListener('click', async () => {
-    const affected = records.filter(r => r.inbezit && instancesFor('pokemon', r.id).length === 0);
-    const regels = affected.map(r => {
-      const num = String(r.nummer || '').padStart(4, '0');
-      const hasLeftoverPhoto = r.afbeelding && r.afbeelding !== defaultArtUrl(String(r.nummer || ''));
-      const hasLeftoverValue = r.waarde !== undefined && r.waarde !== null && !isNaN(parseFloat(r.waarde)) && parseFloat(r.waarde) > 0;
-      const sporen = [hasLeftoverPhoto ? 'eigen foto' : null, hasLeftoverValue ? `waarde €${fmtEuro(parseFloat(r.waarde))}` : null].filter(Boolean).join(', ') || 'geen sporen';
-      return `#${num} ${r.naam || '(onbekend)'} — id ${r.id} — ${sporen}`;
-    });
-    const tekst = `Aangevinkt zonder exemplaar (${affected.length}):\n` + regels.join('\n');
-    const btn = document.getElementById('dashIntegrityCopyBtn');
-    try {
-      await navigator.clipboard.writeText(tekst);
-      const origLabel = btn.textContent;
-      btn.textContent = '✓ Gekopieerd';
-      setTimeout(() => { btn.textContent = origLabel; }, 2000);
-    } catch (err) {
-      alert('Kopiëren naar klembord is mislukt. Hier is de tekst om zelf te selecteren:\n\n' + tekst);
-    }
-  });
-
-  function findDuplicateGroups() {
-    const map = new Map();
-    allInstances.forEach(inst => {
-      const key = [inst.parent_type, inst.parent_id, inst.serie || '', inst.set_naam || '', inst.kaartnummer || '', inst.versie || ''].join('|||');
-      if (!map.has(key)) map.set(key, []);
-      map.get(key).push(inst);
-    });
-    const groups = [];
-    map.forEach(items => {
-      if (items.length > 1) {
-        items.sort((a, b) => (parseInt(a.id, 10) || 0) - (parseInt(b.id, 10) || 0));
-        groups.push(items);
-      }
-    });
-    return groups;
-  }
-
-  function renderDashDupeReport() {
-    const intro = document.getElementById('dashDupeIntro');
-    const list = document.getElementById('dashDupeList');
-    const actions = document.getElementById('dashDupeActions');
-    const groups = findDuplicateGroups();
-    if (groups.length === 0) {
-      intro.textContent = '';
-      list.innerHTML = '<div class="dash-empty">Geen duplicaten gevonden. 👍</div>';
-      actions.style.display = 'none';
-      return;
-    }
-    const totalExtra = groups.reduce((sum, g) => sum + (g.length - 1), 0);
-    intro.textContent = `${groups.length} kaart(en) hebben dubbele exemplaren — samen ${totalExtra} overtollige rij(en). Bij opruimen blijft steeds de oudste rij staan (id ${groups[0][0].id} bijv.), de rest wordt verwijderd.`;
-    list.innerHTML = groups.map(g => {
-      const info = resolveInstanceInfo(g[0]);
-      const meta = [g[0].serie, g[0].set_naam, g[0].kaartnummer ? `#${g[0].kaartnummer}` : '', g[0].versie].filter(Boolean).join(' · ');
-      return `<div class="dash-row">
-        <div class="dash-row-naam">${info.naam}<div class="dash-row-meta">${meta} — ${g.length}x (id's: ${g.map(i => i.id).join(', ')})</div></div>
-      </div>`;
-    }).join('');
-    actions.style.display = '';
-  }
-
-  document.getElementById('dashDupeCleanBtn').addEventListener('click', async () => {
-    const groups = findDuplicateGroups();
-    if (groups.length === 0) return;
-    const totalExtra = groups.reduce((sum, g) => sum + (g.length - 1), 0);
-    const wantsDelete = confirm(`Dit verwijdert ${totalExtra} dubbele kaartexemplaren (de oudste rij per kaart blijft altijd staan, aantal blijft ongewijzigd). Dit kan niet ongedaan gemaakt worden. Doorgaan?`);
-    if (!wantsDelete) return;
-    const btn = document.getElementById('dashDupeCleanBtn');
-    btn.disabled = true;
-    const origText = btn.textContent;
-    btn.textContent = 'Bezig...';
-    try {
-      const idsToDelete = [];
-      groups.forEach(g => { for (let i = 1; i < g.length; i++) idsToDelete.push(g[i].id); });
-      const chunkSize = 100;
-      for (let i = 0; i < idsToDelete.length; i += chunkSize) {
-        const chunk = idsToDelete.slice(i, i + chunkSize);
-        const res = await fetch(instRestUrl(`?id=in.(${chunk.join(',')})`), {
-          method: 'DELETE',
-          cache: 'no-store',
-          headers: authHeaders()
-        });
-        if (!res.ok) throw new Error(await res.text());
-      }
-      allInstances = allInstances.filter(i => !idsToDelete.includes(i.id));
-      renderDashDupeReport();
-      renderDashIntegrityReport();
-      updateTotalsBar();
-      renderDashCounts();
-    } catch (err) {
-      alert('Opruimen mislukt: ' + err.message);
-    } finally {
-      btn.disabled = false;
-      btn.textContent = origText;
-    }
-  });
 
   // Haalt de hele tcg_set_kaarten-tabel op (alleen serie/set/kaartnummer,
   // gepagineerd zodat de standaard 1000-rijen-limiet niet stilletjes knipt).
