@@ -1271,6 +1271,16 @@
       </div>
     </div>
 
+    <div class="dash-section">
+      <h3>💰 Sets op waarde</h3>
+      <div id="dashSetValue"></div>
+      <div class="dash-pager">
+        <button type="button" class="btn-secondary dash-pager-btn" id="dashSetValuePrev">← Vorige</button>
+        <span id="dashSetValuePageLabel" class="dash-pager-label"></span>
+        <button type="button" class="btn-secondary dash-pager-btn" id="dashSetValueNext">Volgende →</button>
+      </div>
+    </div>
+
     <div class="dash-section" id="dashIntegritySection" style="grid-column: 1 / -1;">
       <h3>⚠️ Aangevinkt zonder exemplaar</h3>
       <div id="dashIntegrityIntro" style="font-size:12px;color:#888;margin-bottom:8px;"></div>
@@ -1582,7 +1592,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '2.84';
+  const APP_VERSION = '2.85';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -5916,17 +5926,20 @@
 
   let dashTopExpensivePage = 0;
   let dashSetProgressPage = 0;
+  let dashSetValuePage = 0;
 
   async function openDashboard() {
     if (!extraLoaded) { extraLoaded = true; await loadAllExtraItems(); }
     if (!sealedLoaded) { sealedLoaded = true; await loadSealedItems(); }
     dashTopExpensivePage = 0;
     dashSetProgressPage = 0;
+    dashSetValuePage = 0;
     updateTotalsBar();
     renderDashCounts();
     renderDashTopExpensive();
     renderDashMostCopies();
     renderDashSetProgress();
+    renderDashSetValue();
     renderDashIntegrityReport();
     renderDashDupeReport();
   }
@@ -6232,6 +6245,52 @@
 
   document.getElementById('dashSetProgressPrev').addEventListener('click', () => { dashSetProgressPage--; renderDashSetProgressPage(); });
   document.getElementById('dashSetProgressNext').addEventListener('click', () => { dashSetProgressPage++; renderDashSetProgressPage(); });
+
+  let dashSetValueStats = null;
+
+  function renderDashSetValue() {
+    const totals = new Map();
+    allInstances.forEach(inst => {
+      if (!inst.set_naam) return;
+      totals.set(inst.set_naam, (totals.get(inst.set_naam) || 0) + instanceLineValue(inst));
+    });
+    const stats = Array.from(totals.entries())
+      .map(([setNaam, waarde]) => ({ setNaam, waarde }))
+      .filter(s => s.waarde > 0)
+      .sort((a, b) => b.waarde - a.waarde);
+    dashSetValueStats = stats;
+    renderDashSetValuePage();
+  }
+
+  function renderDashSetValuePage() {
+    const el = document.getElementById('dashSetValue');
+    const prevBtn = document.getElementById('dashSetValuePrev');
+    const nextBtn = document.getElementById('dashSetValueNext');
+    const label = document.getElementById('dashSetValuePageLabel');
+    const stats = dashSetValueStats || [];
+    if (stats.length === 0) {
+      el.innerHTML = '<div class="dash-empty">Nog geen kaarten met een waarde geregistreerd.</div>';
+      prevBtn.disabled = true; nextBtn.disabled = true; label.textContent = '';
+      return;
+    }
+    const pageSize = 10;
+    const maxPage = Math.ceil(stats.length / pageSize) - 1;
+    if (dashSetValuePage > maxPage) dashSetValuePage = maxPage;
+    if (dashSetValuePage < 0) dashSetValuePage = 0;
+    const start = dashSetValuePage * pageSize;
+    const page = stats.slice(start, start + pageSize);
+    el.innerHTML = page.map((s, idx) => `<div class="dash-row">
+        <span class="dash-row-rank">${start + idx + 1}</span>
+        <div class="dash-row-naam">${s.setNaam}</div>
+        <span class="dash-row-value">&euro; ${fmtEuro(s.waarde)}</span>
+      </div>`).join('');
+    label.textContent = `${start + 1}–${start + page.length} van ${stats.length}`;
+    prevBtn.disabled = dashSetValuePage === 0;
+    nextBtn.disabled = dashSetValuePage >= maxPage;
+  }
+
+  document.getElementById('dashSetValuePrev').addEventListener('click', () => { dashSetValuePage--; renderDashSetValuePage(); });
+  document.getElementById('dashSetValueNext').addEventListener('click', () => { dashSetValuePage++; renderDashSetValuePage(); });
 
   (function init() {
     config = loadConfig();
