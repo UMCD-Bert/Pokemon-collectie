@@ -83,12 +83,6 @@
     display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 4px rgba(0,0,0,0.25);
   }
   @media print { #settingsBtn { display: none !important; } }
-  #highValueBtn {
-    background: var(--color-gold-border); position: fixed; top: 10px; left: 10px; z-index: 50;
-    width: 34px; height: 34px; padding: 0; border-radius: 50%; font-size: 15px; border: none; color: white; cursor: pointer;
-    display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 4px rgba(0,0,0,0.25);
-  }
-  @media print { #highValueBtn { display: none !important; } }
   .print-filter-toggle {
     display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--color-text-dark);
     background: #f1f3f5; border: 1px solid #ccc; border-radius: 8px; padding: 9px 14px; cursor: pointer;
@@ -626,6 +620,10 @@
   .dash-row-meta { color: #888; font-size: 11px; }
   .dash-row-value { font-weight: 700; color: var(--color-value-positive); white-space: nowrap; }
   .dash-empty { font-size: 12px; color: #999; text-align: center; padding: 6px 0; }
+  .dash-pager { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 10px; }
+  .dash-pager-btn { padding: 6px 12px; font-size: 12px; }
+  .dash-pager-btn:disabled { opacity: 0.4; cursor: default; }
+  .dash-pager-label { font-size: 12px; color: #888; min-width: 70px; text-align: center; }
   .dash-bar-track { flex: 1; height: 8px; background: #eee; border-radius: 4px; overflow: hidden; }
   .dash-bar-fill { height: 100%; background: var(--color-primary); }
   .dash-counts-grid { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; text-align: center; }
@@ -634,7 +632,6 @@
   .dash-counts-grid .dash-count-label { font-size: 11px; color: #888; }
 
   /* ---------- Hoge-waarde lijst ---------- */
-  #highValueModal .modal-box { max-width: 480px; }
   .modal-box-wide { max-width: 900px !important; }
   .modal-box-mini { max-width: 320px !important; }
   .so-card-modal-photo {
@@ -647,24 +644,6 @@
   #allPrintsStatus { font-size: 12px; color: #777; text-align: center; margin: 0 0 10px 0; }
   #allPrintsGrid { display: grid; grid-template-columns: repeat(auto-fill, 44mm); gap: 4mm; justify-content: center; }
   .ap-setlabel { font-size: 10px; color: #888; line-height: 1.25; white-space: normal; }
-  #highValueThresholdRow { display: flex; align-items: center; gap: 6px; margin: 6px 0 4px 0; }
-  #highValueThresholdRow .euro { font-weight: 700; }
-  #highValueThresholdRow input { width: 110px; }
-  #highValueSummary { font-size: 12px; color: #666; margin: 6px 0 10px 0; text-align: center; }
-  #highValueListWrap { max-height: 45vh; overflow-y: auto; }
-  #highValueTable { width: 100%; border-collapse: collapse; font-size: 12.5px; }
-  #highValueTable th, #highValueTable td { padding: 5px 6px; border-bottom: 1px solid #eee; text-align: left; }
-  #highValueTable th { color: #666; font-weight: 600; }
-  #highValueTable td.hv-num { text-align: right; white-space: nowrap; }
-  #highValuePrintArea { display: none; }
-  body.print-highvalue-mode > *:not(#highValuePrintArea) { display: none !important; }
-  body.print-highvalue-mode #highValuePrintArea {
-    display: block !important; padding: 20px; font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  }
-  #highValuePrintArea h2 { text-align: center; margin: 0 0 4px 0; }
-  #highValuePrintArea .hv-print-sub { text-align: center; color: #555; margin-bottom: 14px; font-size: 13px; }
-  #highValuePrintArea table { width: 100%; border-collapse: collapse; font-size: 12px; }
-  #highValuePrintArea th, #highValuePrintArea td { padding: 5px 6px; border-bottom: 1px solid #ccc; text-align: left; }
 
   /* ---------- Kaarten zonder opgehaalde prijs ---------- */
   #noPriceModal .modal-box { max-width: 520px; }
@@ -731,7 +710,6 @@
   #photoLightboxInfo .pl-label { color: #888; }
   #photoLightboxInfo .pl-value { font-weight: 600; text-align: right; }
   .art-frame-clickable, #detailArtFrame, #extraArtFrame { cursor: pointer; }
-  #highValuePrintArea td.hv-num { text-align: right; white-space: nowrap; }
 
   /* ---------- Item tab (generic TCG-extra section) ---------- */
   #extraCountStatus { text-align: center; font-size: 13px; color: #666; margin-bottom: 8px; }
@@ -947,7 +925,6 @@
 
 
 <button id="settingsBtn" title="Supabase-instellingen">⚙️</button>
-<button id="highValueBtn" title="Lijst kaarten boven drempelwaarde">💎</button>
 
 <div id="settingsPanel">
   <label for="cfgUrl">Project URL</label>
@@ -1227,12 +1204,14 @@
   <select id="soSortMode" class="visually-hidden-select">
     <option value="nummer">Sorteer op nummer</option>
     <option value="naam">Sorteer op naam</option>
+    <option value="waarde">Sorteer op waarde</option>
   </select>
   <div class="dropdown" id="soSortDropdown">
     <button type="button" class="dropdown-btn" id="soSortDropdownBtn">Sorteer: Nummer <span class="caret">▾</span></button>
     <div class="dropdown-menu" id="soSortDropdownMenu">
       <button type="button" class="dropdown-item" data-value="nummer">Nummer</button>
       <button type="button" class="dropdown-item" data-value="naam">Naam</button>
+      <button type="button" class="dropdown-item" data-value="waarde">Waarde</button>
     </div>
   </div>
 
@@ -1268,8 +1247,13 @@
     </div>
 
     <div class="dash-section">
-      <h3>💎 Duurste kaarten (top 10)</h3>
+      <h3>💎 Duurste kaarten</h3>
       <div id="dashTopExpensive"></div>
+      <div class="dash-pager">
+        <button type="button" class="btn-secondary dash-pager-btn" id="dashTopExpensivePrev">← Vorige</button>
+        <span id="dashTopExpensivePageLabel" class="dash-pager-label"></span>
+        <button type="button" class="btn-secondary dash-pager-btn" id="dashTopExpensiveNext">Volgende →</button>
+      </div>
     </div>
 
     <div class="dash-section">
@@ -1278,18 +1262,13 @@
     </div>
 
     <div class="dash-section">
-      <h3>📊 Voortgang per set</h3>
+      <h3>📊 Meest complete sets</h3>
       <div id="dashSetProgress"></div>
-    </div>
-
-    <div class="dash-section">
-      <h3>✨ Normaal / Holo / Reverse Holo</h3>
-      <div id="dashVersieSplit"></div>
-    </div>
-
-    <div class="dash-section">
-      <h3>🆕 Recent toegevoegd</h3>
-      <div id="dashRecent"></div>
+      <div class="dash-pager">
+        <button type="button" class="btn-secondary dash-pager-btn" id="dashSetProgressPrev">← Vorige</button>
+        <span id="dashSetProgressPageLabel" class="dash-pager-label"></span>
+        <button type="button" class="btn-secondary dash-pager-btn" id="dashSetProgressNext">Volgende →</button>
+      </div>
     </div>
 
     <div class="dash-section" id="dashIntegritySection" style="grid-column: 1 / -1;">
@@ -1427,31 +1406,6 @@
     </div>
   </div>
 </div>
-
-<div class="modal-overlay" id="highValueModal">
-  <div class="modal-box">
-    <button type="button" class="modal-close" id="highValueCloseBtn">&times;</button>
-    <h3>Kaarten boven drempelwaarde</h3>
-    <label class="field-label">Minimale waarde</label>
-    <div id="highValueThresholdRow">
-      <span class="euro">&euro;</span>
-      <input type="text" class="field-input" inputmode="decimal" id="highValueThreshold" placeholder="bijv. 500 = &euro;5,00">
-    </div>
-    <div id="highValueSummary"></div>
-    <div id="highValueListWrap">
-      <table id="highValueTable">
-        <thead><tr><th>Naam</th><th>Categorie</th><th>Serie / Set / Versie</th><th>Aantal</th><th>Waarde (per stuk)</th></tr></thead>
-        <tbody id="highValueTbody"></tbody>
-      </table>
-    </div>
-    <div class="modal-actions">
-      <button type="button" class="btn-secondary" id="highValuePrintBtn">Printen</button>
-      <button type="button" class="btn-primary" id="highValueDoneBtn">Sluiten</button>
-    </div>
-  </div>
-</div>
-
-<div id="highValuePrintArea"></div>
 
 <div class="modal-overlay" id="instancesPopupModal">
   <div class="modal-box modal-box-mini">
@@ -1628,7 +1582,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '2.82';
+  const APP_VERSION = '2.84';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -2344,9 +2298,18 @@
     grid3.innerHTML = rows3.map(row => {
       const thumbHtml = row.afbeelding ? `<img src="${row.afbeelding}/low.png" alt="">` : `<span class="placeholder-mark">🎴</span>`;
       const checks = [];
-      if (row.heeft_normaal) checks.push(setCheckRowHtml(row, 'Normaal', null, null));
-      if (row.heeft_holo) checks.push(setCheckRowHtml(row, 'Holo', null, null));
-      if (row.heeft_reverse) checks.push(setCheckRowHtml(row, 'Reverse Holo', null, null));
+      if (row.heeft_normaal) {
+        const prijsHtml = row.prijs_normaal != null ? priceFreshnessDotHtml(row.prijs_updated) + fmtEuro(row.prijs_normaal) : '';
+        checks.push(setCheckRowHtml(row, 'Normaal', 'normaal', prijsHtml));
+      }
+      if (row.heeft_holo) {
+        const prijsHtml = row.prijs_holo != null ? priceFreshnessDotHtml(row.prijs_updated) + fmtEuro(row.prijs_holo) : '';
+        checks.push(setCheckRowHtml(row, 'Holo', 'holo', prijsHtml));
+      }
+      if (row.heeft_reverse) {
+        const prijsHtml = row.prijs_reverse != null ? priceFreshnessDotHtml(row.prijs_updated) + fmtEuro(row.prijs_reverse) : '';
+        checks.push(setCheckRowHtml(row, 'Reverse Holo', 'reverse', prijsHtml));
+      }
       return `
         <div class="so-card" data-row-id="${row.id}">
           <div class="so-thumb">${thumbHtml}</div>
@@ -4633,11 +4596,7 @@
     });
   })();
 
-  // ---------- Hoge-waarde lijst (alle categorieën samen) ----------
-  const highValueModal = document.getElementById('highValueModal');
-  const highValueThresholdInput = document.getElementById('highValueThreshold');
-  let highValueLastRows = [];
-
+  // ---------- Gedeelde helpers voor exemplaar-naam/categorie (o.a. bulk-prijs-review) ----------
   function nameForInstance(inst) {
     if (inst.parent_type === 'pokemon') {
       const rec = getRec(inst.parent_id);
@@ -4652,90 +4611,6 @@
     const item = extraItems.find(i => String(i.id) === String(inst.parent_id));
     return item ? (EXTRA_TYPE_LABELS[item.categorie] || item.categorie) : '';
   }
-
-  function computeHighValueRows(threshold) {
-    const rows = [];
-    allInstances.forEach(inst => {
-      const waardePerStuk = parseFloat(inst.waarde) || 0;
-      if (waardePerStuk < threshold) return;
-      rows.push({
-        naam: nameForInstance(inst),
-        categorie: categorieLabelForInstance(inst),
-        details: [inst.serie, inst.set_naam, inst.versie].filter(Boolean).join(' · '),
-        aantal: parseInt(inst.aantal) || 1,
-        waardePerStuk
-      });
-    });
-    rows.sort((a, b) => b.waardePerStuk - a.waardePerStuk);
-    return rows;
-  }
-
-  function highValueRowsHtml(rows) {
-    return rows.map(r => `
-      <tr>
-        <td>${r.naam}</td>
-        <td>${r.categorie}</td>
-        <td>${r.details || '—'}</td>
-        <td class="hv-num">${r.aantal}x</td>
-        <td class="hv-num">&euro; ${fmtEuro(r.waardePerStuk)}</td>
-      </tr>`).join('');
-  }
-
-  function renderHighValueList() {
-    const threshold = parseMoneyInput(highValueThresholdInput.value);
-    const tbody = document.getElementById('highValueTbody');
-    const summary = document.getElementById('highValueSummary');
-    if (threshold === null || isNaN(threshold)) {
-      highValueLastRows = [];
-      tbody.innerHTML = '';
-      summary.textContent = 'Vul een minimale waarde in.';
-      return;
-    }
-    const rows = computeHighValueRows(threshold);
-    highValueLastRows = rows;
-    if (rows.length === 0) {
-      tbody.innerHTML = '';
-      summary.textContent = `Geen kaarten gevonden boven € ${fmtEuro(threshold)}.`;
-      return;
-    }
-    summary.textContent = `${rows.length} unieke ${rows.length === 1 ? 'kaart' : 'kaarten'} gevonden (waarde per stuk, ongeacht aantal)`;
-    tbody.innerHTML = highValueRowsHtml(rows);
-  }
-
-  let highValueRenderTimer = null;
-  highValueThresholdInput.addEventListener('input', () => {
-    clearTimeout(highValueRenderTimer);
-    highValueRenderTimer = setTimeout(renderHighValueList, 200);
-  });
-
-  document.getElementById('highValueBtn').addEventListener('click', () => {
-    highValueModal.classList.add('open');
-    if (!highValueThresholdInput.value) highValueThresholdInput.value = '500'; // standaard: € 5,00
-    renderHighValueList();
-  });
-  document.getElementById('highValueCloseBtn').addEventListener('click', () => highValueModal.classList.remove('open'));
-  document.getElementById('highValueDoneBtn').addEventListener('click', () => highValueModal.classList.remove('open'));
-  wireOverlayClickToClose(highValueModal, () => highValueModal.classList.remove('open'));
-
-  document.getElementById('highValuePrintBtn').addEventListener('click', () => {
-    const threshold = parseMoneyInput(highValueThresholdInput.value) || 0;
-    const rows = highValueLastRows;
-    const printArea = document.getElementById('highValuePrintArea');
-    printArea.innerHTML = `
-      <h2>Kaarten boven &euro; ${fmtEuro(threshold)}</h2>
-      <div class="hv-print-sub">${rows.length} unieke ${rows.length === 1 ? 'kaart' : 'kaarten'} (waarde per stuk, ongeacht aantal)</div>
-      <table>
-        <thead><tr><th>Naam</th><th>Categorie</th><th>Serie / Set / Versie</th><th>Aantal</th><th>Waarde (per stuk)</th></tr></thead>
-        <tbody>${highValueRowsHtml(rows)}</tbody>
-      </table>`;
-    document.body.classList.add('print-highvalue-mode');
-    window.print();
-    const restore = () => {
-      document.body.classList.remove('print-highvalue-mode');
-      window.removeEventListener('afterprint', restore);
-    };
-    window.addEventListener('afterprint', restore);
-  });
 
   // ---------- Opslaggebruik controleren (Supabase Storage) ----------
   // Let op: de 50 MB-limiet is de maximale bestandsgrootte per upload, niet de
@@ -5116,7 +4991,7 @@
     soSearchWrap.classList.remove('has-text');
     renderSetOverviewGrid();
   });
-  const soSortRefreshLabel = setupDropdown('soSortDropdown', soSortMode, 'Sorteer', { nummer: 'Nummer', naam: 'Naam' });
+  const soSortRefreshLabel = setupDropdown('soSortDropdown', soSortMode, 'Sorteer', { nummer: 'Nummer', naam: 'Naam', waarde: 'Waarde' });
   const soFilterRefreshLabel = setupDropdown('soFilterDropdown', soFilterOwned, 'Filter', { alle: 'Alle', bezit: 'In bezit', mis: 'Ontbrekend' });
   soSortMode.addEventListener('change', () => renderSetOverviewGrid());
   soFilterOwned.addEventListener('change', () => renderSetOverviewGrid());
@@ -5422,11 +5297,17 @@
     return `<label class="so-check"><input type="checkbox" ${checkboxAttrs} ${inst ? 'checked' : ''}> <span>${versie}</span>${priceSpan}</label>${stepper}`;
   }
 
+  function soRowValue(row) {
+    const vals = [row.prijs_normaal, row.prijs_holo, row.prijs_reverse].map(v => parseFloat(v)).filter(v => !isNaN(v));
+    return vals.length ? Math.max(...vals) : 0;
+  }
+
   function renderSetOverviewGrid() {
     const grid2 = document.getElementById('soGrid');
     updateSetGauge();
     let rows = [...soCachedRows];
     if (soSortMode.value === 'naam') rows.sort((a, b) => (a.naam || '').localeCompare(b.naam || '', 'nl'));
+    else if (soSortMode.value === 'waarde') rows.sort((a, b) => soRowValue(b) - soRowValue(a));
     else rows.sort((a, b) => soSortKey(a) - soSortKey(b));
     if (soFilterOwned.value === 'bezit') rows = rows.filter(rowIsOwned);
     else if (soFilterOwned.value === 'mis') rows = rows.filter(r => !rowIsOwned(r));
@@ -6033,18 +5914,37 @@
     return { naam: item ? item.naam : '(onbekend)' };
   }
 
+  let dashTopExpensivePage = 0;
+  let dashSetProgressPage = 0;
+
   async function openDashboard() {
     if (!extraLoaded) { extraLoaded = true; await loadAllExtraItems(); }
     if (!sealedLoaded) { sealedLoaded = true; await loadSealedItems(); }
+    dashTopExpensivePage = 0;
+    dashSetProgressPage = 0;
     updateTotalsBar();
     renderDashCounts();
     renderDashTopExpensive();
     renderDashMostCopies();
-    renderDashVersieSplit();
-    renderDashRecent();
     renderDashSetProgress();
     renderDashIntegrityReport();
     renderDashDupeReport();
+  }
+
+  function computeBinderValue() {
+    const maxPerDexNum = new Map();
+    allInstances.forEach(inst => {
+      if (inst.parent_type !== 'pokemon') return;
+      const rec = getRec(inst.parent_id);
+      if (!rec) return;
+      const dexNum = parseInt(rec.nummer, 10);
+      if (isNaN(dexNum)) return;
+      const waarde = parseFloat(inst.waarde) || 0;
+      if (waarde > (maxPerDexNum.get(dexNum) || 0)) maxPerDexNum.set(dexNum, waarde);
+    });
+    let total = 0;
+    maxPerDexNum.forEach(v => { total += v; });
+    return total;
   }
 
   function renderDashCounts() {
@@ -6052,33 +5952,53 @@
     const totalWaarde = allInstances.reduce((sum, i) => sum + instanceLineValue(i), 0);
     const gemiddelde = totalAantal > 0 ? totalWaarde / totalAantal : 0;
     const uniekeKaarten = new Set(allInstances.map(i => `${i.parent_type}-${i.parent_id}`)).size;
+    const binderWaarde = computeBinderValue();
     document.getElementById('dashCounts').innerHTML = `
       <div class="dash-counts-grid">
         <div class="dash-count-item"><div class="dash-count-num">${totalAantal}</div><div class="dash-count-label">Totaal aantal kaarten</div></div>
         <div class="dash-count-item"><div class="dash-count-num">${uniekeKaarten}</div><div class="dash-count-label">Unieke kaarten</div></div>
         <div class="dash-count-item"><div class="dash-count-num">&euro; ${fmtEuro(gemiddelde)}</div><div class="dash-count-label">Gem. prijs per kaart</div></div>
+        <div class="dash-count-item"><div class="dash-count-num">&euro; ${fmtEuro(binderWaarde)}</div><div class="dash-count-label">Binderwaarde (Pokédex)</div></div>
       </div>`;
   }
 
   function renderDashTopExpensive() {
-    const rows = allInstances
+    const alle = allInstances
       .map(inst => ({ inst, value: parseFloat(inst.waarde) || 0 }))
       .filter(r => r.value > 0)
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 10);
+      .sort((a, b) => b.value - a.value);
     const el = document.getElementById('dashTopExpensive');
-    if (rows.length === 0) { el.innerHTML = '<div class="dash-empty">Nog geen prijzen geregistreerd.</div>'; return; }
+    const prevBtn = document.getElementById('dashTopExpensivePrev');
+    const nextBtn = document.getElementById('dashTopExpensiveNext');
+    const label = document.getElementById('dashTopExpensivePageLabel');
+    if (alle.length === 0) {
+      el.innerHTML = '<div class="dash-empty">Nog geen prijzen geregistreerd.</div>';
+      prevBtn.disabled = true; nextBtn.disabled = true; label.textContent = '';
+      return;
+    }
+    const pageSize = 10;
+    const maxPage = Math.ceil(alle.length / pageSize) - 1;
+    if (dashTopExpensivePage > maxPage) dashTopExpensivePage = maxPage;
+    if (dashTopExpensivePage < 0) dashTopExpensivePage = 0;
+    const start = dashTopExpensivePage * pageSize;
+    const rows = alle.slice(start, start + pageSize);
     el.innerHTML = rows.map((r, idx) => {
       const info = resolveInstanceInfo(r.inst);
       const meta = [r.inst.versie, r.inst.set_naam].filter(Boolean).join(' &middot; ');
       const aantal = parseInt(r.inst.aantal, 10) || 1;
       return `<div class="dash-row">
-        <span class="dash-row-rank">${idx + 1}</span>
+        <span class="dash-row-rank">${start + idx + 1}</span>
         <div class="dash-row-naam">${info.naam}${aantal > 1 ? ` (${aantal}x)` : ''}<div class="dash-row-meta">${meta}</div></div>
         <span class="dash-row-value">&euro; ${fmtEuro(r.value)}</span>
       </div>`;
     }).join('');
+    label.textContent = `${start + 1}–${start + rows.length} van ${alle.length}`;
+    prevBtn.disabled = dashTopExpensivePage === 0;
+    nextBtn.disabled = dashTopExpensivePage >= maxPage;
   }
+
+  document.getElementById('dashTopExpensivePrev').addEventListener('click', () => { dashTopExpensivePage--; renderDashTopExpensive(); });
+  document.getElementById('dashTopExpensiveNext').addEventListener('click', () => { dashTopExpensivePage++; renderDashTopExpensive(); });
 
   function renderDashMostCopies() {
     const groups = new Map();
@@ -6097,49 +6017,6 @@
         <span class="dash-row-rank">${idx + 1}</span>
         <div class="dash-row-naam">${info.naam}</div>
         <span class="dash-row-value">${r.aantal}x</span>
-      </div>`;
-    }).join('');
-  }
-
-  function renderDashVersieSplit() {
-    const counts = {};
-    let total = 0;
-    allInstances.forEach(inst => {
-      const v = inst.versie || 'Onbekend';
-      const aantal = parseInt(inst.aantal, 10) || 1;
-      counts[v] = (counts[v] || 0) + aantal;
-      total += aantal;
-    });
-    const el = document.getElementById('dashVersieSplit');
-    if (total === 0) { el.innerHTML = '<div class="dash-empty">Nog geen kaarten geregistreerd.</div>'; return; }
-    const order = ['Normaal', 'Holo', 'Reverse Holo'];
-    const keys = Object.keys(counts).sort((a, b) => {
-      const ia = order.indexOf(a), ib = order.indexOf(b);
-      if (ia === -1 && ib === -1) return a.localeCompare(b, 'nl');
-      if (ia === -1) return 1;
-      if (ib === -1) return -1;
-      return ia - ib;
-    });
-    el.innerHTML = keys.map(k => {
-      const pct = (counts[k] / total) * 100;
-      return `<div class="dash-row">
-        <div class="dash-row-naam" style="flex:0 0 110px;">${k}</div>
-        <div class="dash-bar-track"><div class="dash-bar-fill" style="width:${pct.toFixed(1)}%"></div></div>
-        <span class="dash-row-value">${pct.toFixed(1)}%</span>
-      </div>`;
-    }).join('');
-  }
-
-  function renderDashRecent() {
-    const rows = [...allInstances].sort((a, b) => (parseInt(b.id, 10) || 0) - (parseInt(a.id, 10) || 0)).slice(0, 8);
-    const el = document.getElementById('dashRecent');
-    if (rows.length === 0) { el.innerHTML = '<div class="dash-empty">Nog geen kaarten toegevoegd.</div>'; return; }
-    el.innerHTML = rows.map(inst => {
-      const info = resolveInstanceInfo(inst);
-      const meta = [inst.versie, inst.set_naam].filter(Boolean).join(' &middot; ');
-      const aantal = parseInt(inst.aantal, 10) || 1;
-      return `<div class="dash-row">
-        <div class="dash-row-naam">${info.naam}${aantal > 1 ? ` (${aantal}x)` : ''}<div class="dash-row-meta">${meta}</div></div>
       </div>`;
     }).join('');
   }
@@ -6294,6 +6171,8 @@
     return all;
   }
 
+  let dashSetProgressStats = null;
+
   async function renderDashSetProgress() {
     const el = document.getElementById('dashSetProgress');
     el.innerHTML = '<div class="dash-empty">Bezig met laden...</div>';
@@ -6319,22 +6198,40 @@
       if (total === 0 || ownedCount === 0) return;
       stats.push({ setNaam, ownedCount, total, pct: (ownedCount / total) * 100 });
     });
+    stats.sort((a, b) => b.pct - a.pct);
+    dashSetProgressStats = stats;
+    renderDashSetProgressPage();
+  }
+
+  function renderDashSetProgressPage() {
+    const el = document.getElementById('dashSetProgress');
+    const prevBtn = document.getElementById('dashSetProgressPrev');
+    const nextBtn = document.getElementById('dashSetProgressNext');
+    const label = document.getElementById('dashSetProgressPageLabel');
+    const stats = dashSetProgressStats || [];
     if (stats.length === 0) {
       el.innerHTML = '<div class="dash-empty">Nog geen sets opgehaald via Serie/Set, of nog niets van bezit.</div>';
+      prevBtn.disabled = true; nextBtn.disabled = true; label.textContent = '';
       return;
     }
-    const meestCompleet = [...stats].sort((a, b) => b.pct - a.pct).slice(0, 5);
-    const minstCompleet = [...stats].sort((a, b) => a.pct - b.pct).slice(0, 5);
-    function rowsHtml(list) {
-      return list.map(s => `<div class="dash-row">
+    const pageSize = 10;
+    const maxPage = Math.ceil(stats.length / pageSize) - 1;
+    if (dashSetProgressPage > maxPage) dashSetProgressPage = maxPage;
+    if (dashSetProgressPage < 0) dashSetProgressPage = 0;
+    const start = dashSetProgressPage * pageSize;
+    const page = stats.slice(start, start + pageSize);
+    el.innerHTML = page.map(s => `<div class="dash-row">
         <div class="dash-row-naam">${s.setNaam}<div class="dash-row-meta">${s.ownedCount} / ${s.total}</div></div>
         <div class="dash-bar-track"><div class="dash-bar-fill" style="width:${s.pct.toFixed(1)}%"></div></div>
         <span class="dash-row-value">${s.pct.toFixed(0)}%</span>
       </div>`).join('');
-    }
-    el.innerHTML = `<div style="font-size:12px;color:#888;margin-bottom:4px;">Meest compleet</div>${rowsHtml(meestCompleet)}
-      <div style="font-size:12px;color:#888;margin:10px 0 4px 0;">Minst compleet (nog te gaan)</div>${rowsHtml(minstCompleet)}`;
+    label.textContent = `${start + 1}–${start + page.length} van ${stats.length}`;
+    prevBtn.disabled = dashSetProgressPage === 0;
+    nextBtn.disabled = dashSetProgressPage >= maxPage;
   }
+
+  document.getElementById('dashSetProgressPrev').addEventListener('click', () => { dashSetProgressPage--; renderDashSetProgressPage(); });
+  document.getElementById('dashSetProgressNext').addEventListener('click', () => { dashSetProgressPage++; renderDashSetProgressPage(); });
 
   (function init() {
     config = loadConfig();
