@@ -1628,7 +1628,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '2.78';
+  const APP_VERSION = '2.79';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -5183,9 +5183,26 @@
 
   // Zoekt (of maakt) de juiste Pokémon/Trainer/Energy-kaart waar dit
   // set-overzicht-item bij hoort, zodat een vinkje er een exemplaar aan kan hangen.
+  // Herkent "Naam's Soort"-kaarten (Trainer's Pokémon, bijv. "Larry's Braviary")
+  // door te kijken of een bekende Pokémonnaam het einde van de kaartnaam vormt,
+  // voorafgegaan door een bezits-'s. Alleen als terugval als het dexid ontbreekt.
+  function findRecordBySpeciesName(cardName) {
+    if (!cardName) return null;
+    let naam = cardName.trim().replace(/\s+(ex|EX|GX|VMAX|VSTAR|V-UNION|V)$/, '').trim();
+    const lower = naam.toLowerCase();
+    let rec = records.find(r => (r.naam || '').trim().toLowerCase() === lower);
+    if (rec) return rec;
+    return records.find(r => {
+      const rn = (r.naam || '').trim().toLowerCase();
+      if (!rn) return false;
+      return lower.endsWith(`'s ${rn}`) || lower.endsWith(`’s ${rn}`);
+    }) || null;
+  }
+
   async function findOrCreateParentForSetCard(row) {
     if (row.categorie === 'pokemon') {
-      const rec = row.dexid != null ? records.find(r => parseInt(r.nummer) === parseInt(row.dexid)) : null;
+      let rec = row.dexid != null ? records.find(r => parseInt(r.nummer) === parseInt(row.dexid)) : null;
+      if (!rec) rec = findRecordBySpeciesName(row.naam);
       if (!rec) return null;
       return { parentType: 'pokemon', parentId: rec.id };
     }
@@ -5273,7 +5290,8 @@
     try {
       const parent = await findOrCreateParentForSetCard(row);
       if (!parent) {
-        alert(`Kon geen Pokémon vinden met Pokédexnummer ${row.dexid} voor "${row.naam}" — controleer of dat nummer in de Pokédex bestaat.`);
+        const dexHint = row.dexid != null ? `Pokédexnummer ${row.dexid}` : 'geen Pokédexnummer of herkenbare soortnaam';
+        alert(`Kon geen Pokémon vinden (${dexHint}) voor "${row.naam}" — controleer of de kaart bij een bestaande Pokémon hoort.`);
         checkboxEl.checked = false;
         return;
       }
@@ -5503,6 +5521,11 @@
         let categorie = 'pokemon';
         if (card.category === 'Trainer') categorie = (card.trainerType || 'item').toLowerCase();
         else if (card.category === 'Energy') categorie = 'energy';
+        // TCGdex' eigen 'variants'-vlaggetjes zijn niet altijd volledig (met name
+        // bij recente sets) — als Cardmarket al een holo-prijs heeft, bestaat de
+        // holo-druk dus sowieso, ook als 'variants.holo' dat niet aangeeft.
+        const cmPricing = card.pricing && card.pricing.cardmarket;
+        const priceSuggestsHolo = !!(cmPricing && (cmPricing['trend-holo'] != null || cmPricing['avg-holo'] != null));
         newRows.push({
           set_id: setId,
           serie: serie || null,
@@ -5513,7 +5536,7 @@
           categorie,
           dexid: (card.dexId && card.dexId[0]) || null,
           heeft_normaal: !!(card.variants && (card.variants.normal || card.variants.firstEdition || card.variants.wPromo)),
-          heeft_holo: !!(card.variants && card.variants.holo),
+          heeft_holo: !!(card.variants && card.variants.holo) || priceSuggestsHolo,
           heeft_reverse: !!(card.variants && card.variants.reverse)
         });
       } catch (err) {
