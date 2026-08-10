@@ -1628,7 +1628,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '2.81';
+  const APP_VERSION = '2.82';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -2264,10 +2264,18 @@
     try {
       // Filteren doen we op de server (query string), niet door de hele tabel op
       // te halen — die kan inmiddels duizenden rijen bevatten en Supabase/PostgREST
-      // geeft per verzoek maximaal 1000 rijen terug.
-      const res = await fetch(setKaartenRestUrl(`?${queryFilter}&order=serie.asc,set_naam.asc,kaartnummer.asc`), { headers: authHeaders(), cache: 'no-store' });
-      if (!res.ok) throw new Error(await res.text());
-      const alle = await res.json();
+      // geeft per verzoek maximaal 1000 rijen terug. queryFilter mag een losse
+      // string zijn, of een array van meerdere filters (bijv. dexid + naam-patroon)
+      // die samengevoegd worden — nodig voor kaarten zonder Pokédexnummer.
+      const filters = Array.isArray(queryFilter) ? queryFilter : [queryFilter];
+      const batches = await Promise.all(filters.map(async qf => {
+        const res = await fetch(setKaartenRestUrl(`?${qf}&order=serie.asc,set_naam.asc,kaartnummer.asc`), { headers: authHeaders(), cache: 'no-store' });
+        if (!res.ok) throw new Error(await res.text());
+        return res.json();
+      }));
+      const merged = new Map();
+      batches.flat().forEach(row => merged.set(row.id, row));
+      const alle = Array.from(merged.values());
       apCachedRows = clientFilterFn ? alle.filter(clientFilterFn) : alle;
     } catch (err) {
       statusEl3.textContent = 'Kon de drukken niet laden: ' + err.message;
@@ -2284,10 +2292,14 @@
   document.getElementById('detailAllPrintsBtn').addEventListener('click', async () => {
     const rec = getRec(currentDetailId);
     if (!rec) return;
+    const naamLower = (rec.naam || '').trim().toLowerCase();
     await openAllPrintsModal(
       rec.naam,
-      `categorie=eq.pokemon&dexid=eq.${encodeURIComponent(rec.nummer)}`,
-      r => r.dexid != null && parseInt(r.dexid) === parseInt(rec.nummer),
+      [
+        `categorie=eq.pokemon&dexid=eq.${encodeURIComponent(rec.nummer)}`,
+        `categorie=eq.pokemon&naam=ilike.*${encodeURIComponent(rec.naam)}*`
+      ],
+      r => (r.dexid != null && parseInt(r.dexid) === parseInt(rec.nummer)) || extractCoreSpeciesName(r.naam) === naamLower,
       'Nog geen drukken van deze Pokémon bekend — haal eerst een set op via de Serie/Set-tab.'
     );
   });
@@ -5199,23 +5211,27 @@
     return isNaN(n) ? 999999 : n;
   }
 
+  // Haalt de kernsoortnaam uit een kaartnaam: strip ex/EX/GX/V-achtervoegsels,
+  // en bij "Naam's Soort"-kaarten (elk apostrofteken: ' ’ ‘ ´ `) alles vóór de
+  // eerste "'s " weg, zodat "N's Darumaka" -> "darumaka" wordt.
+  function extractCoreSpeciesName(cardName) {
+    let naam = (cardName || '').trim().replace(/\s+(ex|EX|GX|VMAX|VSTAR|V-UNION|V)$/, '').trim();
+    const m = naam.match(/^.+?['’‘´`]s\s+(.+)$/);
+    return (m ? m[1] : naam).trim().toLowerCase();
+  }
+
   // Zoekt (of maakt) de juiste Pokémon/Trainer/Energy-kaart waar dit
   // set-overzicht-item bij hoort, zodat een vinkje er een exemplaar aan kan hangen.
   // Herkent "Naam's Soort"-kaarten (Trainer's Pokémon, bijv. "Larry's Braviary")
-  // door te kijken of een bekende Pokémonnaam het einde van de kaartnaam vormt,
-  // voorafgegaan door een bezits-'s. Alleen als terugval als het dexid ontbreekt.
+  // via extractCoreSpeciesName. Alleen als terugval als het dexid ontbreekt.
   function findRecordBySpeciesName(cardName) {
     if (!cardName) return null;
-    let naam = cardName.trim().replace(/\s+(ex|EX|GX|VMAX|VSTAR|V-UNION|V)$/, '').trim();
-    const lower = naam.toLowerCase();
+    const lower = (cardName || '').trim().replace(/\s+(ex|EX|GX|VMAX|VSTAR|V-UNION|V)$/, '').trim().toLowerCase();
     let rec = records.find(r => (r.naam || '').trim().toLowerCase() === lower);
     if (rec) return rec;
-    // "Naam's Soort" (elk apostrofteken: ' ’ ‘ ´ `) -> pak alles ná de eerste "'s "
-    // en vergelijk dat rechtstreeks, i.p.v. te gokken welk apostrofteken TCGdex gebruikt.
-    const m = naam.match(/^.+?['’‘´`]s\s+(.+)$/);
-    if (m) {
-      const rest = m[1].trim().toLowerCase();
-      rec = records.find(r => (r.naam || '').trim().toLowerCase() === rest);
+    const core = extractCoreSpeciesName(cardName);
+    if (core && core !== lower) {
+      rec = records.find(r => (r.naam || '').trim().toLowerCase() === core);
       if (rec) return rec;
     }
     return null;
