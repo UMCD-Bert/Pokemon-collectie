@@ -1628,7 +1628,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '2.80';
+  const APP_VERSION = '2.81';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -5210,11 +5210,15 @@
     const lower = naam.toLowerCase();
     let rec = records.find(r => (r.naam || '').trim().toLowerCase() === lower);
     if (rec) return rec;
-    return records.find(r => {
-      const rn = (r.naam || '').trim().toLowerCase();
-      if (!rn) return false;
-      return lower.endsWith(`'s ${rn}`) || lower.endsWith(`’s ${rn}`);
-    }) || null;
+    // "Naam's Soort" (elk apostrofteken: ' ’ ‘ ´ `) -> pak alles ná de eerste "'s "
+    // en vergelijk dat rechtstreeks, i.p.v. te gokken welk apostrofteken TCGdex gebruikt.
+    const m = naam.match(/^.+?['’‘´`]s\s+(.+)$/);
+    if (m) {
+      const rest = m[1].trim().toLowerCase();
+      rec = records.find(r => (r.naam || '').trim().toLowerCase() === rest);
+      if (rec) return rec;
+    }
+    return null;
   }
 
   async function findOrCreateParentForSetCard(row) {
