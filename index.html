@@ -1628,7 +1628,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '2.79';
+  const APP_VERSION = '2.80';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -1784,6 +1784,22 @@
   Object.values(CARD_SERIES).forEach(sets => sets.forEach(s => { if (!allSetsFlat.includes(s)) allSetsFlat.push(s); }));
   allSetsFlat.sort((a, b) => a.localeCompare(b, 'nl'));
 
+  // Zet een getypte/gekozen setnaam om naar de canonieke schrijfwijze (zelfde
+  // hoofdlettergebruik als in CARD_SERIES/de opgehaalde sets) als die bestaat —
+  // voorkomt dat "white flare" en "White Flare" als twee losse sets eindigen.
+  function canonicalSetName(typed) {
+    const t = (typed || '').trim();
+    if (!t) return t;
+    const lower = t.toLowerCase();
+    const staticMatch = allSetsFlat.find(s => s.toLowerCase() === lower);
+    if (staticMatch) return staticMatch;
+    for (const setSet of Object.values(dynamicSerieToSets)) {
+      const dynMatch = [...setSet].find(s => s.toLowerCase() === lower);
+      if (dynMatch) return dynMatch;
+    }
+    return t;
+  }
+
   // Automatisch nieuwe series/sets meenemen die TCGdex kent maar die nog niet
   // in onze eigen (vaste) lijst staan — zo hoeft niemand dit handmatig bij te
   // houden zodra er een nieuwe set uitkomt. Faalt dit onverhoopt (bijv. geen
@@ -1841,6 +1857,7 @@
     return null;
   }
   iSetInput.addEventListener('change', () => {
+    iSetInput.value = canonicalSetName(iSetInput.value);
     const serie = findSerieForSetName(iSetInput.value);
     if (serie) iSerieInput.value = serie;
   });
@@ -5107,6 +5124,7 @@
   // meteen niet meer meer — dus die alvast leegmaken (niet pas bij blur/change).
   soSetInput.addEventListener('input', () => { soSerieInput.value = ''; });
   soSetInput.addEventListener('change', () => {
+    soSetInput.value = canonicalSetName(soSetInput.value);
     soSerieInput.value = '';
     const serie = findSerieForSetName(soSetInput.value);
     if (serie) soSerieInput.value = serie;
@@ -5933,7 +5951,7 @@
     if (!naam) { alert('Naam is verplicht.'); return; }
     const payload = {
       naam,
-      set_naam: document.getElementById('sealedSet').value.trim() || null,
+      set_naam: canonicalSetName(document.getElementById('sealedSet').value) || null,
       serie: document.getElementById('sealedSerie').value.trim() || null,
       aantal: parseInt(document.getElementById('sealedAantal').value, 10) || 1,
       aankoopprijs: parseSealedMoney(document.getElementById('sealedAankoopprijs').value),
