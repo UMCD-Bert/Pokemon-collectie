@@ -1300,6 +1300,16 @@
     </div>
 
     <div class="dash-section">
+      <h3>♻️ Meer dan 3 van dezelfde druk</h3>
+      <div id="dashSurplus"></div>
+      <div class="dash-pager">
+        <button type="button" class="btn-secondary dash-pager-btn" id="dashSurplusPrev">← Vorige</button>
+        <span id="dashSurplusPageLabel" class="dash-pager-label"></span>
+        <button type="button" class="btn-secondary dash-pager-btn" id="dashSurplusNext">Volgende →</button>
+      </div>
+    </div>
+
+    <div class="dash-section">
       <h3>📊 Meest complete sets</h3>
       <div id="dashSetProgress"></div>
       <div class="dash-pager">
@@ -1622,7 +1632,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '2.91';
+  const APP_VERSION = '2.92';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -6179,6 +6189,7 @@
     await renderDashPokedexSwaps();
     renderDashTopExpensive();
     renderDashMostCopies();
+    renderDashSurplus();
     renderDashSetProgress();
     renderDashSetValue();
     renderDashPriceUpdateStatus();
@@ -6350,7 +6361,52 @@
   }
 
 
-  // Haalt de hele tcg_set_kaarten-tabel op (alleen serie/set/kaartnummer,
+  let dashSurplusPage = 0;
+
+  // Kaarten waarvan je meer dan 3 exemplaren hebt van EXACT dezelfde druk
+  // (zelfde parent, serie, set, kaartnummer én versie) — Normaal/Holo/
+  // Reverse Holo van dezelfde kaart tellen dus apart, niet opgeteld.
+  function renderDashSurplus() {
+    const groups = new Map();
+    allInstances.forEach(inst => {
+      const key = [inst.parent_type, inst.parent_id, inst.serie || '', inst.set_naam || '', inst.kaartnummer || '', inst.versie || ''].join('|||');
+      const g = groups.get(key) || { aantal: 0, inst };
+      g.aantal += (parseInt(inst.aantal, 10) || 1);
+      groups.set(key, g);
+    });
+    const alle = Array.from(groups.values()).filter(g => g.aantal > 3).sort((a, b) => b.aantal - a.aantal);
+    const el = document.getElementById('dashSurplus');
+    const prevBtn = document.getElementById('dashSurplusPrev');
+    const nextBtn = document.getElementById('dashSurplusNext');
+    const label = document.getElementById('dashSurplusPageLabel');
+    if (alle.length === 0) {
+      el.innerHTML = '<div class="dash-empty">Geen enkele druk met meer dan 3 exemplaren. 👍</div>';
+      prevBtn.disabled = true; nextBtn.disabled = true; label.textContent = '';
+      return;
+    }
+    const pageSize = 10;
+    const maxPage = Math.ceil(alle.length / pageSize) - 1;
+    if (dashSurplusPage > maxPage) dashSurplusPage = maxPage;
+    if (dashSurplusPage < 0) dashSurplusPage = 0;
+    const start = dashSurplusPage * pageSize;
+    const rows = alle.slice(start, start + pageSize);
+    el.innerHTML = rows.map(r => {
+      const info = resolveInstanceInfo(r.inst);
+      const meta = [r.inst.versie, r.inst.set_naam].filter(Boolean).join(' &middot; ');
+      return `<div class="dash-row">
+        <div class="dash-row-naam">${info.naam}<div class="dash-row-meta">${meta}</div></div>
+        <span class="dash-row-value">${r.aantal}x</span>
+      </div>`;
+    }).join('');
+    label.textContent = `${start + 1}–${start + rows.length} van ${alle.length}`;
+    prevBtn.disabled = dashSurplusPage === 0;
+    nextBtn.disabled = dashSurplusPage >= maxPage;
+  }
+
+  document.getElementById('dashSurplusPrev').addEventListener('click', () => { dashSurplusPage--; renderDashSurplus(); });
+  document.getElementById('dashSurplusNext').addEventListener('click', () => { dashSurplusPage++; renderDashSurplus(); });
+
+
   // gepagineerd zodat de standaard 1000-rijen-limiet niet stilletjes knipt).
   async function fetchAllSetKaartenSlim() {
     let all = [];
