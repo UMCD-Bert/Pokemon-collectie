@@ -1594,7 +1594,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '2.87';
+  const APP_VERSION = '2.88';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -3667,6 +3667,14 @@
   }
 
   function mainImageFor(parentType, parentId, fallbackUrl) {
+    // Bij Pokémon-records leidend: het exemplaar dat als "in pokedex" is
+    // gemarkeerd bepaalt de getoonde foto — zonder terugval naar een ander
+    // (duurder-met-foto) exemplaar of naar de generieke soort-afbeelding.
+    // Zo blijft zichtbaar wanneer er nog zelf een foto bij moet.
+    if (parentType === 'pokemon') {
+      const flagged = instancesFor('pokemon', parentId).find(i => i.in_pokedex);
+      if (flagged) return flagged.afbeelding || null;
+    }
     const best = bestPhotoInstance(parentType, parentId);
     return best ? best.afbeelding : fallbackUrl;
   }
