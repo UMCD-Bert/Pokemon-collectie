@@ -430,6 +430,33 @@
     border-radius: 1.2mm; margin: 1.2mm 0; display: flex; align-items: center; justify-content: center; overflow: hidden;
   }
   .art-frame img { max-width: 90%; max-height: 90%; width: auto; height: auto; object-fit: contain; }
+  /* Subtiel holo-effect — TCGdex/pokemontcg.io leveren maar 1 foto per
+     kaartnummer (geen aparte holo-scans), dus dit is decoratief, puur om
+     Holo en Reverse Holo van elkaar te kunnen onderscheiden. */
+  .art-frame.is-holo::after, #detailArtFrame.is-holo::after,
+  .art-frame.is-reverse-holo::after, #detailArtFrame.is-reverse-holo::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none; mix-blend-mode: color-dodge; opacity: 0.32;
+  }
+  .art-frame.is-holo::after, #detailArtFrame.is-holo::after {
+    background: linear-gradient(115deg, transparent 20%, #ff9a9e 35%, #fad0c4 42%, #a1c4fd 50%, #c2e9fb 58%, #fbc2eb 66%, transparent 80%);
+    background-size: 250% 250%;
+    animation: holoShine 6s ease-in-out infinite;
+  }
+  .art-frame.is-reverse-holo::after, #detailArtFrame.is-reverse-holo::after {
+    background:
+      repeating-linear-gradient(135deg, rgba(255,255,255,0) 0px, rgba(255,255,255,0) 5px, rgba(255,255,255,0.55) 6px, rgba(255,255,255,0) 7px),
+      linear-gradient(115deg, transparent 25%, #a1c4fd 40%, #fbc2eb 55%, transparent 75%);
+    background-size: 16px 16px, 250% 250%;
+    animation: holoShineReverse 7s ease-in-out infinite;
+  }
+  @keyframes holoShine {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+  @keyframes holoShineReverse {
+    0%, 100% { background-position: 0 0, 100% 50%; }
+    50% { background-position: 0 0, 0% 50%; }
+  }
   .card-footer { text-align: center; font-size: 1.6mm; color: var(--color-gold-text); min-height: 4mm; cursor: pointer; }
   .card-footer .value-row-readonly { display: block; font-weight: 700; font-size: 2.4mm; color: var(--color-value-positive); }
   .card-footer .card-count { font-weight: 600; font-size: 2mm; color: var(--color-gold-text); }
@@ -1081,6 +1108,7 @@
       </div>
       <div id="detailArtFrame">
         <img id="detailImg" src="" alt="">
+        <div id="detailImgPlaceholder" class="placeholder-mark" style="display:none;">?</div>
       </div>
       <div class="detail-photo-actions-row">
         <button type="button" class="refresh-all-btn" id="detailRefreshAllBtn">🔄 Ververs foto's &amp; prijzen</button>
@@ -1594,7 +1622,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '2.88';
+  const APP_VERSION = '2.91';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -2018,6 +2046,7 @@
     const value = (rec.waarde !== undefined && rec.waarde !== null) ? rec.waarde : '';
     const imgUrl = mainImageFor('pokemon', rec.id, rec.afbeelding || defaultArtUrl(num));
     const fallbackUrl = defaultSpriteUrl(num);
+    const holoClass = imgUrl ? holoClassFor('pokemon', rec.id) : '';
     const artBlock = imgUrl
       ? `<img src="${imgUrl}" alt="${naam}" onerror="this.onerror=null; this.src='${fallbackUrl}'; this.onerror=function(){this.replaceWith(Object.assign(document.createElement('div'),{className:'placeholder-mark',textContent:'?'}))};">`
       : `<div class="placeholder-mark">?</div>`;
@@ -2032,7 +2061,7 @@
             <span class="box"></span>
           </label>
         </div>
-        <div class="art-frame">${artBlock}</div>
+        <div class="art-frame ${holoClass}">${artBlock}</div>
         <div class="card-footer">
           <span class="value-row-readonly" id="cardValue-${rec.id}">&euro; 0,00</span>
         </div>
@@ -2169,8 +2198,25 @@
     const rec = getRec(currentDetailId);
     if (!rec) return;
     const num = String(rec.nummer || '');
-    detailImg.src = mainImageFor('pokemon', currentDetailId, rec.afbeelding || defaultArtUrl(num));
-    detailImg.onerror = () => { detailImg.onerror = null; detailImg.src = defaultSpriteUrl(num); };
+    const imgUrl = mainImageFor('pokemon', currentDetailId, rec.afbeelding || defaultArtUrl(num));
+    const detailImgPlaceholder = document.getElementById('detailImgPlaceholder');
+    const detailArtFrame = document.getElementById('detailArtFrame');
+    detailArtFrame.classList.remove('is-holo', 'is-reverse-holo');
+    if (imgUrl) {
+      const holoClass = holoClassFor('pokemon', currentDetailId);
+      if (holoClass) detailArtFrame.classList.add(holoClass);
+      detailImg.style.display = '';
+      detailImgPlaceholder.style.display = 'none';
+      detailImg.src = imgUrl;
+      detailImg.onerror = () => { detailImg.onerror = null; detailImg.src = defaultSpriteUrl(num); };
+    } else {
+      // Bewust géén terugval-afbeelding: dit signaleert dat het gemarkeerde
+      // "in pokedex"-exemplaar nog een eigen foto nodig heeft.
+      detailImg.onerror = null;
+      detailImg.removeAttribute('src');
+      detailImg.style.display = 'none';
+      detailImgPlaceholder.style.display = '';
+    }
     detailName.textContent = rec.naam || '(onbekend)';
     detailNum.textContent = '#' + num.padStart(4, '0');
     detailOwnedCheck.checked = !!rec.inbezit;
@@ -2364,7 +2410,7 @@
 
   document.getElementById('detailArtFrame').addEventListener('click', () => {
     const rec = getRec(currentDetailId);
-    if (!rec) return;
+    if (!rec || !detailImg.getAttribute('src')) return;
     const list = instancesFor('pokemon', currentDetailId);
     const rows = plRow('Naam', rec.naam || '(onbekend)') +
       plRow('Nummer', '#' + String(rec.nummer || '').padStart(4, '0')) +
@@ -3497,6 +3543,7 @@
       await migrateExtraInstanceParentTypes();
       await migrateLegacyOwnedToInstances();
       await migrateInitialInPokedex();
+      await fillMissingGroupPhotos();
       updateTotalsBar();
       updateProgress();
       renderGrid();
@@ -3583,8 +3630,7 @@
 
   // Setnaam (lowercase) -> release_datum ('yyyy-mm-dd'), voor de tiebreak
   // hieronder. Eén simpele full-scan van tcg_set_kaarten (net als elders in
-  // de app) — geen probleem qua omvang, gebeurt alleen als er records zijn
-  // die nog geen "in pokedex"-keuze hebben.
+  // de app) — geen probleem qua omvang.
   async function getSetReleaseDateMap() {
     const map = new Map();
     let offset = 0;
@@ -3604,11 +3650,44 @@
     return map;
   }
 
+  // Bepaalt welk van 2 even dure exemplaren de voorkeur krijgt (voor de
+  // "in pokedex"-toewijzing en het wisseloverzicht):
+  // 1. Binnen dezelfde serie: (Reverse) Holo gaat boven Normaal.
+  // 2. Anders: de kaart uit de oudste set (release_datum) wint.
+  // 3. Anders: het langst geleden toegevoegde exemplaar (laagste id) wint.
+  function pickPreferredOnTie(a, b, releaseDateMap) {
+    const sameSerie = !!a.serie && (a.serie || '').toLowerCase() === (b.serie || '').toLowerCase();
+    if (sameSerie) {
+      const aHolo = /holo/i.test(a.versie || '');
+      const bHolo = /holo/i.test(b.versie || '');
+      if (aHolo !== bHolo) return aHolo ? a : b;
+    }
+    if (releaseDateMap) {
+      const dA = releaseDateMap.get((a.set_naam || '').toLowerCase());
+      const dB = releaseDateMap.get((b.set_naam || '').toLowerCase());
+      if (dA && dB && dA !== dB) return dA < dB ? a : b;
+    }
+    return parseInt(a.id) < parseInt(b.id) ? a : b;
+  }
+
+  // Uit een lijst exemplaren van 1 record: het duurste, met de tiebreak
+  // hierboven bij een gelijke hoogste waarde.
+  function pickMaxValueInstance(list, releaseDateMap) {
+    let best = null;
+    list.forEach(inst => {
+      const val = parseFloat(inst.waarde) || 0;
+      if (val <= 0) return;
+      if (!best) { best = inst; return; }
+      const bestVal = parseFloat(best.waarde) || 0;
+      if (val > bestVal) { best = inst; return; }
+      if (val === bestVal) best = pickPreferredOnTie(inst, best, releaseDateMap);
+    });
+    return best;
+  }
+
   // Eenmalige (maar idempotente en zelf-helende) toewijzing: elk Pokémon-
   // record zonder een "in pokedex"-keuze krijgt automatisch zijn duurste
-  // exemplaar toegewezen. Bij een gelijke hoogste waarde wint de kaart uit
-  // de oudste set (release_datum); is die ook onbekend/gelijk, dan wint het
-  // langst geleden toegevoegde exemplaar (laagste id).
+  // exemplaar toegewezen (tiebreak: zie pickPreferredOnTie hierboven).
   async function migrateInitialInPokedex() {
     const byRecord = new Map();
     allInstances.forEach(inst => {
@@ -3622,20 +3701,7 @@
     const releaseDateMap = await getSetReleaseDateMap();
     const winners = [];
     toDecide.forEach(list => {
-      let best = null;
-      list.forEach(inst => {
-        const val = parseFloat(inst.waarde) || 0;
-        if (val <= 0) return;
-        if (!best) { best = inst; return; }
-        const bestVal = parseFloat(best.waarde) || 0;
-        if (val > bestVal) { best = inst; return; }
-        if (val === bestVal) {
-          const dCur = releaseDateMap.get((inst.set_naam || '').toLowerCase());
-          const dBest = releaseDateMap.get((best.set_naam || '').toLowerCase());
-          if (dCur && dBest && dCur < dBest) { best = inst; }
-          else if (!dCur && !dBest && parseInt(inst.id) < parseInt(best.id)) { best = inst; }
-        }
-      });
+      const best = pickMaxValueInstance(list, releaseDateMap);
       if (best) winners.push(best.id);
     });
     if (winners.length === 0) return;
@@ -3648,6 +3714,41 @@
       winners.forEach(id => { const inst = getInstance(id); if (inst) inst.in_pokedex = true; });
     } catch (err) {
       console.error('Kon initiële "in pokedex"-toewijzing niet opslaan:', err);
+    }
+  }
+
+  // Zelf-helende aanvulling: binnen elke groep (zelfde parent, serie, set
+  // en kaartnummer — dus Normaal/Holo/Reverse Holo van 1 kaart) krijgt elk
+  // exemplaar zonder eigen foto automatisch de foto van een zusje dat er
+  // wél een heeft. Puur binnen Supabase, geen TCGdex nodig. Een exemplaar
+  // dat al een (mogelijk bewust afwijkende) foto heeft, wordt nooit
+  // overschreven — de filter "afbeelding is null" bewaakt dat ook
+  // serverside nog eens.
+  async function fillMissingGroupPhotos() {
+    const groups = new Map();
+    allInstances.forEach(inst => {
+      if (!inst.set_naam || !inst.kaartnummer) return;
+      const key = [inst.parent_type, inst.parent_id, inst.serie || '', inst.set_naam, inst.kaartnummer].join('|||');
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(inst);
+    });
+    const updates = [];
+    groups.forEach(list => {
+      const withPhoto = list.find(i => i.afbeelding);
+      if (!withPhoto) return;
+      const missingIds = list.filter(i => !i.afbeelding).map(i => i.id);
+      if (missingIds.length > 0) updates.push({ ids: missingIds, url: withPhoto.afbeelding });
+    });
+    for (const u of updates) {
+      try {
+        const res = await fetch(instRestUrl(`?id=in.(${u.ids.join(',')})&afbeelding=is.null`), {
+          method: 'PATCH', cache: 'no-store', headers: authHeaders({ 'Prefer': 'return=minimal' }),
+          body: JSON.stringify({ afbeelding: u.url })
+        });
+        if (res.ok) u.ids.forEach(id => { const inst = getInstance(id); if (inst) inst.afbeelding = u.url; });
+      } catch (err) {
+        console.error('Kon ontbrekende groepsfoto niet aanvullen:', err);
+      }
     }
   }
 
@@ -3677,6 +3778,18 @@
     }
     const best = bestPhotoInstance(parentType, parentId);
     return best ? best.afbeelding : fallbackUrl;
+  }
+
+  // Geeft 'is-holo' / 'is-reverse-holo' / '' terug voor het holo-effect,
+  // gebaseerd op het exemplaar dat op dit moment de hoofdfoto levert.
+  function holoClassFor(parentType, parentId) {
+    let inst = null;
+    if (parentType === 'pokemon') inst = instancesFor('pokemon', parentId).find(i => i.in_pokedex);
+    if (!inst) inst = bestPhotoInstance(parentType, parentId);
+    const v = (inst && inst.versie || '').toLowerCase();
+    if (v === 'reverse holo') return 'is-reverse-holo';
+    if (v === 'holo') return 'is-holo';
+    return '';
   }
 
   function instanceLineValue(inst) {
@@ -6063,7 +6176,7 @@
     dashSetValuePage = 0;
     updateTotalsBar();
     renderDashCounts();
-    renderDashPokedexSwaps();
+    await renderDashPokedexSwaps();
     renderDashTopExpensive();
     renderDashMostCopies();
     renderDashSetProgress();
@@ -6071,7 +6184,7 @@
     renderDashPriceUpdateStatus();
   }
 
-  function renderDashPokedexSwaps() {
+  async function renderDashPokedexSwaps() {
     const el = document.getElementById('dashPokedexSwaps');
     const byRecord = new Map();
     allInstances.forEach(inst => {
@@ -6080,15 +6193,11 @@
       if (!byRecord.has(key)) byRecord.set(key, []);
       byRecord.get(key).push(inst);
     });
+    const releaseDateMap = await getSetReleaseDateMap();
     const mismatches = [];
     byRecord.forEach((list, recId) => {
       const flagged = list.find(i => i.in_pokedex);
-      let maxInst = null;
-      list.forEach(inst => {
-        const val = parseFloat(inst.waarde) || 0;
-        if (val <= 0) return;
-        if (!maxInst || val > (parseFloat(maxInst.waarde) || 0)) maxInst = inst;
-      });
+      const maxInst = pickMaxValueInstance(list, releaseDateMap);
       if (!maxInst) return;
       if (!flagged || String(flagged.id) !== String(maxInst.id)) mismatches.push({ recId, flagged, maxInst });
     });
