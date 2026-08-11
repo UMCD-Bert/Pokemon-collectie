@@ -882,7 +882,21 @@
     background: #eef5fa; color: var(--color-accent-blue-dark); font-size: 11px; font-weight: 600; cursor: pointer; white-space: nowrap;
   }
   .inst-price-refresh:disabled { opacity: 0.6; cursor: default; }
+  .inst-pokedex-toggle {
+    flex-shrink: 0; padding: 3px 7px; border-radius: 6px; border: 1px solid #ddd;
+    background: #fff; font-size: 13px; cursor: pointer; opacity: 0.55;
+  }
+  .inst-pokedex-toggle.active { opacity: 1; border-color: var(--color-gold-border); background: var(--color-gold-bg-light); }
   .placeholder-mark { font-size: 30px; color: #ccc; }
+  .dash-swap-row { display: flex; align-items: center; gap: 8px; padding: 8px; background: #f7f7f7; border-radius: 8px; margin-bottom: 6px; }
+  .dash-swap-info { flex: 1; min-width: 0; font-size: 12.5px; }
+  .dash-swap-info .dash-swap-naam { font-weight: 700; color: var(--color-text-dark); }
+  .dash-swap-info .dash-swap-detail { color: #888; font-size: 11.5px; }
+  .dash-swap-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .dash-swap-actions button { padding: 5px 9px; border-radius: 6px; border: none; font-size: 11px; font-weight: 600; cursor: pointer; }
+  .dash-swap-open { background: #eef5fa; color: var(--color-accent-blue-dark); }
+  .dash-swap-apply { background: var(--color-gold-bg-light); color: var(--color-gold-text); border: 1px solid var(--color-gold-border) !important; }
+  #dashPriceUpdateStatus { text-align: center; font-size: 11.5px; color: #888; margin-top: -4px; margin-bottom: 10px; }
 
   #instanceArtFrame {
     width: 130px; aspect-ratio: 1/1; background: var(--color-bg-subtle); border: 2px solid var(--color-gold-border); border-radius: 8px;
@@ -1239,11 +1253,17 @@
       <div id="pieChartLegend"></div>
     </div>
   </div>
+  <div id="dashPriceUpdateStatus"></div>
 
   <div id="dashboardGrid">
     <div class="dash-section">
       <h3>🔢 Aantallen</h3>
       <div id="dashCounts"></div>
+    </div>
+
+    <div class="dash-section">
+      <h3>🔄 Pokedex-wissels</h3>
+      <div id="dashPokedexSwaps"></div>
     </div>
 
     <div class="dash-section">
@@ -1574,7 +1594,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '2.86';
+  const APP_VERSION = '2.87';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -3476,6 +3496,7 @@
       }
       await migrateExtraInstanceParentTypes();
       await migrateLegacyOwnedToInstances();
+      await migrateInitialInPokedex();
       updateTotalsBar();
       updateProgress();
       renderGrid();
@@ -3557,6 +3578,76 @@
     } catch (err) {
       statusEl.textContent = 'Kon oude waardes niet omzetten: ' + err.message;
       console.error(err);
+    }
+  }
+
+  // Setnaam (lowercase) -> release_datum ('yyyy-mm-dd'), voor de tiebreak
+  // hieronder. Eén simpele full-scan van tcg_set_kaarten (net als elders in
+  // de app) — geen probleem qua omvang, gebeurt alleen als er records zijn
+  // die nog geen "in pokedex"-keuze hebben.
+  async function getSetReleaseDateMap() {
+    const map = new Map();
+    let offset = 0;
+    const pageSize = 1000;
+    while (true) {
+      const res = await fetch(setKaartenRestUrl(`?select=set_naam,release_datum&order=id.asc&limit=${pageSize}&offset=${offset}`), { headers: authHeaders(), cache: 'no-store' });
+      if (!res.ok) break;
+      const batch = await res.json();
+      batch.forEach(row => {
+        if (!row.set_naam || !row.release_datum) return;
+        const key = row.set_naam.toLowerCase();
+        if (!map.has(key)) map.set(key, row.release_datum);
+      });
+      if (batch.length < pageSize) break;
+      offset += pageSize;
+    }
+    return map;
+  }
+
+  // Eenmalige (maar idempotente en zelf-helende) toewijzing: elk Pokémon-
+  // record zonder een "in pokedex"-keuze krijgt automatisch zijn duurste
+  // exemplaar toegewezen. Bij een gelijke hoogste waarde wint de kaart uit
+  // de oudste set (release_datum); is die ook onbekend/gelijk, dan wint het
+  // langst geleden toegevoegde exemplaar (laagste id).
+  async function migrateInitialInPokedex() {
+    const byRecord = new Map();
+    allInstances.forEach(inst => {
+      if (inst.parent_type !== 'pokemon') return;
+      const key = String(inst.parent_id);
+      if (!byRecord.has(key)) byRecord.set(key, []);
+      byRecord.get(key).push(inst);
+    });
+    const toDecide = Array.from(byRecord.values()).filter(list => !list.some(i => i.in_pokedex));
+    if (toDecide.length === 0) return;
+    const releaseDateMap = await getSetReleaseDateMap();
+    const winners = [];
+    toDecide.forEach(list => {
+      let best = null;
+      list.forEach(inst => {
+        const val = parseFloat(inst.waarde) || 0;
+        if (val <= 0) return;
+        if (!best) { best = inst; return; }
+        const bestVal = parseFloat(best.waarde) || 0;
+        if (val > bestVal) { best = inst; return; }
+        if (val === bestVal) {
+          const dCur = releaseDateMap.get((inst.set_naam || '').toLowerCase());
+          const dBest = releaseDateMap.get((best.set_naam || '').toLowerCase());
+          if (dCur && dBest && dCur < dBest) { best = inst; }
+          else if (!dCur && !dBest && parseInt(inst.id) < parseInt(best.id)) { best = inst; }
+        }
+      });
+      if (best) winners.push(best.id);
+    });
+    if (winners.length === 0) return;
+    try {
+      const res = await fetch(instRestUrl(`?id=in.(${winners.join(',')})`), {
+        method: 'PATCH', cache: 'no-store', headers: authHeaders({ 'Prefer': 'return=minimal' }),
+        body: JSON.stringify({ in_pokedex: true })
+      });
+      if (!res.ok) throw new Error(await res.text());
+      winners.forEach(id => { const inst = getInstance(id); if (inst) inst.in_pokedex = true; });
+    } catch (err) {
+      console.error('Kon initiële "in pokedex"-toewijzing niet opslaan:', err);
     }
   }
 
@@ -3663,6 +3754,10 @@
     const valueHtml = isPending
       ? `<span class="inst-value-pending">⏳ prijs ophalen...</span>`
       : `${dotHtml}&euro; ${fmtEuro(parseFloat(inst.waarde) || 0)}`;
+    // Alleen bij Pokémon-exemplaren zinvol — Trainers/Energy/Sealed hebben geen Pokédexplek.
+    const pokedexBtn = inst.parent_type === 'pokemon'
+      ? `<button type="button" class="inst-pokedex-toggle${inst.in_pokedex ? ' active' : ''}" data-inst-id="${inst.id}" title="${inst.in_pokedex ? 'Zit in de Pokédex-binder — klik om uit te zetten' : 'Zet dit exemplaar in de Pokédex-binder'}">${inst.in_pokedex ? '📖' : '📕'}</button>`
+      : '';
     return `
       <div class="instance-row" data-inst-id="${inst.id}">
         <div class="inst-info">
@@ -3670,6 +3765,7 @@
         </div>
         ${stepperHtmlFor(inst)}
         <div class="inst-value">${valueHtml}</div>
+        ${pokedexBtn}
         ${canTryPrice ? `<button type="button" class="inst-price-refresh" title="Marktprijs ophalen (Cardmarket via TCGdex)" data-inst-id="${inst.id}" ${isPending ? 'disabled' : ''}>💶 Prijs</button>` : ''}
       </div>`;
   }
@@ -3727,6 +3823,12 @@
       row.addEventListener('click', () => openInstanceModal(parentType, parentId, row.dataset.instId));
     });
     wireStepperButtons(containerEl);
+    containerEl.querySelectorAll('.inst-pokedex-toggle').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleInPokedex(btn.dataset.instId);
+      });
+    });
     containerEl.querySelectorAll('.inst-price-refresh').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         e.stopPropagation();
@@ -3819,6 +3921,38 @@
       if (String(currentExtraId) === String(parentId)) refreshExtraDetailPreview();
     }
     updateTotalsBar();
+  }
+
+  // Zet (of haalt weg) de "in pokedex"-markering op een exemplaar. Er mag
+  // maximaal 1 exemplaar per Pokémon-record gemarkeerd zijn — bij het
+  // aanzetten wordt dit dus eerst bij alle andere exemplaren van hetzelfde
+  // record uitgezet.
+  async function toggleInPokedex(instId) {
+    const inst = getInstance(instId);
+    if (!inst || inst.parent_type !== 'pokemon') return;
+    const turningOn = !inst.in_pokedex;
+    try {
+      if (turningOn) {
+        const res = await fetch(instRestUrl(`?parent_type=eq.pokemon&parent_id=eq.${inst.parent_id}&id=neq.${inst.id}`), {
+          method: 'PATCH', cache: 'no-store', headers: authHeaders({ 'Prefer': 'return=minimal' }),
+          body: JSON.stringify({ in_pokedex: false })
+        });
+        if (!res.ok) throw new Error(await res.text());
+        allInstances.forEach(i => {
+          if (i.parent_type === 'pokemon' && String(i.parent_id) === String(inst.parent_id) && String(i.id) !== String(inst.id)) i.in_pokedex = false;
+        });
+      }
+      const res2 = await fetch(instRestUrl(`?id=eq.${inst.id}`), {
+        method: 'PATCH', cache: 'no-store', headers: authHeaders({ 'Prefer': 'return=minimal' }),
+        body: JSON.stringify({ in_pokedex: turningOn })
+      });
+      if (!res2.ok) throw new Error(await res2.text());
+      inst.in_pokedex = turningOn;
+      refreshParentUI('pokemon', inst.parent_id);
+      if (currentMainTab === 'dashboard') renderDashPokedexSwaps();
+    } catch (err) {
+      alert('Kon "in pokedex" niet bijwerken: ' + err.message);
+    }
   }
 
   function openInstanceModal(parentType, parentId, instanceId) {
@@ -5414,10 +5548,12 @@
     if (!setId) return { ok: false, error: `TCGdex kent geen set met de naam "${setNaam}" — controleer de schrijfwijze.` };
 
     let briefCards;
+    let releaseDatum = null;
     try {
       const setRes = await fetchWithRetry(`https://api.tcgdex.net/v2/en/sets/${encodeURIComponent(setId)}`);
       const setData = await setRes.json();
       briefCards = setData.cards || [];
+      releaseDatum = setData.releaseDate || null;
     } catch (err) {
       return { ok: false, error: 'Kon de setlijst niet ophalen bij TCGdex: ' + err.message };
     }
@@ -5448,7 +5584,8 @@
           dexid: (card.dexId && card.dexId[0]) || null,
           heeft_normaal: !!(card.variants && (card.variants.normal || card.variants.firstEdition || card.variants.wPromo)),
           heeft_holo: !!(card.variants && card.variants.holo) || priceSuggestsHolo,
-          heeft_reverse: !!(card.variants && card.variants.reverse)
+          heeft_reverse: !!(card.variants && card.variants.reverse),
+          release_datum: releaseDatum
         });
       } catch (err) {
         console.error(`Kon kaart ${brief.localId} niet ophalen:`, err);
@@ -5918,10 +6055,91 @@
     dashSetValuePage = 0;
     updateTotalsBar();
     renderDashCounts();
+    renderDashPokedexSwaps();
     renderDashTopExpensive();
     renderDashMostCopies();
     renderDashSetProgress();
     renderDashSetValue();
+    renderDashPriceUpdateStatus();
+  }
+
+  function renderDashPokedexSwaps() {
+    const el = document.getElementById('dashPokedexSwaps');
+    const byRecord = new Map();
+    allInstances.forEach(inst => {
+      if (inst.parent_type !== 'pokemon') return;
+      const key = String(inst.parent_id);
+      if (!byRecord.has(key)) byRecord.set(key, []);
+      byRecord.get(key).push(inst);
+    });
+    const mismatches = [];
+    byRecord.forEach((list, recId) => {
+      const flagged = list.find(i => i.in_pokedex);
+      let maxInst = null;
+      list.forEach(inst => {
+        const val = parseFloat(inst.waarde) || 0;
+        if (val <= 0) return;
+        if (!maxInst || val > (parseFloat(maxInst.waarde) || 0)) maxInst = inst;
+      });
+      if (!maxInst) return;
+      if (!flagged || String(flagged.id) !== String(maxInst.id)) mismatches.push({ recId, flagged, maxInst });
+    });
+    if (mismatches.length === 0) {
+      el.innerHTML = '<div class="dash-empty">Alle Pokédex-kaarten hebben nog de duurste druk in de binder. 👍</div>';
+      return;
+    }
+    mismatches.sort((a, b) => (parseFloat(b.maxInst.waarde) || 0) - (parseFloat(a.maxInst.waarde) || 0));
+    el.innerHTML = mismatches.map(m => {
+      const rec = getRec(m.recId);
+      const naam = rec ? rec.naam : '(onbekend)';
+      const oudDetail = m.flagged
+        ? `${[m.flagged.versie, m.flagged.set_naam].filter(Boolean).join(' · ')} — &euro; ${fmtEuro(parseFloat(m.flagged.waarde) || 0)}`
+        : '(nog niets in de binder)';
+      const nieuwDetail = `${[m.maxInst.versie, m.maxInst.set_naam].filter(Boolean).join(' · ')} — &euro; ${fmtEuro(parseFloat(m.maxInst.waarde) || 0)}`;
+      return `<div class="dash-swap-row" data-rec-id="${m.recId}" data-new-inst-id="${m.maxInst.id}">
+        <div class="dash-swap-info">
+          <div class="dash-swap-naam">${naam}</div>
+          <div class="dash-swap-detail">Nu: ${oudDetail}</div>
+          <div class="dash-swap-detail">Nieuw: ${nieuwDetail}</div>
+        </div>
+        <div class="dash-swap-actions">
+          <button type="button" class="dash-swap-open">Open</button>
+          <button type="button" class="dash-swap-apply">Wissel toegepast</button>
+        </div>
+      </div>`;
+    }).join('');
+    el.querySelectorAll('.dash-swap-open').forEach(btn => {
+      btn.addEventListener('click', () => openDetailModal(btn.closest('.dash-swap-row').dataset.recId));
+    });
+    el.querySelectorAll('.dash-swap-apply').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        btn.disabled = true;
+        await toggleInPokedex(btn.closest('.dash-swap-row').dataset.newInstId);
+        renderDashPokedexSwaps();
+      });
+    });
+  }
+
+  const PRIJS_UPDATE_LOG_TABLE = 'prijs_update_log';
+  function prijsUpdateLogRestUrl(path) { return `${config.url}/rest/v1/${PRIJS_UPDATE_LOG_TABLE}${path || ''}`; }
+
+  async function renderDashPriceUpdateStatus() {
+    const el = document.getElementById('dashPriceUpdateStatus');
+    el.textContent = '';
+    try {
+      const res = await fetch(prijsUpdateLogRestUrl('?select=run_at,sets_verwerkt,kaarten_verwerkt,succes,foutmelding&order=run_at.desc&limit=1'), { headers: authHeaders(), cache: 'no-store' });
+      if (!res.ok) return;
+      const rows = await res.json();
+      if (rows.length === 0) { el.textContent = 'Automatische prijsupdate: nog niet gedraaid.'; return; }
+      const r = rows[0];
+      const d = new Date(r.run_at);
+      const datumLabel = isNaN(d.getTime()) ? r.run_at : d.toLocaleString('nl-NL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+      el.textContent = r.succes
+        ? `Laatste prijsupdate: ${datumLabel} ✅ (${r.sets_verwerkt} sets, ${r.kaarten_verwerkt} kaarten)`
+        : `Laatste prijsupdate: ${datumLabel} ❌ ${r.foutmelding || ''}`;
+    } catch (err) {
+      // Stille fout — dit statusregeltje is puur informatief.
+    }
   }
 
   function computeBinderValue() {
