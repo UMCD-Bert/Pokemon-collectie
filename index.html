@@ -646,6 +646,8 @@
   .dash-row-naam { flex: 1; min-width: 0; color: var(--color-text-dark); font-weight: 600; }
   .dash-row-meta { color: #888; font-size: 11px; }
   .dash-row-value { font-weight: 700; color: var(--color-value-positive); white-space: nowrap; }
+  .dash-row-clickable { cursor: pointer; }
+  .dash-row-clickable:hover { background: #f7f7f7; }
   .dash-empty { font-size: 12px; color: #999; text-align: center; padding: 6px 0; }
   .dash-pager { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 10px; }
   .dash-pager-btn { padding: 6px 12px; font-size: 12px; }
@@ -1632,7 +1634,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '2.92';
+  const APP_VERSION = '2.93';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -6393,11 +6395,19 @@
     el.innerHTML = rows.map(r => {
       const info = resolveInstanceInfo(r.inst);
       const meta = [r.inst.versie, r.inst.set_naam].filter(Boolean).join(' &middot; ');
-      return `<div class="dash-row">
+      return `<div class="dash-row dash-row-clickable" data-parent-type="${r.inst.parent_type}" data-parent-id="${r.inst.parent_id}">
         <div class="dash-row-naam">${info.naam}<div class="dash-row-meta">${meta}</div></div>
         <span class="dash-row-value">${r.aantal}x</span>
       </div>`;
     }).join('');
+    el.querySelectorAll('.dash-row-clickable').forEach(row => {
+      row.addEventListener('click', () => {
+        const parentType = row.dataset.parentType;
+        const parentId = row.dataset.parentId;
+        if (parentType === 'pokemon') openDetailModal(parentId);
+        else openExtraDetailModal(parentId);
+      });
+    });
     label.textContent = `${start + 1}–${start + rows.length} van ${alle.length}`;
     prevBtn.disabled = dashSurplusPage === 0;
     nextBtn.disabled = dashSurplusPage >= maxPage;
