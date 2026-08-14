@@ -1634,7 +1634,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '2.93';
+  const APP_VERSION = '2.94';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -2271,8 +2271,19 @@
     renderAllPrintsGrid();
   });
   let apCachedRows = [];
+  let allPrintsContext = null; // { parentType, parentId } — voor de auto-ververs bij sluiten
 
-  function closeAllPrintsModal() { allPrintsModal.classList.remove('open'); }
+  function closeAllPrintsModal() {
+    allPrintsModal.classList.remove('open');
+    // Wens: na het verlaten van "Alle bekende drukken" automatisch de
+    // foto's en prijzen verversen voor de kaart waar dit venster bij hoorde.
+    if (allPrintsContext) {
+      const { parentType, parentId } = allPrintsContext;
+      allPrintsContext = null;
+      const btnEl = document.getElementById(parentType === 'pokemon' ? 'detailRefreshAllBtn' : 'extraRefreshAllBtn');
+      if (btnEl) refreshAllPhotosAndPrices(parentType, parentId, btnEl);
+    }
+  }
   document.getElementById('allPrintsCloseBtn').addEventListener('click', closeAllPrintsModal);
   wireOverlayClickToClose(allPrintsModal, closeAllPrintsModal);
 
@@ -2316,6 +2327,7 @@
   document.getElementById('detailAllPrintsBtn').addEventListener('click', async () => {
     const rec = getRec(currentDetailId);
     if (!rec) return;
+    allPrintsContext = { parentType: 'pokemon', parentId: currentDetailId };
     const naamLower = (rec.naam || '').trim().toLowerCase();
     await openAllPrintsModal(
       rec.naam,
@@ -2331,6 +2343,7 @@
   document.getElementById('extraAllPrintsBtn').addEventListener('click', async () => {
     const item = getExtra(currentExtraId);
     if (!item) return;
+    allPrintsContext = { parentType: 'extra', parentId: currentExtraId };
     const naamLower = (item.naam || '').trim().toLowerCase();
     // ilike zonder % is een exacte, hoofdletterongevoelige match op de server.
     // De client-side check erna vangt op als de naam toevallig % of _ bevat.
