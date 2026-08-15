@@ -421,7 +421,7 @@
   .card-header {
     display: flex; align-items: center; gap: 0.8mm;
     background: var(--color-text-dark); color: white; border-radius: 1.2mm; padding: 0.8mm 1.2mm;
-    font-size: 2.65mm; font-weight: 700;
+    font-size: 3.3mm; font-weight: 700;
   }
   .card-header .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .card-header .num { flex-shrink: 0; }
@@ -1665,7 +1665,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '2.95';
+  const APP_VERSION = '2.96';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -1969,7 +1969,7 @@
   }
   function showDashSection(key) {
     document.getElementById('dashHubBar').style.display = 'none';
-    document.getElementById('dashSectionView').style.display = '';
+    document.getElementById('dashSectionView').style.display = 'block';
     document.querySelectorAll('#dashSectionView .dash-section').forEach(s => {
       s.classList.toggle('active', s.dataset.dashKey === key);
     });
