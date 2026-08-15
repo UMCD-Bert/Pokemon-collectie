@@ -586,6 +586,8 @@
       box-sizing: border-box; border: none; border-radius: 0; padding: 0; box-shadow: none;
       outline: 0.15mm solid #999; outline-offset: -0.15mm;
     }
+    .card-header { padding-left: 3mm; padding-right: 3mm; }
+    .owned-toggle { display: none !important; }
     #checklistView { box-shadow: none; padding: 0; max-width: 100%; }
     #checklistTable { column-count: 3; column-gap: 16px; }
     .check-row { font-size: 11px; }
@@ -1665,7 +1667,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '2.96';
+  const APP_VERSION = '2.97';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
