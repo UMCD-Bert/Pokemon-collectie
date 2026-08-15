@@ -74,8 +74,8 @@
     cursor: pointer;
     color: white;
   }
-  #printBtn { background: var(--color-accent-blue); }
-  #printMancoBtn { background: none; }
+  #printNowBtn { background: var(--color-accent-blue); }
+  #printMancoBtn { background: #2a9d8f; }
   #viewToggleBtn { background: #2a9d8f; }
   #settingsBtn {
     background: var(--color-primary); position: fixed; top: 10px; right: 10px; z-index: 50;
@@ -421,7 +421,7 @@
   .card-header {
     display: flex; align-items: center; gap: 0.8mm;
     background: var(--color-text-dark); color: white; border-radius: 1.2mm; padding: 0.8mm 1.2mm;
-    font-size: 2.3mm; font-weight: 700;
+    font-size: 2.65mm; font-weight: 700;
   }
   .card-header .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .card-header .num { flex-shrink: 0; }
@@ -581,8 +581,11 @@
     body { background: white; padding: 0; }
     h1, .toolbar, #status, #countStatus { display: none; }
     .grid.active { grid-template-columns: repeat(3, 63mm); grid-auto-rows: 88mm; gap: 0; align-content: start; }
-    .card { width: 63mm; height: 88mm; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
-    .card { box-shadow: none; }
+    .card {
+      width: 63mm; height: 88mm; print-color-adjust: exact; -webkit-print-color-adjust: exact;
+      box-sizing: border-box; border: none; border-radius: 0; padding: 0; box-shadow: none;
+      outline: 0.15mm solid #999; outline-offset: -0.15mm;
+    }
     #checklistView { box-shadow: none; padding: 0; max-width: 100%; }
     #checklistTable { column-count: 3; column-gap: 16px; }
     .check-row { font-size: 11px; }
@@ -631,10 +634,25 @@
   #pieChartLegend .pie-legend-value { color: #888; white-space: nowrap; }
   @media print { #totalsBarRow, #pieChartSection, #dashHero { display: none !important; } }
 
-  #dashboardGrid { max-width: 1040px; margin: 0 auto; display: grid; grid-template-columns: 1fr; gap: 14px; }
-  @media (min-width: 700px) {
-    #dashboardGrid { grid-template-columns: 1fr 1fr; align-items: start; }
+  #dashHubBar { max-width: 640px; margin: 0 auto 14px auto; text-align: center; }
+  .dash-hub-label { font-size: 13px; color: #888; margin: 0 0 10px 0; }
+  #dashTileGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+  .dash-tile {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    background: white; border: 1px solid #eee; border-radius: 12px; padding: 14px 8px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08); cursor: pointer; font-size: 12.5px; font-weight: 600;
+    color: var(--color-text-dark); font-family: inherit;
   }
+  .dash-tile:hover { background: var(--color-gold-bg-light); border-color: var(--color-gold-border); }
+  .dash-tile-icon { font-size: 22px; }
+  #dashSectionView { display: none; max-width: 640px; margin: 0 auto; }
+  #dashBackBtn {
+    display: inline-flex; align-items: center; gap: 6px; margin-bottom: 12px;
+    background: none; border: none; color: var(--color-text-dark); font-size: 13px; font-weight: 600; cursor: pointer; padding: 0;
+  }
+  #dashSectionView .dash-section { display: none; }
+  #dashSectionView .dash-section.active { display: block; }
+  @media print { #dashHubBar, #dashSectionView { display: none !important; } }
   .dash-section {
     margin: 0; background: white; border-radius: 12px;
     padding: 14px 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.08);
@@ -926,6 +944,9 @@
   .dash-swap-open { background: #eef5fa; color: var(--color-accent-blue-dark); }
   .dash-swap-apply { background: var(--color-gold-bg-light); color: var(--color-gold-text); border: 1px solid var(--color-gold-border) !important; }
   #dashPriceUpdateStatus { text-align: center; font-size: 11.5px; color: #888; margin-top: -4px; margin-bottom: 10px; }
+  #settingsViewSection { margin: 10px 0; padding-top: 10px; border-top: 1px solid #eee; }
+  #settingsViewSection #dashPriceUpdateStatus { margin: 0 0 8px 0; }
+  #settingsViewSection #viewToggleBtn { color: white; border: none; padding: 8px 12px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
 
   #instanceArtFrame {
     width: 130px; aspect-ratio: 1/1; background: var(--color-bg-subtle); border: 2px solid var(--color-gold-border); border-radius: 8px;
@@ -977,6 +998,10 @@
   <label for="cfgKey">Publishable key (sb_publishable_...)</label>
   <input type="password" id="cfgKey" placeholder="sb_publishable_XXXXXXXXXXXXXX">
   <p>Deze gegevens worden alleen lokaal in je browser bewaard en rechtstreeks vanuit jouw apparaat naar Supabase gestuurd — ze gaan niet via Claude.</p>
+  <div id="settingsViewSection">
+    <div id="dashPriceUpdateStatus"></div>
+    <button type="button" id="viewToggleBtn" title="Wissel weergave">☰ Checklist-weergave</button>
+  </div>
   <div id="storageUsageSection">
     <button type="button" id="checkStorageBtn">📦 Opslaggebruik controleren</button>
     <div id="storageUsageResult"></div>
@@ -1031,21 +1056,10 @@
       <button type="button" class="dropdown-item" data-value="waarde">Op waarde</button>
     </div>
   </div>
-
-  <button id="viewToggleBtn" title="Wissel weergave">☰ Checklist</button>
 </div>
 <div class="toolbar toolbar-actions">
-  <div class="dropdown" id="printDropdown">
-    <button type="button" class="dropdown-btn" id="printDropdownBtn">🖨️ Print <span class="caret">▾</span></button>
-    <div class="dropdown-menu" id="printDropdownMenu">
-      <label class="dropdown-checkbox-item">
-        <input type="checkbox" id="printOnlyVisible" checked>
-        Alleen huidige filter printen
-      </label>
-      <button type="button" class="dropdown-item" id="printNowBtn">Print</button>
-      <button type="button" class="dropdown-item" id="printMancoBtn">Mancolijst printen (compact)</button>
-    </div>
-  </div>
+  <button type="button" id="printNowBtn">🖨️ Plaatsvervangende kaartjes</button>
+  <button type="button" id="printMancoBtn">📋 Mancolijst</button>
 </div>
 
 <div id="appVersion"></div>
@@ -1270,38 +1284,55 @@
 </div>
 
 <div id="dashboardSection" style="display:none;">
-  <div id="dashHero">
-    <div id="totalsBarRow">
-      <div id="totalsBar">Totaal: &euro; 0,00</div>
-    </div>
-    <div id="pieChartSection">
-      <svg id="pieChartSvg" viewBox="0 0 100 100" width="170" height="170">
-        <g id="pieChartGroup" transform="rotate(-90 50 50)">
-          <circle cx="50" cy="50" r="40" fill="none" stroke="#e4e8ec" stroke-width="18"/>
-        </g>
-      </svg>
-      <div id="pieChartLegend"></div>
+  <div id="dashHubBar">
+    <p class="dash-hub-label">Kies een onderdeel</p>
+    <div id="dashTileGrid">
+      <button type="button" class="dash-tile" data-dash-key="hero"><span class="dash-tile-icon">💰</span><span>Totaalwaarde</span></button>
+      <button type="button" class="dash-tile" data-dash-key="counts"><span class="dash-tile-icon">🔢</span><span>Aantallen</span></button>
+      <button type="button" class="dash-tile" data-dash-key="swaps"><span class="dash-tile-icon">🔄</span><span>Pokedex-wissels</span></button>
+      <button type="button" class="dash-tile" data-dash-key="mostcopies"><span class="dash-tile-icon">📦</span><span>Meeste exemplaren</span></button>
+      <button type="button" class="dash-tile" data-dash-key="surplus"><span class="dash-tile-icon">♻️</span><span>Meer dan 3x</span></button>
+      <button type="button" class="dash-tile" data-dash-key="setprogress"><span class="dash-tile-icon">📊</span><span>Sets voortgang</span></button>
+      <button type="button" class="dash-tile" data-dash-key="setvalue"><span class="dash-tile-icon">💵</span><span>Sets op waarde</span></button>
+      <button type="button" class="dash-tile" data-dash-key="topexpensive"><span class="dash-tile-icon">💎</span><span>Duurste kaarten</span></button>
     </div>
   </div>
-  <div id="dashPriceUpdateStatus"></div>
 
-  <div id="dashboardGrid">
-    <div class="dash-section">
+  <div id="dashSectionView">
+    <button type="button" id="dashBackBtn">← Terug naar overzicht</button>
+
+    <div class="dash-section" data-dash-key="hero">
+      <div id="dashHero">
+        <div id="totalsBarRow">
+          <div id="totalsBar">Totaal: &euro; 0,00</div>
+        </div>
+        <div id="pieChartSection">
+          <svg id="pieChartSvg" viewBox="0 0 100 100" width="170" height="170">
+            <g id="pieChartGroup" transform="rotate(-90 50 50)">
+              <circle cx="50" cy="50" r="40" fill="none" stroke="#e4e8ec" stroke-width="18"/>
+            </g>
+          </svg>
+          <div id="pieChartLegend"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dash-section" data-dash-key="counts">
       <h3>🔢 Aantallen</h3>
       <div id="dashCounts"></div>
     </div>
 
-    <div class="dash-section">
+    <div class="dash-section" data-dash-key="swaps">
       <h3>🔄 Pokedex-wissels</h3>
       <div id="dashPokedexSwaps"></div>
     </div>
 
-    <div class="dash-section">
+    <div class="dash-section" data-dash-key="mostcopies">
       <h3>📦 Meeste exemplaren van 1 kaart</h3>
       <div id="dashMostCopies"></div>
     </div>
 
-    <div class="dash-section">
+    <div class="dash-section" data-dash-key="surplus">
       <h3>♻️ Meer dan 3 van dezelfde druk</h3>
       <div id="dashSurplus"></div>
       <div class="dash-pager">
@@ -1311,7 +1342,7 @@
       </div>
     </div>
 
-    <div class="dash-section">
+    <div class="dash-section" data-dash-key="setprogress">
       <h3>📊 Meest complete sets</h3>
       <div id="dashSetProgress"></div>
       <div class="dash-pager">
@@ -1321,7 +1352,7 @@
       </div>
     </div>
 
-    <div class="dash-section">
+    <div class="dash-section" data-dash-key="setvalue">
       <h3>💰 Sets op waarde</h3>
       <div id="dashSetValue"></div>
       <div class="dash-pager">
@@ -1331,7 +1362,7 @@
       </div>
     </div>
 
-    <div class="dash-section">
+    <div class="dash-section" data-dash-key="topexpensive">
       <h3>💎 Duurste kaarten</h3>
       <div id="dashTopExpensive"></div>
       <div class="dash-pager">
@@ -1634,7 +1665,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '2.94';
+  const APP_VERSION = '2.95';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -1675,15 +1706,6 @@
 
   setupDropdown('filterDropdown', filterOwned, 'Filter', { alle: 'Alle', bezit: 'In bezit', mis: 'Ontbrekend' });
   setupDropdown('sortDropdown', sortMode, 'Sorteer', { nummer: 'Nummer', naam: 'Naam', waarde: 'Waarde' });
-
-  // Print dropdown: its items are plain action buttons, not a synced select
-  document.getElementById('printDropdownBtn').addEventListener('click', (e) => {
-    e.stopPropagation();
-    const dropdown = document.getElementById('printDropdown');
-    const wasOpen = dropdown.classList.contains('open');
-    document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
-    if (!wasOpen) dropdown.classList.add('open');
-  });
 
   document.addEventListener('click', () => {
     document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
@@ -1923,6 +1945,7 @@
       cfgTable.value = existing.table || 'pokemon';
       cfgKey.value = existing.key || '';
     }
+    renderDashPriceUpdateStatus();
     settingsPanel.classList.add('open');
   });
   document.getElementById('settingsCancelBtn').addEventListener('click', () => settingsPanel.classList.remove('open'));
@@ -1938,6 +1961,23 @@
     settingsPanel.classList.remove('open');
     await loadAllRecords();
   });
+
+  // ---------- Dashboard-hub: tegels tonen/verbergen i.p.v. scrollen ----------
+  function showDashHub() {
+    document.getElementById('dashHubBar').style.display = '';
+    document.getElementById('dashSectionView').style.display = 'none';
+  }
+  function showDashSection(key) {
+    document.getElementById('dashHubBar').style.display = 'none';
+    document.getElementById('dashSectionView').style.display = '';
+    document.querySelectorAll('#dashSectionView .dash-section').forEach(s => {
+      s.classList.toggle('active', s.dataset.dashKey === key);
+    });
+  }
+  document.querySelectorAll('.dash-tile').forEach(btn => {
+    btn.addEventListener('click', () => showDashSection(btn.dataset.dashKey));
+  });
+  document.getElementById('dashBackBtn').addEventListener('click', showDashHub);
 
   function restUrl(path) { return `${config.url}/rest/v1/${config.table}${path || ''}`; }
   function authHeaders(extra) {
@@ -3038,20 +3078,7 @@
   filterOwned.addEventListener('change', applyFilter);
 
   document.getElementById('printNowBtn').addEventListener('click', () => {
-    const onlyVisible = document.getElementById('printOnlyVisible').checked;
-    const items = currentView === 'cards' ? Array.from(document.querySelectorAll('.card')) : Array.from(checklistTable.querySelectorAll('.check-row'));
-    if (onlyVisible) {
-      window.print();
-    } else {
-      const hiddenBefore = items.filter(el => el.classList.contains('hidden'));
-      items.forEach(el => el.classList.remove('hidden'));
-      window.print();
-      const restoreHidden = () => {
-        hiddenBefore.forEach(el => el.classList.add('hidden'));
-        window.removeEventListener('afterprint', restoreHidden);
-      };
-      window.addEventListener('afterprint', restoreHidden);
-    }
+    window.print();
   });
 
   function computeMancoLayout(n) {
@@ -3079,8 +3106,8 @@
   }
 
   document.getElementById('printMancoBtn').addEventListener('click', () => {
-    const prevView = currentView, prevFilter = filterOwned.value, prevSearch = search.value;
-    search.value = ''; filterOwned.value = 'mis'; setView('checklist');
+    const prevView = currentView, prevFilter = filterOwned.value, prevSearch = search.value, prevSort = sortMode.value;
+    search.value = ''; filterOwned.value = 'mis'; sortMode.value = 'naam'; setView('checklist');
     const visibleCount = checklistTable.querySelectorAll('.check-row:not(.hidden)').length;
     const layout = computeMancoLayout(Math.max(visibleCount, 1));
     document.documentElement.style.setProperty('--manco-cols', layout.cols);
@@ -3093,7 +3120,7 @@
     const restore = () => {
       document.body.classList.remove('manco-mode');
       ['--manco-cols','--manco-rows','--manco-font','--manco-checkbox','--manco-rowheight','--manco-height'].forEach(p => document.documentElement.style.removeProperty(p));
-      search.value = prevSearch; filterOwned.value = prevFilter; setView(prevView);
+      search.value = prevSearch; filterOwned.value = prevFilter; sortMode.value = prevSort; setView(prevView);
       window.removeEventListener('afterprint', restore);
     };
     window.addEventListener('afterprint', restore);
