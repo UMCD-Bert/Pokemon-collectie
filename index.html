@@ -1332,6 +1332,11 @@
     <div class="dash-section" data-dash-key="mostcopies">
       <h3>📦 Meeste exemplaren van 1 kaart</h3>
       <div id="dashMostCopies"></div>
+      <div class="dash-pager">
+        <button type="button" class="btn-secondary dash-pager-btn" id="dashMostCopiesPrev">← Vorige</button>
+        <span id="dashMostCopiesPageLabel" class="dash-pager-label"></span>
+        <button type="button" class="btn-secondary dash-pager-btn" id="dashMostCopiesNext">Volgende →</button>
+      </div>
     </div>
 
     <div class="dash-section" data-dash-key="surplus">
@@ -1667,7 +1672,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '2.97';
+  const APP_VERSION = '2.98';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -6228,6 +6233,7 @@
     dashTopExpensivePage = 0;
     dashSetProgressPage = 0;
     dashSetValuePage = 0;
+    dashMostCopiesPage = 0;
     updateTotalsBar();
     renderDashCounts();
     await renderDashPokedexSwaps();
@@ -6383,6 +6389,8 @@
   document.getElementById('dashTopExpensivePrev').addEventListener('click', () => { dashTopExpensivePage--; renderDashTopExpensive(); });
   document.getElementById('dashTopExpensiveNext').addEventListener('click', () => { dashTopExpensivePage++; renderDashTopExpensive(); });
 
+  let dashMostCopiesPage = 0;
+
   function renderDashMostCopies() {
     const groups = new Map();
     allInstances.forEach(inst => {
@@ -6391,18 +6399,37 @@
       g.aantal += (parseInt(inst.aantal, 10) || 1);
       groups.set(key, g);
     });
-    const rows = Array.from(groups.values()).sort((a, b) => b.aantal - a.aantal).slice(0, 5);
+    const alle = Array.from(groups.values()).sort((a, b) => b.aantal - a.aantal).slice(0, 20);
     const el = document.getElementById('dashMostCopies');
-    if (rows.length === 0) { el.innerHTML = '<div class="dash-empty">Nog geen kaarten geregistreerd.</div>'; return; }
+    const prevBtn = document.getElementById('dashMostCopiesPrev');
+    const nextBtn = document.getElementById('dashMostCopiesNext');
+    const label = document.getElementById('dashMostCopiesPageLabel');
+    if (alle.length === 0) {
+      el.innerHTML = '<div class="dash-empty">Nog geen kaarten geregistreerd.</div>';
+      prevBtn.disabled = true; nextBtn.disabled = true; label.textContent = '';
+      return;
+    }
+    const pageSize = 10;
+    const maxPage = Math.ceil(alle.length / pageSize) - 1;
+    if (dashMostCopiesPage > maxPage) dashMostCopiesPage = maxPage;
+    if (dashMostCopiesPage < 0) dashMostCopiesPage = 0;
+    const start = dashMostCopiesPage * pageSize;
+    const rows = alle.slice(start, start + pageSize);
     el.innerHTML = rows.map((r, idx) => {
       const info = resolveInstanceInfo(r.inst);
       return `<div class="dash-row">
-        <span class="dash-row-rank">${idx + 1}</span>
+        <span class="dash-row-rank">${start + idx + 1}</span>
         <div class="dash-row-naam">${info.naam}</div>
         <span class="dash-row-value">${r.aantal}x</span>
       </div>`;
     }).join('');
+    label.textContent = `${start + 1}–${start + rows.length} van ${alle.length}`;
+    prevBtn.disabled = dashMostCopiesPage === 0;
+    nextBtn.disabled = dashMostCopiesPage >= maxPage;
   }
+
+  document.getElementById('dashMostCopiesPrev').addEventListener('click', () => { dashMostCopiesPage--; renderDashMostCopies(); });
+  document.getElementById('dashMostCopiesNext').addEventListener('click', () => { dashMostCopiesPage++; renderDashMostCopies(); });
 
 
   let dashSurplusPage = 0;
