@@ -360,6 +360,7 @@
     display: flex; flex-direction: column;
   }
   .so-thumb { aspect-ratio: 5/7; background: #f0f0f0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  #allPrintsModal .so-thumb { cursor: pointer; }
   .so-thumb img { width: 100%; height: 100%; object-fit: contain; }
   .so-thumb .placeholder-mark { font-size: 26px; color: #ccc; }
   .so-info { padding: 6px 8px 8px 8px; }
@@ -1672,7 +1673,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '3.00';
+  const APP_VERSION = '3.01';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -2452,6 +2453,18 @@
         if (!row) return;
         if (cb.checked) onCheckSetCard(row, cb.dataset.versie, cb);
         else onUncheckSetCard(row, cb.dataset.versie, cb);
+      });
+    });
+    grid3.querySelectorAll('.so-thumb').forEach(thumb => {
+      thumb.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const rowId = thumb.closest('.so-card').dataset.rowId;
+        const row = apCachedRows.find(r => String(r.id) === rowId);
+        if (!row || !row.afbeelding) return;
+        const rows = plRow('Naam', row.naam || '(onbekend)') +
+          plRow('Set', [row.serie ? row.serie.replace(/ Series$/, '') : null, row.set_naam].filter(Boolean).join(' · ')) +
+          plRow('Nummer', '#' + row.kaartnummer);
+        openPhotoLightbox(row.afbeelding + '/high.png', rows);
       });
     });
     wireStepperButtons(grid3);
