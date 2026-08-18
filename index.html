@@ -1672,7 +1672,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '2.98';
+  const APP_VERSION = '3.00';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -1748,6 +1748,7 @@
     'Legendary Collection': ['Legendary Collection'],
     'e-Card Series': ['Expedition Base Set', 'Aquapolis', 'Skyridge'],
     'EX Series': ['EX Ruby & Sapphire', 'EX Sandstorm', 'EX Dragon', 'EX Team Magma vs Team Aqua', 'EX Hidden Legends', 'EX FireRed & LeafGreen', 'EX Team Rocket Returns', 'EX Deoxys', 'EX Emerald', 'EX Unseen Forces', 'EX Delta Species', 'EX Legend Maker', 'EX Holon Phantoms', 'EX Crystal Guardians', 'EX Dragon Frontiers', 'EX Power Keepers', 'Nintendo Black Star Promos'],
+  'POP Series': ['POP Series 1', 'POP Series 2', 'POP Series 3', 'POP Series 4', 'POP Series 5', 'POP Series 6', 'POP Series 7', 'POP Series 8', 'POP Series 9'],
     'Diamond & Pearl Series': ['Diamond & Pearl', 'Mysterious Treasures', 'Secret Wonders', 'Great Encounters', 'Majestic Dawn', 'Legends Awakened', 'Stormfront', 'DP Black Star Promos'],
     'Platinum Series': ['Platinum', 'Rising Rivals', 'Supreme Victors', 'Arceus'],
     'HeartGold & SoulSilver Series': ['HeartGold & SoulSilver', 'Unleashed', 'Undaunted', 'Triumphant', 'Call of Legends', 'HGSS Black Star Promos'],
@@ -2115,10 +2116,6 @@
         <div class="card-header">
           <span class="name">${naam}</span>
           <span class="num">#${num.padStart(4, '0')}</span>
-          <label class="owned-toggle">
-            <input type="checkbox" class="owned-check" ${owned ? 'checked' : ''}>
-            <span class="box"></span>
-          </label>
         </div>
         <div class="art-frame ${holoClass}">${artBlock}</div>
         <div class="card-footer">
@@ -2172,7 +2169,6 @@
     grid.innerHTML = records.map(cardHtml).join('');
     grid.querySelectorAll('.card').forEach(card => {
       const id = card.dataset.id;
-      card.querySelector('.owned-check').addEventListener('change', (e) => onMainOwnedToggle(id, e.target.checked, e.target));
       const footer = card.querySelector('.card-footer');
       footer.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -2548,7 +2544,6 @@
     rec.inbezit = checked;
     document.querySelectorAll(`.card[data-id="${id}"]`).forEach(c => {
       c.classList.toggle('is-owned', checked);
-      c.querySelector('.owned-check').checked = checked;
     });
     const row = checklistTable.querySelector(`.check-row[data-id="${id}"] input[type="checkbox"]`);
     if (row) row.checked = checked;
@@ -4875,14 +4870,12 @@
       rec.inbezit = true;
       document.querySelectorAll(`.card[data-id="${pokemonId}"]`).forEach(c => {
         c.classList.add('is-owned');
-        const cb = c.querySelector('.owned-check'); if (cb) cb.checked = true;
       });
       try { await patchRecord(pokemonId, { inbezit: true }); } catch (e) {}
     } else if (!hasInstances && rec.inbezit) {
       rec.inbezit = false;
       document.querySelectorAll(`.card[data-id="${pokemonId}"]`).forEach(c => {
         c.classList.remove('is-owned');
-        const cb = c.querySelector('.owned-check'); if (cb) cb.checked = false;
       });
       try { await patchRecord(pokemonId, { inbezit: false }); } catch (e) {}
     }
