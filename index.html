@@ -95,8 +95,8 @@
   #gaugeLabel { font-weight: 700; color: var(--color-text-dark); margin-top: -6px; font-size: 14px; }
   @media print { #progressDashboard { display: none; } }
 
-  #status, #countStatus, #imgHint { text-align: center; font-size: 13px; color: #666; margin-bottom: 6px; }
-  @media print { #status, #countStatus, #imgHint { display: none; } }
+  #status, #countStatus, #imgHint, #soCountStatus { text-align: center; font-size: 13px; color: #666; margin-bottom: 6px; }
+  @media print { #status, #countStatus, #imgHint, #soCountStatus { display: none; } }
 
   #cropModal {
     display: none;
@@ -1243,6 +1243,8 @@
     <div id="soGaugeLabel">Verzameld: 0 / 0</div>
   </div>
 
+  <div id="soCountStatus"></div>
+
   <span class="search-wrap" id="soSearchWrap">
     <input type="text" id="soSearchInput" placeholder="Zoek op naam of nummer...">
     <button type="button" id="soSearchClearBtn" title="Wis zoekopdracht">&times;</button>
@@ -1294,7 +1296,7 @@
       <button type="button" class="dash-tile" data-dash-key="counts"><span class="dash-tile-icon">🔢</span><span>Aantallen</span></button>
       <button type="button" class="dash-tile" data-dash-key="swaps"><span class="dash-tile-icon">🔄</span><span>Pokedex-wissels</span></button>
       <button type="button" class="dash-tile" data-dash-key="mostcopies"><span class="dash-tile-icon">📦</span><span>Meeste exemplaren</span></button>
-      <button type="button" class="dash-tile" data-dash-key="surplus"><span class="dash-tile-icon">♻️</span><span>Meer dan 3x</span></button>
+      <button type="button" class="dash-tile" data-dash-key="surplus"><span class="dash-tile-icon">♻️</span><span>Meer dan 2x</span></button>
       <button type="button" class="dash-tile" data-dash-key="setprogress"><span class="dash-tile-icon">📊</span><span>Sets voortgang</span></button>
       <button type="button" class="dash-tile" data-dash-key="setvalue"><span class="dash-tile-icon">💵</span><span>Sets op waarde</span></button>
       <button type="button" class="dash-tile" data-dash-key="topexpensive"><span class="dash-tile-icon">💎</span><span>Duurste kaarten</span></button>
@@ -1341,7 +1343,7 @@
     </div>
 
     <div class="dash-section" data-dash-key="surplus">
-      <h3>♻️ Meer dan 3 van dezelfde druk</h3>
+      <h3>♻️ Meer dan 2 van dezelfde druk</h3>
       <div id="dashSurplus"></div>
       <div class="dash-pager">
         <button type="button" class="btn-secondary dash-pager-btn" id="dashSurplusPrev">← Vorige</button>
@@ -1673,7 +1675,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '3.01';
+  const APP_VERSION = '3.03';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -5625,6 +5627,7 @@
     else if (soFilterOwned.value === 'mis') rows = rows.filter(r => !rowIsOwned(r));
     const zoekterm = soSearchInput.value.trim().toLowerCase();
     if (zoekterm) rows = rows.filter(r => (r.naam || '').toLowerCase().includes(zoekterm) || String(r.kaartnummer || '').toLowerCase().includes(zoekterm));
+    document.getElementById('soCountStatus').textContent = `${rows.length} van ${soCachedRows.length} zichtbaar`;
     grid2.innerHTML = rows.map(row => {
       const thumbHtml = row.afbeelding ? `<img src="${row.afbeelding}/low.png" alt="">` : `<span class="placeholder-mark">🎴</span>`;
       const checks = [];
@@ -6440,7 +6443,7 @@
 
   let dashSurplusPage = 0;
 
-  // Kaarten waarvan je meer dan 3 exemplaren hebt van EXACT dezelfde druk
+  // Kaarten waarvan je meer dan 2 exemplaren hebt van EXACT dezelfde druk
   // (zelfde parent, serie, set, kaartnummer én versie) — Normaal/Holo/
   // Reverse Holo van dezelfde kaart tellen dus apart, niet opgeteld.
   function renderDashSurplus() {
@@ -6451,13 +6454,13 @@
       g.aantal += (parseInt(inst.aantal, 10) || 1);
       groups.set(key, g);
     });
-    const alle = Array.from(groups.values()).filter(g => g.aantal > 3).sort((a, b) => b.aantal - a.aantal);
+    const alle = Array.from(groups.values()).filter(g => g.aantal > 2).sort((a, b) => b.aantal - a.aantal);
     const el = document.getElementById('dashSurplus');
     const prevBtn = document.getElementById('dashSurplusPrev');
     const nextBtn = document.getElementById('dashSurplusNext');
     const label = document.getElementById('dashSurplusPageLabel');
     if (alle.length === 0) {
-      el.innerHTML = '<div class="dash-empty">Geen enkele druk met meer dan 3 exemplaren. 👍</div>';
+      el.innerHTML = '<div class="dash-empty">Geen enkele druk met meer dan 2 exemplaren. 👍</div>';
       prevBtn.disabled = true; nextBtn.disabled = true; label.textContent = '';
       return;
     }
