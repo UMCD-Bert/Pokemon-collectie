@@ -1675,7 +1675,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '3.03';
+  const APP_VERSION = '3.04';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -5296,9 +5296,12 @@
   const soSearchInput = document.getElementById('soSearchInput');
   const soSearchWrap = document.getElementById('soSearchWrap');
   const soSearchClearBtn = document.getElementById('soSearchClearBtn');
+  let soRenderDebounce = null;
   soSearchInput.addEventListener('input', () => {
     soSearchWrap.classList.toggle('has-text', soSearchInput.value.length > 0);
-    renderSetOverviewGrid();
+    updateSoCountStatus();
+    clearTimeout(soRenderDebounce);
+    soRenderDebounce = setTimeout(renderSetOverviewGrid, 150);
   });
   soSearchClearBtn.addEventListener('click', () => {
     soSearchInput.value = '';
@@ -5616,9 +5619,7 @@
     return vals.length ? Math.max(...vals) : 0;
   }
 
-  function renderSetOverviewGrid() {
-    const grid2 = document.getElementById('soGrid');
-    updateSetGauge();
+  function computeSoVisibleRows() {
     let rows = [...soCachedRows];
     if (soSortMode.value === 'naam') rows.sort((a, b) => (a.naam || '').localeCompare(b.naam || '', 'nl'));
     else if (soSortMode.value === 'waarde') rows.sort((a, b) => soRowValue(b) - soRowValue(a));
@@ -5627,7 +5628,18 @@
     else if (soFilterOwned.value === 'mis') rows = rows.filter(r => !rowIsOwned(r));
     const zoekterm = soSearchInput.value.trim().toLowerCase();
     if (zoekterm) rows = rows.filter(r => (r.naam || '').toLowerCase().includes(zoekterm) || String(r.kaartnummer || '').toLowerCase().includes(zoekterm));
-    document.getElementById('soCountStatus').textContent = `${rows.length} van ${soCachedRows.length} zichtbaar`;
+    return rows;
+  }
+
+  function updateSoCountStatus() {
+    document.getElementById('soCountStatus').textContent = `${computeSoVisibleRows().length} van ${soCachedRows.length} zichtbaar`;
+  }
+
+  function renderSetOverviewGrid() {
+    const grid2 = document.getElementById('soGrid');
+    updateSetGauge();
+    const rows = computeSoVisibleRows();
+    updateSoCountStatus();
     grid2.innerHTML = rows.map(row => {
       const thumbHtml = row.afbeelding ? `<img src="${row.afbeelding}/low.png" alt="">` : `<span class="placeholder-mark">🎴</span>`;
       const checks = [];
