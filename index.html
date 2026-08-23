@@ -1385,7 +1385,8 @@
 
     <div class="dash-section" data-dash-key="suspicious">
       <h3>⚠️ Verdachte prijzen</h3>
-      <p class="dash-hub-label" style="margin-bottom:10px;">Kaarten waarvan de Normaal-druk opvallend duurder is dan de Holo/Reverse Holo van dezelfde kaart — vaak een teken van een verkeerd gekoppelde druk bij TCGdex.</p>
+      <p class="dash-hub-label" style="margin-bottom:10px;">Kaarten waarvan de Normaal-druk opvallend duurder is dan de Holo/Reverse Holo van dezelfde kaart, plus (na een scan) kaarten waarvan de Cardmarket (EUR)-prijs sterk afwijkt van de TCGplayer (USD)-prijs — beide vaak een teken van een verkeerd gekoppelde druk bij TCGdex.</p>
+      <button type="button" id="dashSuspiciousScanBtn" class="btn-secondary" style="margin-bottom:10px;">🔍 Vergelijk duurste 30 kaarten met TCGplayer</button>
       <div id="dashSuspicious"></div>
       <div class="dash-pager">
         <button type="button" class="btn-secondary dash-pager-btn" id="dashSuspiciousPrev">← Vorige</button>
@@ -1687,7 +1688,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '3.06';
+  const APP_VERSION = '3.07';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -6429,15 +6430,16 @@
   document.getElementById('dashTopExpensiveNext').addEventListener('click', () => { dashTopExpensivePage++; renderDashTopExpensive(); });
 
   let dashSuspiciousPage = 0;
+  let dashSuspiciousUsdFlags = []; // resultaat van de TCGplayer-scan (los van de synchrone Normaal/Holo-check)
 
   // Vindt exemplaren met een vermoedelijk foute prijs — dit is een bekend
   // TCGdex-euvel (zie hun eigen FAQ): drukken van dezelfde Pokémon raken
   // soms aan elkaars Cardmarket-notering gekoppeld. Twee signalen:
-  // 1. De prijs ligt fors boven de mediaan van alle eigen kaarten uit
-  //    dezelfde set (vangt bijv. een gewone kaart die de prijs van een
-  //    secret rare kreeg).
-  // 2. Binnen dezelfde kaart is Normaal opvallend duurder dan Holo/
-  //    Reverse Holo (hoort vrijwel nooit zo te zijn).
+  // 1. Binnen dezelfde kaart is Normaal opvallend duurder dan Holo/
+  //    Reverse Holo (hoort vrijwel nooit zo te zijn) — synchroon, altijd aan.
+  // 2. Cardmarket (EUR) en TCGplayer (USD) wijzen voor dezelfde druk sterk
+  //    uiteen — vereist losse aanroepen bij TCGdex, dus alleen op verzoek
+  //    (de scanknop) voor de duurste kaarten.
   function renderDashSuspiciousPrices() {
     const el = document.getElementById('dashSuspicious');
     const prevBtn = document.getElementById('dashSuspiciousPrev');
@@ -6469,6 +6471,8 @@
         }
       }
     });
+
+    dashSuspiciousUsdFlags.forEach(({ inst, reason }) => flag(inst, reason));
 
     const alle = Array.from(flagged.values()).sort((a, b) => (parseFloat(b.inst.waarde) || 0) - (parseFloat(a.inst.waarde) || 0));
     if (alle.length === 0) {
@@ -6504,6 +6508,45 @@
 
   document.getElementById('dashSuspiciousPrev').addEventListener('click', () => { dashSuspiciousPage--; renderDashSuspiciousPrices(); });
   document.getElementById('dashSuspiciousNext').addEventListener('click', () => { dashSuspiciousPage++; renderDashSuspiciousPrices(); });
+
+  document.getElementById('dashSuspiciousScanBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('dashSuspiciousScanBtn');
+    const origText = btn.textContent;
+    btn.disabled = true;
+    dashSuspiciousUsdFlags = [];
+    try {
+      const kandidaten = allInstances
+        .filter(i => i.set_naam && i.kaartnummer && (parseFloat(i.waarde) || 0) > 1)
+        .sort((a, b) => (parseFloat(b.waarde) || 0) - (parseFloat(a.waarde) || 0))
+        .slice(0, 30);
+      for (let i = 0; i < kandidaten.length; i++) {
+        const inst = kandidaten[i];
+        btn.textContent = `🔍 Bezig (${i + 1}/${kandidaten.length})...`;
+        try {
+          const pricing = await fetchTcgdexPricing(inst.set_naam, inst.kaartnummer);
+          const usd = pricing ? pickTcgdexUsdPrice(pricing.tcgplayer, inst.versie) : null;
+          if (usd == null) continue;
+          const eur = parseFloat(inst.waarde) || 0;
+          // Ruwe vuistregel: EUR en USD liggen normaal dicht bij elkaar
+          // (koers rond 1:1 tot 1:1,15). Een factor 3+ verschil duidt op een
+          // verkeerd gekoppelde druk, geen normale marktschommeling.
+          if (eur > usd * 3) {
+            dashSuspiciousUsdFlags.push({
+              inst,
+              reason: `Cardmarket (&euro; ${fmtEuro(eur)}) wijkt sterk af van TCGplayer ($ ${fmtEuro(usd)}) voor dezelfde druk`
+            });
+          }
+        } catch (err) {
+          // Eén mislukte kaart mag de rest van de scan niet blokkeren.
+        }
+      }
+      dashSuspiciousPage = 0;
+      renderDashSuspiciousPrices();
+    } finally {
+      btn.disabled = false;
+      btn.textContent = origText;
+    }
+  });
 
   let dashMostCopiesPage = 0;
 
