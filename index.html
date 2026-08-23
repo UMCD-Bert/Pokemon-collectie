@@ -1300,6 +1300,7 @@
       <button type="button" class="dash-tile" data-dash-key="setprogress"><span class="dash-tile-icon">📊</span><span>Sets voortgang</span></button>
       <button type="button" class="dash-tile" data-dash-key="setvalue"><span class="dash-tile-icon">💵</span><span>Sets op waarde</span></button>
       <button type="button" class="dash-tile" data-dash-key="topexpensive"><span class="dash-tile-icon">💎</span><span>Duurste kaarten</span></button>
+      <button type="button" class="dash-tile" data-dash-key="suspicious"><span class="dash-tile-icon">⚠️</span><span>Verdachte prijzen</span></button>
     </div>
   </div>
 
@@ -1379,6 +1380,17 @@
         <button type="button" class="btn-secondary dash-pager-btn" id="dashTopExpensivePrev">← Vorige</button>
         <span id="dashTopExpensivePageLabel" class="dash-pager-label"></span>
         <button type="button" class="btn-secondary dash-pager-btn" id="dashTopExpensiveNext">Volgende →</button>
+      </div>
+    </div>
+
+    <div class="dash-section" data-dash-key="suspicious">
+      <h3>⚠️ Verdachte prijzen</h3>
+      <p class="dash-hub-label" style="margin-bottom:10px;">Prijzen die fors afwijken van de setmediaan, of waar Normaal opvallend duurder is dan Holo/Reverse Holo — vaak een teken van een verkeerd gekoppelde druk bij TCGdex.</p>
+      <div id="dashSuspicious"></div>
+      <div class="dash-pager">
+        <button type="button" class="btn-secondary dash-pager-btn" id="dashSuspiciousPrev">← Vorige</button>
+        <span id="dashSuspiciousPageLabel" class="dash-pager-label"></span>
+        <button type="button" class="btn-secondary dash-pager-btn" id="dashSuspiciousNext">Volgende →</button>
       </div>
     </div>
   </div>
@@ -1675,7 +1687,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '3.04';
+  const APP_VERSION = '3.05';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -4651,11 +4663,15 @@
         const updatedAt = pricing.cardmarket.updated || null;
         // Is er een handmatig ingevulde prijs, en is de online brondata niet
         // aantoonbaar recenter dan die handmatige invoer? Dan laten we 'm
-        // met rust — jouw eigen invoer wint bij twijfel.
+        // met rust — jouw eigen invoer wint bij twijfel. Vergelijking op
+        // kale kalenderdag (yyyy-mm-dd, tekstvergelijking) — niet op exacte
+        // tijdstippen, anders wint "vandaag 14:32" altijd van "vandaag"
+        // (middernacht), en zou elke ophaling dezelfde dag je eigen invoer
+        // alsnog overschrijven.
         if (inst.prijs_handmatig_datum) {
-          const manualDate = new Date(inst.prijs_handmatig_datum);
-          const onlineDate = updatedAt ? new Date(String(updatedAt).replace(/\//g, '-')) : null;
-          const onlineIsNewer = onlineDate && !isNaN(onlineDate.getTime()) && onlineDate > manualDate;
+          const manualDateStr = String(inst.prijs_handmatig_datum).slice(0, 10);
+          const onlineDateStr = updatedAt ? String(updatedAt).slice(0, 10).replace(/\//g, '-') : null;
+          const onlineIsNewer = !!(onlineDateStr && onlineDateStr > manualDateStr);
           if (!onlineIsNewer) return { status: 'kept-manual' };
         }
         const res = await fetch(instRestUrl(`?id=eq.${instId}`), {
@@ -5005,9 +5021,9 @@
     if (price == null) return { status: 'not-found' };
     const updatedAt = pricing.cardmarket.updated || null;
     if (inst.prijs_handmatig_datum) {
-      const manualDate = new Date(inst.prijs_handmatig_datum);
-      const onlineDate = updatedAt ? new Date(String(updatedAt).replace(/\//g, '-')) : null;
-      const onlineIsNewer = onlineDate && !isNaN(onlineDate.getTime()) && onlineDate > manualDate;
+      const manualDateStr = String(inst.prijs_handmatig_datum).slice(0, 10);
+      const onlineDateStr = updatedAt ? String(updatedAt).slice(0, 10).replace(/\//g, '-') : null;
+      const onlineIsNewer = !!(onlineDateStr && onlineDateStr > manualDateStr);
       if (!onlineIsNewer) return { status: 'kept-manual' };
     }
     const oldValue = (inst.waarde !== null && inst.waarde !== undefined) ? parseFloat(inst.waarde) : null;
@@ -6255,10 +6271,12 @@
     dashSetProgressPage = 0;
     dashSetValuePage = 0;
     dashMostCopiesPage = 0;
+    dashSuspiciousPage = 0;
     updateTotalsBar();
     renderDashCounts();
     await renderDashPokedexSwaps();
     renderDashTopExpensive();
+    renderDashSuspiciousPrices();
     renderDashMostCopies();
     renderDashSurplus();
     renderDashSetProgress();
@@ -6409,6 +6427,107 @@
 
   document.getElementById('dashTopExpensivePrev').addEventListener('click', () => { dashTopExpensivePage--; renderDashTopExpensive(); });
   document.getElementById('dashTopExpensiveNext').addEventListener('click', () => { dashTopExpensivePage++; renderDashTopExpensive(); });
+
+  let dashSuspiciousPage = 0;
+
+  // Vindt exemplaren met een vermoedelijk foute prijs — dit is een bekend
+  // TCGdex-euvel (zie hun eigen FAQ): drukken van dezelfde Pokémon raken
+  // soms aan elkaars Cardmarket-notering gekoppeld. Twee signalen:
+  // 1. De prijs ligt fors boven de mediaan van alle eigen kaarten uit
+  //    dezelfde set (vangt bijv. een gewone kaart die de prijs van een
+  //    secret rare kreeg).
+  // 2. Binnen dezelfde kaart is Normaal opvallend duurder dan Holo/
+  //    Reverse Holo (hoort vrijwel nooit zo te zijn).
+  function renderDashSuspiciousPrices() {
+    const el = document.getElementById('dashSuspicious');
+    const prevBtn = document.getElementById('dashSuspiciousPrev');
+    const nextBtn = document.getElementById('dashSuspiciousNext');
+    const label = document.getElementById('dashSuspiciousPageLabel');
+
+    const bySet = new Map();
+    allInstances.forEach(inst => {
+      const val = parseFloat(inst.waarde) || 0;
+      if (val <= 0 || !inst.set_naam) return;
+      if (!bySet.has(inst.set_naam)) bySet.set(inst.set_naam, []);
+      bySet.get(inst.set_naam).push(val);
+    });
+    const setMedian = new Map();
+    bySet.forEach((vals, setNaam) => {
+      const sorted = [...vals].sort((a, b) => a - b);
+      const mid = Math.floor(sorted.length / 2);
+      const median = sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+      setMedian.set(setNaam, median);
+    });
+
+    const cardGroups = new Map();
+    allInstances.forEach(inst => {
+      if (!inst.set_naam || !inst.kaartnummer) return;
+      const key = [inst.parent_type, inst.parent_id, inst.set_naam, inst.kaartnummer].join('|||');
+      if (!cardGroups.has(key)) cardGroups.set(key, []);
+      cardGroups.get(key).push(inst);
+    });
+
+    const flagged = new Map(); // inst.id -> { inst, reasons: [] }
+    function flag(inst, reason) {
+      if (!flagged.has(inst.id)) flagged.set(inst.id, { inst, reasons: [] });
+      flagged.get(inst.id).reasons.push(reason);
+    }
+
+    allInstances.forEach(inst => {
+      const val = parseFloat(inst.waarde) || 0;
+      if (val <= 1 || !inst.set_naam) return;
+      const median = setMedian.get(inst.set_naam) || 0;
+      if (median > 0 && val > Math.max(5, median * 6)) {
+        flag(inst, `fors hoger dan de setmediaan (&euro; ${fmtEuro(median)})`);
+      }
+    });
+
+    cardGroups.forEach(list => {
+      const normaal = list.find(i => (i.versie || '').toLowerCase() === 'normaal');
+      const holoAchtig = list.find(i => /holo/i.test(i.versie || ''));
+      if (normaal && holoAchtig) {
+        const nv = parseFloat(normaal.waarde) || 0;
+        const hv = parseFloat(holoAchtig.waarde) || 0;
+        if (nv > 1 && hv > 0 && nv > hv * 3) {
+          flag(normaal, `Normaal (&euro; ${fmtEuro(nv)}) fors duurder dan ${holoAchtig.versie} (&euro; ${fmtEuro(hv)})`);
+        }
+      }
+    });
+
+    const alle = Array.from(flagged.values()).sort((a, b) => (parseFloat(b.inst.waarde) || 0) - (parseFloat(a.inst.waarde) || 0));
+    if (alle.length === 0) {
+      el.innerHTML = '<div class="dash-empty">Geen verdachte prijzen gevonden. 👍</div>';
+      prevBtn.disabled = true; nextBtn.disabled = true; label.textContent = '';
+      return;
+    }
+    const pageSize = 10;
+    const maxPage = Math.ceil(alle.length / pageSize) - 1;
+    if (dashSuspiciousPage > maxPage) dashSuspiciousPage = maxPage;
+    if (dashSuspiciousPage < 0) dashSuspiciousPage = 0;
+    const start = dashSuspiciousPage * pageSize;
+    const rows = alle.slice(start, start + pageSize);
+    el.innerHTML = rows.map(r => {
+      const info = resolveInstanceInfo(r.inst);
+      const meta = [r.inst.versie, r.inst.set_naam].filter(Boolean).join(' &middot; ');
+      return `<div class="dash-row dash-row-clickable" data-parent-type="${r.inst.parent_type}" data-parent-id="${r.inst.parent_id}">
+        <div class="dash-row-naam">${info.naam}<div class="dash-row-meta">${meta}<br>${r.reasons.join('; ')}</div></div>
+        <span class="dash-row-value">&euro; ${fmtEuro(parseFloat(r.inst.waarde) || 0)}</span>
+      </div>`;
+    }).join('');
+    label.textContent = `${start + 1}–${start + rows.length} van ${alle.length}`;
+    prevBtn.disabled = dashSuspiciousPage === 0;
+    nextBtn.disabled = dashSuspiciousPage >= maxPage;
+    el.querySelectorAll('.dash-row-clickable').forEach(row => {
+      row.addEventListener('click', () => {
+        const parentType = row.dataset.parentType, parentId = row.dataset.parentId;
+        if (parentType === 'pokemon') openDetailModal(parentId);
+        else openExtraDetailModal(parentId);
+      });
+    });
+  }
+
+  document.getElementById('dashSuspiciousPrev').addEventListener('click', () => { dashSuspiciousPage--; renderDashSuspiciousPrices(); });
+  document.getElementById('dashSuspiciousNext').addEventListener('click', () => { dashSuspiciousPage++; renderDashSuspiciousPrices(); });
 
   let dashMostCopiesPage = 0;
 
