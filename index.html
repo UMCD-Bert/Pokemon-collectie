@@ -669,6 +669,8 @@
   .dash-row-value { font-weight: 700; color: var(--color-value-positive); white-space: nowrap; }
   .dash-row-clickable { cursor: pointer; }
   .dash-row-clickable:hover { background: #f7f7f7; }
+  .dash-row-check { flex-shrink: 0; text-decoration: none; font-size: 14px; padding: 2px 4px; border-radius: 6px; }
+  .dash-row-check:hover { background: #eef5fa; }
   .dash-empty { font-size: 12px; color: #999; text-align: center; padding: 6px 0; }
   .dash-pager { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 10px; }
   .dash-pager-btn { padding: 6px 12px; font-size: 12px; }
@@ -1385,7 +1387,7 @@
 
     <div class="dash-section" data-dash-key="suspicious">
       <h3>⚠️ Verdachte prijzen</h3>
-      <p class="dash-hub-label" style="margin-bottom:10px;">Kaarten waarvan de Normaal-druk opvallend duurder is dan de Holo/Reverse Holo van dezelfde kaart, plus (na een scan) kaarten waarvan de Cardmarket (EUR)-prijs sterk afwijkt van de TCGplayer (USD)-prijs — beide vaak een teken van een verkeerd gekoppelde druk bij TCGdex.</p>
+      <p class="dash-hub-label" style="margin-bottom:10px;">Kaarten waarvan de Normaal-druk opvallend duurder is dan de Holo/Reverse Holo van dezelfde kaart — vaak een teken van een verkeerd gekoppelde druk bij TCGdex. De TCGplayer-vergelijkingsknop hieronder werkt alleen als er ook USD-data beschikbaar is; bij oudere/zeldzame kaarten ontbreekt die vaak (TCGdex-beperking), dus voor die categorie is het 🔍-zoekicoontje bij "Duurste kaarten" de betrouwbaardere manier om snel te controleren.</p>
       <button type="button" id="dashSuspiciousScanBtn" class="btn-secondary" style="margin-bottom:10px;">🔍 Vergelijk duurste 30 kaarten met TCGplayer</button>
       <div id="dashSuspiciousScanLog" style="display:none;"></div>
       <div id="dashSuspicious"></div>
@@ -1689,7 +1691,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '3.08';
+  const APP_VERSION = '3.09';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -6416,10 +6418,12 @@
       const info = resolveInstanceInfo(r.inst);
       const meta = [r.inst.versie, r.inst.set_naam].filter(Boolean).join(' &middot; ');
       const aantal = parseInt(r.inst.aantal, 10) || 1;
+      const cardmarketUrl = 'https://www.cardmarket.com/en/Pokemon/Products/Search?searchString=' + encodeURIComponent([info.naam, r.inst.set_naam].filter(Boolean).join(' '));
       return `<div class="dash-row">
         <span class="dash-row-rank">${start + idx + 1}</span>
         <div class="dash-row-naam">${info.naam}${aantal > 1 ? ` (${aantal}x)` : ''}<div class="dash-row-meta">${meta}</div></div>
         <span class="dash-row-value">&euro; ${fmtEuro(r.value)}</span>
+        <a href="${cardmarketUrl}" target="_blank" rel="noopener" class="dash-row-check" title="Opzoeken op Cardmarket" onclick="event.stopPropagation()">🔍</a>
       </div>`;
     }).join('');
     label.textContent = `${start + 1}–${start + rows.length} van ${alle.length}`;
