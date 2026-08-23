@@ -1385,7 +1385,7 @@
 
     <div class="dash-section" data-dash-key="suspicious">
       <h3>⚠️ Verdachte prijzen</h3>
-      <p class="dash-hub-label" style="margin-bottom:10px;">Prijzen die fors afwijken van de setmediaan, of waar Normaal opvallend duurder is dan Holo/Reverse Holo — vaak een teken van een verkeerd gekoppelde druk bij TCGdex.</p>
+      <p class="dash-hub-label" style="margin-bottom:10px;">Kaarten waarvan de Normaal-druk opvallend duurder is dan de Holo/Reverse Holo van dezelfde kaart — vaak een teken van een verkeerd gekoppelde druk bij TCGdex.</p>
       <div id="dashSuspicious"></div>
       <div class="dash-pager">
         <button type="button" class="btn-secondary dash-pager-btn" id="dashSuspiciousPrev">← Vorige</button>
@@ -1687,7 +1687,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '3.05';
+  const APP_VERSION = '3.06';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -6444,21 +6444,6 @@
     const nextBtn = document.getElementById('dashSuspiciousNext');
     const label = document.getElementById('dashSuspiciousPageLabel');
 
-    const bySet = new Map();
-    allInstances.forEach(inst => {
-      const val = parseFloat(inst.waarde) || 0;
-      if (val <= 0 || !inst.set_naam) return;
-      if (!bySet.has(inst.set_naam)) bySet.set(inst.set_naam, []);
-      bySet.get(inst.set_naam).push(val);
-    });
-    const setMedian = new Map();
-    bySet.forEach((vals, setNaam) => {
-      const sorted = [...vals].sort((a, b) => a - b);
-      const mid = Math.floor(sorted.length / 2);
-      const median = sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
-      setMedian.set(setNaam, median);
-    });
-
     const cardGroups = new Map();
     allInstances.forEach(inst => {
       if (!inst.set_naam || !inst.kaartnummer) return;
@@ -6472,15 +6457,6 @@
       if (!flagged.has(inst.id)) flagged.set(inst.id, { inst, reasons: [] });
       flagged.get(inst.id).reasons.push(reason);
     }
-
-    allInstances.forEach(inst => {
-      const val = parseFloat(inst.waarde) || 0;
-      if (val <= 1 || !inst.set_naam) return;
-      const median = setMedian.get(inst.set_naam) || 0;
-      if (median > 0 && val > Math.max(5, median * 6)) {
-        flag(inst, `fors hoger dan de setmediaan (&euro; ${fmtEuro(median)})`);
-      }
-    });
 
     cardGroups.forEach(list => {
       const normaal = list.find(i => (i.versie || '').toLowerCase() === 'normaal');
