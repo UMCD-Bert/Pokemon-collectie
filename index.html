@@ -1387,6 +1387,7 @@
       <h3>⚠️ Verdachte prijzen</h3>
       <p class="dash-hub-label" style="margin-bottom:10px;">Kaarten waarvan de Normaal-druk opvallend duurder is dan de Holo/Reverse Holo van dezelfde kaart, plus (na een scan) kaarten waarvan de Cardmarket (EUR)-prijs sterk afwijkt van de TCGplayer (USD)-prijs — beide vaak een teken van een verkeerd gekoppelde druk bij TCGdex.</p>
       <button type="button" id="dashSuspiciousScanBtn" class="btn-secondary" style="margin-bottom:10px;">🔍 Vergelijk duurste 30 kaarten met TCGplayer</button>
+      <div id="dashSuspiciousScanLog" style="display:none;"></div>
       <div id="dashSuspicious"></div>
       <div class="dash-pager">
         <button type="button" class="btn-secondary dash-pager-btn" id="dashSuspiciousPrev">← Vorige</button>
@@ -1688,7 +1689,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '3.07';
+  const APP_VERSION = '3.08';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -6509,11 +6510,29 @@
   document.getElementById('dashSuspiciousPrev').addEventListener('click', () => { dashSuspiciousPage--; renderDashSuspiciousPrices(); });
   document.getElementById('dashSuspiciousNext').addEventListener('click', () => { dashSuspiciousPage++; renderDashSuspiciousPrices(); });
 
+  // Volledig, inspecteerbaar logje van de laatste scan — ook de kaarten die
+  // NIET gevlagd werden, zodat te zien is of een kaart wel/niet is
+  // meegenomen en waarom (geen TCGdex-match, geen USD-data, of gewoon geen
+  // afwijking).
+  function renderDashSuspiciousScanLog(scanLog) {
+    const el = document.getElementById('dashSuspiciousScanLog');
+    if (scanLog.length === 0) { el.style.display = 'none'; el.innerHTML = ''; return; }
+    el.style.display = '';
+    el.innerHTML = `<div style="font-size:12px;color:#888;margin:4px 0 8px;">Scanresultaat (duurste ${scanLog.length}):</div>` +
+      scanLog.map(r => {
+        const usdTxt = r.usd != null ? `$ ${fmtEuro(r.usd)}` : '—';
+        return `<div class="dash-row">
+          <div class="dash-row-naam">${r.info.naam}<div class="dash-row-meta">${[r.inst.versie, r.inst.set_naam].filter(Boolean).join(' &middot; ')} — &euro; ${fmtEuro(r.eur)} vs ${usdTxt} — ${r.status}</div></div>
+        </div>`;
+      }).join('');
+  }
+
   document.getElementById('dashSuspiciousScanBtn').addEventListener('click', async () => {
     const btn = document.getElementById('dashSuspiciousScanBtn');
     const origText = btn.textContent;
     btn.disabled = true;
     dashSuspiciousUsdFlags = [];
+    const scanLog = [];
     try {
       const kandidaten = allInstances
         .filter(i => i.set_naam && i.kaartnummer && (parseFloat(i.waarde) || 0) > 1)
@@ -6522,26 +6541,37 @@
       for (let i = 0; i < kandidaten.length; i++) {
         const inst = kandidaten[i];
         btn.textContent = `🔍 Bezig (${i + 1}/${kandidaten.length})...`;
+        const info = resolveInstanceInfo(inst);
+        const eur = parseFloat(inst.waarde) || 0;
         try {
           const pricing = await fetchTcgdexPricing(inst.set_naam, inst.kaartnummer);
           const usd = pricing ? pickTcgdexUsdPrice(pricing.tcgplayer, inst.versie) : null;
-          if (usd == null) continue;
-          const eur = parseFloat(inst.waarde) || 0;
+          if (!pricing) {
+            scanLog.push({ inst, info, eur, usd: null, status: 'geen TCGdex-resultaat (set/kaartnummer niet gevonden)' });
+            continue;
+          }
+          if (usd == null) {
+            scanLog.push({ inst, info, eur, usd: null, status: 'geen TCGplayer-prijs beschikbaar' });
+            continue;
+          }
+          const wijkAf = eur > usd * 3;
+          scanLog.push({ inst, info, eur, usd, status: wijkAf ? 'afwijkend — gevlagd' : 'komt overeen' });
           // Ruwe vuistregel: EUR en USD liggen normaal dicht bij elkaar
           // (koers rond 1:1 tot 1:1,15). Een factor 3+ verschil duidt op een
           // verkeerd gekoppelde druk, geen normale marktschommeling.
-          if (eur > usd * 3) {
+          if (wijkAf) {
             dashSuspiciousUsdFlags.push({
               inst,
               reason: `Cardmarket (&euro; ${fmtEuro(eur)}) wijkt sterk af van TCGplayer ($ ${fmtEuro(usd)}) voor dezelfde druk`
             });
           }
         } catch (err) {
-          // Eén mislukte kaart mag de rest van de scan niet blokkeren.
+          scanLog.push({ inst, info, eur, usd: null, status: 'fout tijdens ophalen: ' + err.message });
         }
       }
       dashSuspiciousPage = 0;
       renderDashSuspiciousPrices();
+      renderDashSuspiciousScanLog(scanLog);
     } finally {
       btn.disabled = false;
       btn.textContent = origText;
