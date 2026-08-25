@@ -1562,6 +1562,7 @@
     <div id="soCardModalSetInfo" style="font-size:12px;color:#888;margin-bottom:10px;"></div>
     <div class="modal-actions">
       <button type="button" class="btn-primary" id="soCardModalRefreshBtn">🔄 Ververs deze kaart</button>
+      <button type="button" class="btn-secondary" id="soCardModalOpenFullBtn">📋 Open volledige kaart</button>
     </div>
     <div id="soCardModalStatus" style="font-size:12px;margin-top:8px;text-align:center;"></div>
   </div>
@@ -1691,7 +1692,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '3.10';
+  const APP_VERSION = '3.11';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -3173,10 +3174,12 @@
   function extraRestUrl(path) { return `${config.url}/rest/v1/${EXTRA_TABLE}${path || ''}`; }
 
   document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const tab = btn.dataset.tab;
+    btn.addEventListener('click', () => activateMainTab(btn.dataset.tab));
+  });
+
+  function activateMainTab(tab) {
       currentMainTab = tab;
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
       document.getElementById('pokemonSection').style.display = (tab === 'pokemon') ? '' : 'none';
       document.getElementById('extraSection').style.display = (tab === 'trainers') ? '' : 'none';
       document.getElementById('setOverzichtSection').style.display = (tab === 'setoverzicht') ? '' : 'none';
@@ -3194,8 +3197,7 @@
           renderExtraGrid();
         }
       }
-    });
-  });
+  }
 
   async function loadAllExtraItems() {
     if (!config) return;
@@ -5721,6 +5723,29 @@
   function closeSoCardModal() { soCardModal.classList.remove('open'); soCardModalRow = null; }
   document.getElementById('soCardCloseBtn').addEventListener('click', closeSoCardModal);
   wireOverlayClickToClose(soCardModal, closeSoCardModal);
+
+  document.getElementById('soCardModalOpenFullBtn').addEventListener('click', async () => {
+    const row = soCardModalRow;
+    if (!row) return;
+    const btn = document.getElementById('soCardModalOpenFullBtn');
+    const statusEl = document.getElementById('soCardModalStatus');
+    btn.disabled = true;
+    try {
+      const parent = await findOrCreateParentForSetCard(row);
+      if (!parent) {
+        statusEl.textContent = `Kon geen Pokémon vinden voor "${row.naam}" — voeg 'm eerst toe via het vinkje hieronder.`;
+        return;
+      }
+      closeSoCardModal();
+      activateMainTab(parent.parentType === 'pokemon' ? 'pokemon' : 'trainers');
+      if (parent.parentType === 'pokemon') openDetailModal(parent.parentId);
+      else openExtraDetailModal(parent.parentId);
+    } catch (err) {
+      statusEl.textContent = 'Kon de kaart niet openen: ' + err.message;
+    } finally {
+      btn.disabled = false;
+    }
+  });
 
   document.getElementById('soCardModalRefreshBtn').addEventListener('click', async () => {
     const row = soCardModalRow;
