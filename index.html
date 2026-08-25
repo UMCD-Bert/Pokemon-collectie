@@ -1692,7 +1692,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '3.12';
+  const APP_VERSION = '3.13';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -4170,6 +4170,28 @@
       });
       if (!res2.ok) throw new Error(await res2.text());
       inst.in_pokedex = turningOn;
+      // Als dit exemplaar zelf nog geen foto heeft, meteen (niet pas bij de
+      // volgende keer laden) de foto van een zusje-exemplaar overnemen —
+      // anders toont de pokedex-hoofdfoto meteen een "?" na het wisselen,
+      // terwijl er al lang een bruikbare foto in de groep aanwezig is.
+      if (turningOn && !inst.afbeelding) {
+        const sibling = allInstances.find(i =>
+          i.parent_type === inst.parent_type && String(i.parent_id) === String(inst.parent_id) &&
+          (i.serie || '') === (inst.serie || '') && i.set_naam === inst.set_naam &&
+          i.kaartnummer === inst.kaartnummer && i.afbeelding
+        );
+        if (sibling) {
+          try {
+            const res3 = await fetch(instRestUrl(`?id=eq.${inst.id}&afbeelding=is.null`), {
+              method: 'PATCH', cache: 'no-store', headers: authHeaders({ 'Prefer': 'return=minimal' }),
+              body: JSON.stringify({ afbeelding: sibling.afbeelding })
+            });
+            if (res3.ok) inst.afbeelding = sibling.afbeelding;
+          } catch (err) {
+            // Geen foto kunnen overnemen mag het wisselen zelf niet blokkeren.
+          }
+        }
+      }
       refreshParentUI('pokemon', inst.parent_id);
       if (currentMainTab === 'dashboard') renderDashPokedexSwaps();
     } catch (err) {
