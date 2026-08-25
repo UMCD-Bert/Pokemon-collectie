@@ -1692,7 +1692,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '3.11';
+  const APP_VERSION = '3.12';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -2314,6 +2314,11 @@
   function closeDetailModal() {
     detailModal.classList.remove('open');
     currentDetailId = null;
+    if (returnToTabAfterDetail) {
+      const t = returnToTabAfterDetail;
+      returnToTabAfterDetail = null;
+      activateMainTab(t);
+    }
   }
 
   document.getElementById('detailCloseBtn').addEventListener('click', closeDetailModal);
@@ -3166,6 +3171,7 @@
   const EXTRA_PARENT_TYPE = 'extra'; // constant parent_type for kaart_exemplaren linkage, independent of the (editable) Type field
   const EXTRA_TYPE_LABELS = { item: 'Item', tool: 'Tool', supporter: 'Supporter', stadium: 'Stadium', energy: 'Energy' };
   let currentMainTab = 'pokemon';
+  let returnToTabAfterDetail = null; // zet welk tabblad terug actief moet worden bij het sluiten van het detailvenster (bijv. na doorklikken vanuit Serie/Set)
   let extraItems = []; // alle Trainer- en Energy-kaarten samen, in 1 lijst
   let extraLoaded = false; // eenmalig laden, niet opnieuw bij elke tabwissel
   let extraSortMode = 'naam';
@@ -3422,9 +3428,17 @@
   }
 
   document.getElementById('extraFab').addEventListener('click', openExtraAddModal);
-  document.getElementById('extraDetailCloseBtn').addEventListener('click', () => extraDetailModal.classList.remove('open'));
-  document.getElementById('extraDoneBtn').addEventListener('click', () => extraDetailModal.classList.remove('open'));
-  wireOverlayClickToClose(extraDetailModal, () => extraDetailModal.classList.remove('open'));
+  function closeExtraDetailModal() {
+    extraDetailModal.classList.remove('open');
+    if (returnToTabAfterDetail) {
+      const t = returnToTabAfterDetail;
+      returnToTabAfterDetail = null;
+      activateMainTab(t);
+    }
+  }
+  document.getElementById('extraDetailCloseBtn').addEventListener('click', closeExtraDetailModal);
+  document.getElementById('extraDoneBtn').addEventListener('click', closeExtraDetailModal);
+  wireOverlayClickToClose(extraDetailModal, closeExtraDetailModal);
 
   function collectExtraPayload() {
     return {
@@ -5737,6 +5751,7 @@
         return;
       }
       closeSoCardModal();
+      returnToTabAfterDetail = 'setoverzicht';
       activateMainTab(parent.parentType === 'pokemon' ? 'pokemon' : 'trainers');
       if (parent.parentType === 'pokemon') openDetailModal(parent.parentId);
       else openExtraDetailModal(parent.parentId);
