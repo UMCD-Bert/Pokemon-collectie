@@ -385,7 +385,8 @@
   .sealed-row-resultaat-neg { color: var(--color-danger-dark); font-weight: 700; }
   .sealed-row-delete { background: none; border: none; color: var(--color-danger-dark); font-size: 16px; cursor: pointer; padding: 4px; }
   .so-checks { display: flex; flex-direction: column; gap: 3px; margin-top: 4px; }
-  .so-check { display: grid; grid-template-columns: auto 1fr auto; align-items: center; column-gap: 5px; font-size: 11px; color: #444; cursor: pointer; }
+  .so-check { display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; column-gap: 5px; font-size: 11px; color: #444; cursor: pointer; }
+  .so-pokedex-badge { font-size: 12px; }
   .so-check input[type="checkbox"] { flex-shrink: 0; }
   .so-check-price { color: var(--color-value-positive); font-weight: 600; text-align: right; white-space: nowrap; }
   .so-stepper { display: flex; align-items: center; gap: 6px; margin: 2px 0 0 20px; }
@@ -1692,7 +1693,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '3.13';
+  const APP_VERSION = '3.14';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -5617,6 +5618,7 @@
       }, false, true);
       if (bekendePrijs == null) tryAutoFetchInstancePrice(created[0].id, true);
       refreshParentUI(parent.parentType, parent.parentId);
+      updateSetGauge();
     } catch (err) {
       alert('Kon kaartexemplaar niet aanmaken: ' + err.message);
       checkboxEl.checked = false;
@@ -5640,6 +5642,7 @@
       refreshParentUI(inst.parent_type, inst.parent_id);
       document.querySelectorAll(`[data-inst-id="${inst.id}"]`).forEach(el => el.remove());
       delete checkboxEl.dataset.instCheckboxId;
+      updateSetGauge();
     } catch (err) {
       alert('Kon kaartexemplaar niet verwijderen: ' + err.message);
       checkboxEl.checked = true;
@@ -5669,7 +5672,8 @@
       ? `<span class="so-check-price" data-price-row="${row.id}" data-variant="${dataVariant}">${priceHtml || ''}</span>`
       : '';
     const stepper = inst ? stepperHtmlFor(inst) : '';
-    return `<label class="so-check"><input type="checkbox" ${checkboxAttrs} ${inst ? 'checked' : ''}> <span>${versie}</span>${priceSpan}</label>${stepper}`;
+    const pokedexBadge = (inst && inst.in_pokedex) ? `<span class="so-pokedex-badge" title="Zit in de Pokédex-binder">📖</span>` : '';
+    return `<label class="so-check"><input type="checkbox" ${checkboxAttrs} ${inst ? 'checked' : ''}> <span>${versie}</span>${pokedexBadge}${priceSpan}</label>${stepper}`;
   }
 
   function soRowValue(row) {
