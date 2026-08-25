@@ -1691,7 +1691,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '3.09';
+  const APP_VERSION = '3.10';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -2443,15 +2443,15 @@
     grid3.innerHTML = rows3.map(row => {
       const thumbHtml = row.afbeelding ? `<img src="${row.afbeelding}/low.png" alt="">` : `<span class="placeholder-mark">🎴</span>`;
       const checks = [];
-      if (row.heeft_normaal) {
+      if (row.heeft_normaal || findInstanceForSetCard(row, 'Normaal')) {
         const prijsHtml = row.prijs_normaal != null ? priceFreshnessDotHtml(row.prijs_updated) + fmtEuro(row.prijs_normaal) : '';
         checks.push(setCheckRowHtml(row, 'Normaal', 'normaal', prijsHtml));
       }
-      if (row.heeft_holo) {
+      if (row.heeft_holo || findInstanceForSetCard(row, 'Holo')) {
         const prijsHtml = row.prijs_holo != null ? priceFreshnessDotHtml(row.prijs_updated) + fmtEuro(row.prijs_holo) : '';
         checks.push(setCheckRowHtml(row, 'Holo', 'holo', prijsHtml));
       }
-      if (row.heeft_reverse) {
+      if (row.heeft_reverse || findInstanceForSetCard(row, 'Reverse Holo')) {
         const prijsHtml = row.prijs_reverse != null ? priceFreshnessDotHtml(row.prijs_updated) + fmtEuro(row.prijs_reverse) : '';
         checks.push(setCheckRowHtml(row, 'Reverse Holo', 'reverse', prijsHtml));
       }
@@ -5663,15 +5663,15 @@
     grid2.innerHTML = rows.map(row => {
       const thumbHtml = row.afbeelding ? `<img src="${row.afbeelding}/low.png" alt="">` : `<span class="placeholder-mark">🎴</span>`;
       const checks = [];
-      if (row.heeft_normaal) {
+      if (row.heeft_normaal || findInstanceForSetCard(row, 'Normaal')) {
         const prijsHtml = row.prijs_normaal != null ? priceFreshnessDotHtml(row.prijs_updated) + fmtEuro(row.prijs_normaal) : '';
         checks.push(setCheckRowHtml(row, 'Normaal', 'normaal', prijsHtml));
       }
-      if (row.heeft_holo) {
+      if (row.heeft_holo || findInstanceForSetCard(row, 'Holo')) {
         const prijsHtml = row.prijs_holo != null ? priceFreshnessDotHtml(row.prijs_updated) + fmtEuro(row.prijs_holo) : '';
         checks.push(setCheckRowHtml(row, 'Holo', 'holo', prijsHtml));
       }
-      if (row.heeft_reverse) {
+      if (row.heeft_reverse || findInstanceForSetCard(row, 'Reverse Holo')) {
         const prijsHtml = row.prijs_reverse != null ? priceFreshnessDotHtml(row.prijs_updated) + fmtEuro(row.prijs_reverse) : '';
         checks.push(setCheckRowHtml(row, 'Reverse Holo', 'reverse', prijsHtml));
       }
@@ -6029,21 +6029,21 @@
         const cm = pricing ? pricing.cardmarket : null;
         const nu = new Date().toISOString();
         const patch = { prijs_updated: nu };
-        if (row.heeft_normaal) {
+        if (row.heeft_normaal || findInstanceForSetCard(row, 'Normaal')) {
           const p = pickTcgdexPrice(cm, 'Normaal');
           patch.prijs_normaal = p;
           row.prijs_normaal = p;
           const el = document.querySelector(`[data-price-row="${row.id}"][data-variant="normaal"]`);
           if (el) el.innerHTML = p != null ? priceFreshnessDotHtml(nu) + fmtEuro(p) : '(onbekend)';
         }
-        if (row.heeft_holo) {
+        if (row.heeft_holo || findInstanceForSetCard(row, 'Holo')) {
           const p = pickTcgdexPrice(cm, 'Holo');
           patch.prijs_holo = p;
           row.prijs_holo = p;
           const el = document.querySelector(`[data-price-row="${row.id}"][data-variant="holo"]`);
           if (el) el.innerHTML = p != null ? priceFreshnessDotHtml(nu) + fmtEuro(p) : '(onbekend)';
         }
-        if (row.heeft_reverse) {
+        if (row.heeft_reverse || findInstanceForSetCard(row, 'Reverse Holo')) {
           // TCGdex kent geen apart "reverse"-prijsveld — zelfde holo-prijs als benadering.
           const p = pickTcgdexPrice(cm, 'Reverse Holo');
           patch.prijs_reverse = p;
