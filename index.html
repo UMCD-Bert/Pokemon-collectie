@@ -1694,7 +1694,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '3.15';
+  const APP_VERSION = '3.16';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -5507,6 +5507,17 @@
     return null;
   }
 
+  // Sommige "Naam's Soort"-kaarten (Trainer's Pokémon, bijv. "Iono's Kilowattrel")
+  // krijgen van TCGdex zelf geen dexid mee. Voor de Dex-badge gebruiken we
+  // daarom dezelfde naam-fallback als findOrCreateParentForSetCard: de
+  // kernsoortnaam wordt gezocht in onze eigen Pokédex-tabel.
+  function effectiveDexId(row) {
+    if (row.dexid != null) return row.dexid;
+    if (row.categorie !== 'pokemon') return null;
+    const rec = findRecordBySpeciesName(row.naam);
+    return rec ? rec.nummer : null;
+  }
+
   async function findOrCreateParentForSetCard(row) {
     if (row.categorie === 'pokemon') {
       let rec = row.dexid != null ? records.find(r => parseInt(r.nummer) === parseInt(row.dexid)) : null;
@@ -5760,7 +5771,7 @@
           <div class="so-thumb">${thumbHtml}</div>
           <div class="so-info">
             <div class="so-naam">${row.naam}</div>
-            <div class="so-nummer"><span>#${row.kaartnummer}</span>${row.dexid != null ? `<span class="so-dexid">Dex #${row.dexid}</span>` : ''}</div>
+            <div class="so-nummer"><span>#${row.kaartnummer}</span>${effectiveDexId(row) != null ? `<span class="so-dexid">Dex #${effectiveDexId(row)}</span>` : ''}</div>
             <div class="so-checks">${checks.join('')}</div>
           </div>
         </div>`;
