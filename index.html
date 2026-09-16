@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#eef1f4">
 
 <title>Pokemon Collectie (Supabase)</title>
 <style>
@@ -1694,7 +1696,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '3.16';
+  const APP_VERSION = '3.17';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -6944,6 +6946,16 @@
     }
     discoverDynamicSeriesAndSets(); // niet blokkerend; vult de dropdowns aan zodra bekend
   })();
+
+  // PWA-offline-fallback: cachet de app-shell zodat de app ook zonder
+  // verbinding (nog) opstart i.p.v. een browserfout te tonen.
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('service-worker.js').catch((err) => {
+        console.error('Service worker registratie mislukt:', err);
+      });
+    });
+  }
 </script>
 </body>
 </html>
