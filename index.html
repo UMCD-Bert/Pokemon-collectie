@@ -1696,7 +1696,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '3.17';
+  const APP_VERSION = '3.18';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -1781,7 +1781,7 @@
     'Sun & Moon Series': ['Sun & Moon', 'Guardians Rising', 'Burning Shadows', 'Shining Legends', 'Crimson Invasion', 'Ultra Prism', 'Forbidden Light', 'Celestial Storm', 'Dragon Majesty', 'Lost Thunder', 'Team Up', 'Detective Pikachu', 'Unbroken Bonds', 'Unified Minds', 'Hidden Fates', 'Hidden Fates Shiny Vault', 'Cosmic Eclipse', 'SM Black Star Promos'],
     'Sword & Shield Series': ['Sword & Shield', 'Rebel Clash', 'Darkness Ablaze', "Champion's Path", 'Vivid Voltage', 'Shining Fates', 'Shining Fates Shiny Vault', 'Battle Styles', 'Chilling Reign', 'Evolving Skies', 'Celebrations', 'Fusion Strike', 'Brilliant Stars', 'Brilliant Stars Trainer Gallery', 'Astral Radiance', 'Astral Radiance Trainer Gallery', 'Pokémon GO', 'Lost Origin', 'Lost Origin Trainer Gallery', 'Silver Tempest', 'Silver Tempest Trainer Gallery', 'Crown Zenith', 'Crown Zenith Galarian Gallery', 'SWSH Black Star Promos'],
     'Scarlet & Violet Series': ['Scarlet & Violet', 'Paldea Evolved', 'Obsidian Flames', 'Scarlet & Violet 151', 'Paradox Rift', 'Paldean Fates', 'Temporal Forces', 'Twilight Masquerade', 'Shrouded Fable', 'Stellar Crown', 'Surging Sparks', 'Prismatic Evolutions', 'Journey Together', 'Destined Rivals', 'Black Bolt', 'White Flare', 'Scarlet & Violet Promos'],
-    'Mega Evolution Series': ['Mega Evolution', 'Phantasmal Flames', 'Ascended Heroes', 'Perfect Order', 'Chaos Rising', 'Pitch Black', '30th Celebration', 'Mega Evolution Promos'],
+    'Mega Evolution Series': ['Mega Evolution', 'Phantasmal Flames', 'Ascended Heroes', 'Perfect Order', 'Chaos Rising', 'Pitch Black', 'Mega Evolution Promos'],
     "Overig / promo's": [
       "McDonald's Collection", "McDonald's Collection 2011", "McDonald's Collection 2012", "McDonald's Collection 2013",
       "McDonald's Collection 2014", "McDonald's Collection 2015", "McDonald's Collection 2016", "McDonald's Collection 2017",
@@ -1886,6 +1886,28 @@
       });
     } catch (err) {
       console.error('Kon TCGdex niet gebruiken om nieuwe series/sets te vinden:', err);
+    }
+  }
+
+  // Aangekondigde (nog niet door TCGdex gepubliceerde) sets — data-driven
+  // alternatief voor het hardcoderen van een nieuwe setnaam in CARD_SERIES.
+  // Zodra de dagelijkse prijsupdate zo'n set bij TCGdex vindt en ophaalt,
+  // wordt 'opgehaald' true en verdwijnt hij hier vanzelf weer uit.
+  const AANGEKONDIGDE_SETS_TABLE = 'aangekondigde_sets';
+  function aangekondigdeSetsRestUrl(path) { return `${config.url}/rest/v1/${AANGEKONDIGDE_SETS_TABLE}${path || ''}`; }
+  async function discoverAangekondigdeSets() {
+    if (!config) return;
+    try {
+      const res = await fetch(aangekondigdeSetsRestUrl('?select=serie,set_naam&opgehaald=eq.false'), { headers: authHeaders(), cache: 'no-store' });
+      if (!res.ok) return;
+      const rows = await res.json();
+      rows.forEach(r => {
+        const normSerie = normalizeSerieKey(r.serie);
+        if (!dynamicSerieToSets[normSerie]) dynamicSerieToSets[normSerie] = new Set();
+        dynamicSerieToSets[normSerie].add(r.set_naam);
+      });
+    } catch (err) {
+      console.error('Kon aangekondigde sets niet laden:', err);
     }
   }
 
@@ -6482,15 +6504,16 @@
     const el = document.getElementById('dashPriceUpdateStatus');
     el.textContent = '';
     try {
-      const res = await fetch(prijsUpdateLogRestUrl('?select=run_at,sets_verwerkt,kaarten_verwerkt,succes,foutmelding&order=run_at.desc&limit=1'), { headers: authHeaders(), cache: 'no-store' });
+      const res = await fetch(prijsUpdateLogRestUrl('?select=run_at,sets_verwerkt,kaarten_verwerkt,succes,foutmelding,nieuwe_sets_geimporteerd&order=run_at.desc&limit=1'), { headers: authHeaders(), cache: 'no-store' });
       if (!res.ok) return;
       const rows = await res.json();
       if (rows.length === 0) { el.textContent = 'Automatische prijsupdate: nog niet gedraaid.'; return; }
       const r = rows[0];
       const d = new Date(r.run_at);
       const datumLabel = isNaN(d.getTime()) ? r.run_at : d.toLocaleString('nl-NL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+      const nieuweSetsSuffix = r.nieuwe_sets_geimporteerd ? `, ${r.nieuwe_sets_geimporteerd} nieuwe set${r.nieuwe_sets_geimporteerd === 1 ? '' : 's'} geïmporteerd` : '';
       el.textContent = r.succes
-        ? `Laatste prijsupdate: ${datumLabel} ✅ (${r.sets_verwerkt} sets, ${r.kaarten_verwerkt} kaarten)`
+        ? `Laatste prijsupdate: ${datumLabel} ✅ (${r.sets_verwerkt} sets, ${r.kaarten_verwerkt} kaarten${nieuweSetsSuffix})`
         : `Laatste prijsupdate: ${datumLabel} ❌ ${r.foutmelding || ''}`;
     } catch (err) {
       // Stille fout — dit statusregeltje is puur informatief.
@@ -6945,6 +6968,7 @@
       statusEl.textContent = 'Nog niet verbonden met Supabase. Klik op "⚙️ Supabase-instellingen" om te starten.';
     }
     discoverDynamicSeriesAndSets(); // niet blokkerend; vult de dropdowns aan zodra bekend
+    discoverAangekondigdeSets(); // idem, voor nog niet bij TCGdex bekende aangekondigde sets
   })();
 
   // PWA-offline-fallback: cachet de app-shell zodat de app ook zonder

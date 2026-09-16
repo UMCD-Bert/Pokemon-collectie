@@ -30,6 +30,13 @@ function pickTcgdexPrice(prices, versie) {
 function normalizeKaartnummer(n) {
   return String(n || '').trim().replace(/^([A-Za-z]*)0+(?=\d)/, '$1');
 }
+function normalizeSetName(name) {
+  return (name || '')
+    .toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
 
 async function fetchAllPages(table, query) {
   let all = [];
@@ -46,9 +53,101 @@ async function fetchAllPages(table, query) {
   return all;
 }
 
+// Data-driven alternatief voor het hardcoderen van een nog niet door TCGdex
+// gepubliceerde nieuwe set: rijen in aangekondigde_sets worden hier elke
+// dag gecheckt, en zodra TCGdex de set (met kaarten) kent, automatisch
+// opgehaald en naar tcg_set_kaarten weggeschreven — precies zoals de
+// "Deze set ophalen"-knop in index.html dat handmatig doet.
+async function checkAangekondigdeSets() {
+  let setsGeimporteerd = 0;
+  let rows;
+  try {
+    const res = await fetch(restUrl('aangekondigde_sets', '?select=id,serie,set_naam,tcgdex_naam&opgehaald=eq.false'), { headers: authHeaders() });
+    if (!res.ok) return 0;
+    rows = await res.json();
+  } catch (err) {
+    console.error('Kon aangekondigde sets niet ophalen:', err.message);
+    return 0;
+  }
+  if (rows.length === 0) return 0;
+
+  let tcgdexSets;
+  try {
+    const res = await fetch(`${TCGDEX_BASE}/sets`);
+    if (!res.ok) return 0;
+    tcgdexSets = await res.json();
+  } catch (err) {
+    console.error('Kon TCGdex-setlijst niet ophalen:', err.message);
+    return 0;
+  }
+
+  for (const row of rows) {
+    const norm = normalizeSetName(row.tcgdex_naam || row.set_naam);
+    const match = tcgdexSets.find(s => s && s.name && normalizeSetName(s.name) === norm);
+    if (!match) continue; // TCGdex kent de set nog niet
+
+    try {
+      const setRes = await fetch(`${TCGDEX_BASE}/sets/${encodeURIComponent(match.id)}`);
+      if (!setRes.ok) continue;
+      const setData = await setRes.json();
+      const briefCards = setData.cards || [];
+      if (briefCards.length === 0) continue; // metadata bestaat al, kaarten nog niet
+
+      const newRows = [];
+      for (const brief of briefCards) {
+        try {
+          const cardRes = await fetch(`${TCGDEX_BASE}/sets/${encodeURIComponent(match.id)}/${encodeURIComponent(brief.localId)}`);
+          await sleep(REQUEST_DELAY_MS);
+          if (!cardRes.ok) continue;
+          const card = await cardRes.json();
+          let categorie = 'pokemon';
+          if (card.category === 'Trainer') categorie = (card.trainerType || 'item').toLowerCase();
+          else if (card.category === 'Energy') categorie = 'energy';
+          const cmPricing = card.pricing && card.pricing.cardmarket;
+          const priceSuggestsHolo = !!(cmPricing && (cmPricing['trend-holo'] != null || cmPricing['avg-holo'] != null));
+          newRows.push({
+            set_id: match.id,
+            serie: row.serie || null,
+            set_naam: row.set_naam,
+            kaartnummer: card.localId,
+            naam: card.name,
+            afbeelding: card.image || null,
+            categorie,
+            dexid: (card.dexId && card.dexId[0]) || null,
+            heeft_normaal: !!(card.variants && (card.variants.normal || card.variants.firstEdition || card.variants.wPromo)),
+            heeft_holo: !!(card.variants && card.variants.holo) || priceSuggestsHolo,
+            heeft_reverse: !!(card.variants && card.variants.reverse),
+            release_datum: setData.releaseDate || null
+          });
+        } catch (err) {
+          console.error(`Kon kaart ${brief.localId} van ${row.set_naam} niet ophalen:`, err.message);
+        }
+      }
+      if (newRows.length === 0) continue;
+
+      const insRes = await fetch(restUrl('tcg_set_kaarten'), {
+        method: 'POST', headers: authHeaders({ Prefer: 'return=minimal' }), body: JSON.stringify(newRows)
+      });
+      if (!insRes.ok) { console.error(`Opslaan van ${row.set_naam} mislukt:`, await insRes.text()); continue; }
+
+      await fetch(restUrl('aangekondigde_sets', `?id=eq.${row.id}`), {
+        method: 'PATCH', headers: authHeaders({ Prefer: 'return=minimal' }),
+        body: JSON.stringify({ opgehaald: true, opgehaald_op: new Date().toISOString() })
+      });
+      console.log(`Nieuwe set automatisch geïmporteerd: ${row.set_naam} (${newRows.length} kaarten).`);
+      setsGeimporteerd++;
+    } catch (err) {
+      console.error(`Automatisch importeren van ${row.set_naam} mislukt:`, err.message);
+    }
+  }
+  return setsGeimporteerd;
+}
+
 async function main() {
   let setsVerwerkt = 0;
   let kaartenVerwerkt = 0;
+
+  const nieuweSetsGeimporteerd = await checkAangekondigdeSets();
 
   const setKaarten = await fetchAllPages(
     'tcg_set_kaarten',
@@ -117,10 +216,10 @@ async function main() {
   }
   console.log(`${exemplarenBijgewerkt} eigen exemplaren bijgewerkt.`);
 
-  await writeLog({ setsVerwerkt, kaartenVerwerkt, succes: true, foutmelding: null });
+  await writeLog({ setsVerwerkt, kaartenVerwerkt, nieuweSetsGeimporteerd, succes: true, foutmelding: null });
 }
 
-async function writeLog({ setsVerwerkt, kaartenVerwerkt, succes, foutmelding }) {
+async function writeLog({ setsVerwerkt, kaartenVerwerkt, nieuweSetsGeimporteerd, succes, foutmelding }) {
   try {
     await fetch(restUrl('prijs_update_log'), {
       method: 'POST', headers: authHeaders({ Prefer: 'return=minimal' }),
@@ -128,6 +227,7 @@ async function writeLog({ setsVerwerkt, kaartenVerwerkt, succes, foutmelding }) 
         run_at: new Date().toISOString(),
         sets_verwerkt: setsVerwerkt || 0,
         kaarten_verwerkt: kaartenVerwerkt || 0,
+        nieuwe_sets_geimporteerd: nieuweSetsGeimporteerd || 0,
         succes,
         foutmelding
       })
@@ -139,6 +239,6 @@ async function writeLog({ setsVerwerkt, kaartenVerwerkt, succes, foutmelding }) 
 
 main().catch(async (err) => {
   console.error('Prijsupdate mislukt:', err);
-  await writeLog({ setsVerwerkt: 0, kaartenVerwerkt: 0, succes: false, foutmelding: String(err.message || err).slice(0, 500) });
+  await writeLog({ setsVerwerkt: 0, kaartenVerwerkt: 0, nieuweSetsGeimporteerd: 0, succes: false, foutmelding: String(err.message || err).slice(0, 500) });
   process.exit(1);
 });
