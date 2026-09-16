@@ -387,6 +387,9 @@
   .sealed-row-resultaat-pos { color: var(--color-value-positive); font-weight: 700; }
   .sealed-row-resultaat-neg { color: var(--color-danger-dark); font-weight: 700; }
   .sealed-row-delete { background: none; border: none; color: var(--color-danger-dark); font-size: 16px; cursor: pointer; padding: 4px; }
+  #verkoopSection { max-width: 700px; margin: 0 auto; }
+  #verkoopList, #verkoopItemsList, #verkoopKandidatenList { display: flex; flex-direction: column; gap: 6px; }
+  .verkoop-kandidaat-aantal { flex-shrink: 0; }
   .so-checks { display: flex; flex-direction: column; gap: 3px; margin-top: 4px; }
   .so-check { display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; column-gap: 5px; font-size: 11px; color: #444; cursor: pointer; }
   .so-pokedex-badge { font-size: 12px; }
@@ -1738,7 +1741,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '3.20';
+  const APP_VERSION = '3.21';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
