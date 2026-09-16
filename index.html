@@ -1324,6 +1324,13 @@
           <div class="dropdown-menu" id="verkoopSetMenu"></div>
         </div>
       </div>
+      <div id="verkoopKandidatenToolbar" style="display:flex;justify-content:flex-end;align-items:center;gap:6px;margin:8px 0 4px 0;">
+        <span style="font-size:12px;color:#777;">Sorteer op</span>
+        <select id="verkoopKandidatenSort">
+          <option value="nummer">Nummer</option>
+          <option value="naam">Naam</option>
+        </select>
+      </div>
       <div id="verkoopKandidatenList"></div>
     </div>
   </div>
@@ -1731,7 +1738,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '3.19';
+  const APP_VERSION = '3.20';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -6600,14 +6607,18 @@
     const setNaam = document.getElementById('verkoopSetInput').value.trim();
     const el = document.getElementById('verkoopKandidatenList');
     if (!setNaam) { el.innerHTML = ''; return; }
-    const kandidaten = verkoopKandidatenForSet(setNaam);
+    let kandidaten = verkoopKandidatenForSet(setNaam);
     if (kandidaten.length === 0) { el.innerHTML = '<p class="sealed-empty-msg">Geen (nog niet gereserveerde) exemplaren van deze set.</p>'; return; }
+    const sortMode2 = document.getElementById('verkoopKandidatenSort').value;
+    kandidaten = [...kandidaten].sort((a, b) => sortMode2 === 'naam'
+      ? resolveInstanceInfo(a).naam.localeCompare(resolveInstanceInfo(b).naam, 'nl')
+      : soSortKey(a) - soSortKey(b));
     el.innerHTML = kandidaten.map(inst => {
       const info = resolveInstanceInfo(inst);
       const maxAantal = parseInt(inst.aantal, 10) || 1;
       return `<div class="sealed-row" data-inst-id="${inst.id}">
         <div class="sealed-row-info">
-          <div class="sealed-row-naam">${info.naam}</div>
+          <div class="sealed-row-naam">#${inst.kaartnummer || '?'} ${info.naam}</div>
           <div class="sealed-row-setinfo">${inst.versie || ''} &middot; &euro; ${fmtEuro(parseFloat(inst.waarde) || 0)} /stuk &middot; ${maxAantal}x in bezit</div>
         </div>
         <input type="number" class="verkoop-kandidaat-aantal" data-inst-id="${inst.id}" min="1" max="${maxAantal}" value="${maxAantal}" style="width:48px;">
@@ -6625,6 +6636,7 @@
   }
   document.getElementById('verkoopSetInput').addEventListener('input', renderVerkoopKandidaten);
   document.getElementById('verkoopSetInput').addEventListener('change', renderVerkoopKandidaten);
+  document.getElementById('verkoopKandidatenSort').addEventListener('change', renderVerkoopKandidaten);
   setupFieldPicker('verkoopSetPicker', 'verkoopSetPickerBtn', 'verkoopSetMenu', document.getElementById('verkoopSetInput'), () => allSetsFlat);
 
   // Past exact genoeg exemplaren in de kavel: als je minder vraagt dan de
