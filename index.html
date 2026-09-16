@@ -1317,7 +1317,7 @@
     <button type="button" class="btn-primary" id="verkoopMarkeerVerkochtBtn" style="margin-top:10px;">&#9989; Markeer als verkocht</button>
     <button type="button" class="btn-danger" id="verkoopVerwijderKavelBtn">&#128465;&#65039; Kavel verwijderen</button>
 
-    <h4 id="verkoopItemsHeading">Kaarten in deze kavel</h4>
+    <h4>Kaarten in deze kavel</h4>
     <div id="verkoopItemsList"></div>
 
     <div id="verkoopAddSection">
@@ -1744,7 +1744,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '3.23';
+  const APP_VERSION = '3.24';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -6572,7 +6572,6 @@
     const aantal = items.reduce((s, i) => s + (parseInt(i.aantal, 10) || 1), 0);
     const marktwaarde = items.reduce((s, i) => s + instanceLineValue(i), 0);
     document.getElementById('verkoopDetailTotals').textContent = `${aantal} kaart${aantal === 1 ? '' : 'en'} · marktwaarde € ${fmtEuro(marktwaarde)}`;
-    document.getElementById('verkoopItemsHeading').textContent = `Kaarten in deze kavel (${aantal})`;
 
     const vpInput = document.getElementById('verkoopVraagprijs');
     vpInput.value = b.vraagprijs != null ? formatValue(b.vraagprijs) : '';
