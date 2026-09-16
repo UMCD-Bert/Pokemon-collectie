@@ -992,6 +992,7 @@
   <button type="button" class="tab-btn" data-tab="trainers">Trainers &amp; Energy</button>
   <button type="button" class="tab-btn" data-tab="setoverzicht">Serie/Set</button>
   <button type="button" class="tab-btn" data-tab="sealed">Sealed</button>
+  <button type="button" class="tab-btn" data-tab="verkoop">📦 Verkoop</button>
   <button type="button" class="tab-btn" data-tab="dashboard">Dashboard</button>
 </div>
 
@@ -1292,6 +1293,40 @@
   <button type="button" class="btn-primary" id="sealedAddBtn">+ Toevoegen</button>
   <div id="sealedStatus"></div>
   <div id="sealedList"></div>
+</div>
+
+<div id="verkoopSection" style="display:none;">
+  <div id="verkoopListView">
+    <button type="button" class="btn-primary" id="verkoopAddBtn">+ Nieuwe kavel</button>
+    <div id="verkoopStatus"></div>
+    <div id="verkoopList"></div>
+  </div>
+  <div id="verkoopDetailView" style="display:none;">
+    <button type="button" class="btn-secondary" id="verkoopBackBtn">&larr; Terug naar kavels</button>
+    <h3 id="verkoopDetailNaam"></h3>
+    <div id="verkoopDetailStatusLine" class="sealed-row-setinfo" style="text-align:center;margin-bottom:8px;"></div>
+    <div id="verkoopDetailTotals" style="text-align:center;font-weight:700;color:var(--color-text-dark);margin-bottom:10px;"></div>
+    <label class="field-label">Vraagprijs (&euro;)</label>
+    <input type="text" class="field-input" id="verkoopVraagprijs" placeholder="bijv. 45,00">
+    <button type="button" class="btn-primary" id="verkoopMarkeerVerkochtBtn" style="margin-top:10px;">&#9989; Markeer als verkocht</button>
+    <button type="button" class="btn-danger" id="verkoopVerwijderKavelBtn">&#128465;&#65039; Kavel verwijderen</button>
+
+    <h4>Kaarten in deze kavel</h4>
+    <div id="verkoopItemsList"></div>
+
+    <div id="verkoopAddSection">
+      <h4>+ Kaarten toevoegen</h4>
+      <label class="field-label">Set</label>
+      <div class="field-with-picker">
+        <input type="text" class="field-input" id="verkoopSetInput" placeholder="Typ of kies rechts...">
+        <div class="dropdown mini-picker" id="verkoopSetPicker">
+          <button type="button" class="dropdown-btn picker-btn" id="verkoopSetPickerBtn">&#9662;</button>
+          <div class="dropdown-menu" id="verkoopSetMenu"></div>
+        </div>
+      </div>
+      <div id="verkoopKandidatenList"></div>
+    </div>
+  </div>
 </div>
 
 <div id="dashboardSection" style="display:none;">
@@ -1696,7 +1731,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '3.18';
+  const APP_VERSION = '3.19';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -3219,9 +3254,14 @@
       document.getElementById('extraSection').style.display = (tab === 'trainers') ? '' : 'none';
       document.getElementById('setOverzichtSection').style.display = (tab === 'setoverzicht') ? '' : 'none';
       document.getElementById('sealedSection').style.display = (tab === 'sealed') ? '' : 'none';
+      document.getElementById('verkoopSection').style.display = (tab === 'verkoop') ? '' : 'none';
       document.getElementById('dashboardSection').style.display = (tab === 'dashboard') ? '' : 'none';
       if (tab === 'setoverzicht') loadSetOverview();
       if (tab === 'sealed' && !sealedLoaded) { sealedLoaded = true; loadSealedItems(); }
+      if (tab === 'verkoop') {
+        backToVerkoopList();
+        if (!verkoopLoaded) { verkoopLoaded = true; loadVerkoopBundels(); } else { renderVerkoopList(); }
+      }
       if (tab === 'dashboard') openDashboard();
       document.getElementById('progressDashboard').style.display = (tab === 'pokemon') ? '' : 'none';
       if (tab === 'trainers') {
@@ -4009,10 +4049,11 @@
     const pokedexBtn = inst.parent_type === 'pokemon'
       ? `<button type="button" class="inst-pokedex-toggle${inst.in_pokedex ? ' active' : ''}" data-inst-id="${inst.id}" title="${inst.in_pokedex ? 'Zit in de Pokédex-binder — klik om uit te zetten' : 'Zet dit exemplaar in de Pokédex-binder'}">${inst.in_pokedex ? '📖' : '📕'}</button>`
       : '';
+    const bundleBadge = inst.verkoop_bundel_id ? `<span class="so-pokedex-badge" title="Zit in een verkoopkavel">&#128230;</span>` : '';
     return `
       <div class="instance-row" data-inst-id="${inst.id}">
         <div class="inst-info">
-          <div class="inst-sub">${inst.versie || ''}</div>
+          <div class="inst-sub">${inst.versie || ''}${bundleBadge}</div>
         </div>
         ${stepperHtmlFor(inst)}
         <div class="inst-value">${valueHtml}</div>
@@ -5740,7 +5781,8 @@
       : '';
     const stepper = inst ? stepperHtmlFor(inst) : '';
     const pokedexBadge = (inst && inst.in_pokedex) ? `<span class="so-pokedex-badge" title="Zit in de Pokédex-binder">📖</span>` : '';
-    return `<label class="so-check"><input type="checkbox" ${checkboxAttrs} ${inst ? 'checked' : ''}> <span>${versie}</span>${pokedexBadge}${priceSpan}</label>${stepper}`;
+    const bundleBadge = (inst && inst.verkoop_bundel_id) ? `<span class="so-pokedex-badge" title="Zit in een verkoopkavel">&#128230;</span>` : '';
+    return `<label class="so-check"><input type="checkbox" ${checkboxAttrs} ${inst ? 'checked' : ''}> <span>${versie}</span>${pokedexBadge}${bundleBadge}${priceSpan}</label>${stepper}`;
   }
 
   function soRowValue(row) {
@@ -6405,6 +6447,315 @@
       renderSealedList();
     } catch (err) {
       alert('Verwijderen mislukt: ' + err.message);
+    }
+  });
+
+  // ---------- Verkoopkavels (dubbele kaarten bundelen voor Vinted e.d.) ----------
+  const VERKOOP_TABLE = 'verkoop_bundels';
+  function verkoopRestUrl(path) { return `${config.url}/rest/v1/${VERKOOP_TABLE}${path || ''}`; }
+  let verkoopBundels = [];
+  let verkoopLoaded = false;
+  let currentVerkoopBundelId = null;
+
+  async function loadVerkoopBundels() {
+    if (!config) return;
+    const statusEl4 = document.getElementById('verkoopStatus');
+    statusEl4.textContent = 'Bezig met laden...';
+    try {
+      const res = await fetch(verkoopRestUrl('?select=*&order=aangemaakt_op.desc'), { headers: authHeaders(), cache: 'no-store' });
+      if (!res.ok) throw new Error(`status ${res.status}`);
+      verkoopBundels = await res.json();
+      statusEl4.textContent = '';
+      renderVerkoopList();
+    } catch (err) {
+      statusEl4.textContent = 'Kon niet laden: ' + err.message;
+    }
+  }
+
+  function verkoopItemsFor(bundleId) {
+    return allInstances.filter(i => String(i.verkoop_bundel_id) === String(bundleId));
+  }
+
+  function renderVerkoopList() {
+    const list = document.getElementById('verkoopList');
+    if (verkoopBundels.length === 0) {
+      list.innerHTML = '<div class="sealed-empty-msg">Nog geen verkoopkavels.</div>';
+      return;
+    }
+    const open = verkoopBundels.filter(b => b.status === 'open');
+    const verkocht = verkoopBundels.filter(b => b.status === 'verkocht');
+    const rowHtml = (b) => {
+      if (b.status === 'verkocht') {
+        return `<div class="sealed-row" data-id="${b.id}">
+          <div class="sealed-row-info">
+            <div class="sealed-row-naam">${b.naam}</div>
+            <div class="sealed-row-setinfo">Verkocht${b.verkocht_op ? ' op ' + b.verkocht_op : ''}</div>
+          </div>
+          <div class="sealed-row-prices"><span class="sealed-row-resultaat-pos">&euro; ${fmtEuro(b.verkocht_bedrag)}</span></div>
+        </div>`;
+      }
+      const items = verkoopItemsFor(b.id);
+      const aantal = items.reduce((s, i) => s + (parseInt(i.aantal, 10) || 1), 0);
+      const marktwaarde = items.reduce((s, i) => s + instanceLineValue(i), 0);
+      return `<div class="sealed-row" data-id="${b.id}">
+        <div class="sealed-row-info">
+          <div class="sealed-row-naam">${b.naam}</div>
+          <div class="sealed-row-setinfo">${aantal} kaart${aantal === 1 ? '' : 'en'} &middot; marktwaarde &euro; ${fmtEuro(marktwaarde)}</div>
+        </div>
+        <div class="sealed-row-prices">${b.vraagprijs != null ? `Vraagprijs: &euro; ${fmtEuro(b.vraagprijs)}` : ''}</div>
+      </div>`;
+    };
+    list.innerHTML = [...open, ...verkocht].map(rowHtml).join('');
+    list.querySelectorAll('.sealed-row').forEach(row => {
+      row.addEventListener('click', () => openVerkoopDetail(row.dataset.id));
+    });
+  }
+
+  function openVerkoopDetail(id) {
+    currentVerkoopBundelId = id;
+    document.getElementById('verkoopListView').style.display = 'none';
+    document.getElementById('verkoopDetailView').style.display = '';
+    document.getElementById('verkoopSetInput').value = '';
+    renderVerkoopDetail();
+  }
+  function backToVerkoopList() {
+    currentVerkoopBundelId = null;
+    document.getElementById('verkoopDetailView').style.display = 'none';
+    document.getElementById('verkoopListView').style.display = '';
+  }
+  document.getElementById('verkoopBackBtn').addEventListener('click', () => { backToVerkoopList(); renderVerkoopList(); });
+
+  function renderVerkoopDetail() {
+    const b = verkoopBundels.find(x => String(x.id) === String(currentVerkoopBundelId));
+    if (!b) { backToVerkoopList(); renderVerkoopList(); return; }
+    const isVerkocht = b.status === 'verkocht';
+    document.getElementById('verkoopDetailNaam').textContent = b.naam;
+    document.getElementById('verkoopDetailStatusLine').textContent = isVerkocht
+      ? `Verkocht${b.verkocht_op ? ' op ' + b.verkocht_op : ''} voor € ${fmtEuro(b.verkocht_bedrag)}`
+      : 'Open — nog niet verkocht';
+
+    const items = verkoopItemsFor(b.id);
+    const aantal = items.reduce((s, i) => s + (parseInt(i.aantal, 10) || 1), 0);
+    const marktwaarde = items.reduce((s, i) => s + instanceLineValue(i), 0);
+    document.getElementById('verkoopDetailTotals').textContent = `${aantal} kaart${aantal === 1 ? '' : 'en'} · marktwaarde € ${fmtEuro(marktwaarde)}`;
+
+    const vpInput = document.getElementById('verkoopVraagprijs');
+    vpInput.value = b.vraagprijs != null ? formatValue(b.vraagprijs) : '';
+    vpInput.disabled = isVerkocht;
+    document.getElementById('verkoopMarkeerVerkochtBtn').style.display = isVerkocht ? 'none' : '';
+    document.getElementById('verkoopAddSection').style.display = isVerkocht ? 'none' : '';
+
+    const itemsList = document.getElementById('verkoopItemsList');
+    if (items.length === 0) {
+      itemsList.innerHTML = '<p class="sealed-empty-msg">Nog geen kaarten toegevoegd.</p>';
+    } else {
+      itemsList.innerHTML = items.map(inst => {
+        const info = resolveInstanceInfo(inst);
+        const aantalInst = parseInt(inst.aantal, 10) || 1;
+        return `<div class="sealed-row" data-inst-id="${inst.id}">
+          <div class="sealed-row-info">
+            <div class="sealed-row-naam">${info.naam}${aantalInst > 1 ? ` (${aantalInst}x)` : ''}</div>
+            <div class="sealed-row-setinfo">${inst.set_naam || ''}${inst.versie ? ' &middot; ' + inst.versie : ''}</div>
+          </div>
+          <div class="sealed-row-prices">&euro; ${fmtEuro(instanceLineValue(inst))}</div>
+          ${isVerkocht ? '' : `<button type="button" class="sealed-row-delete" data-inst-id="${inst.id}" title="Uit kavel halen">&times;</button>`}
+        </div>`;
+      }).join('');
+      if (!isVerkocht) {
+        itemsList.querySelectorAll('.sealed-row-delete').forEach(btn => {
+          btn.addEventListener('click', (e) => { e.stopPropagation(); releaseInstanceFromBundle(btn.dataset.instId); });
+        });
+      }
+    }
+    if (!isVerkocht) renderVerkoopKandidaten();
+  }
+
+  async function releaseInstanceFromBundle(instId) {
+    try {
+      const res = await fetch(instRestUrl(`?id=eq.${instId}`), {
+        method: 'PATCH', cache: 'no-store', headers: authHeaders({ 'Prefer': 'return=minimal' }),
+        body: JSON.stringify({ verkoop_bundel_id: null })
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const inst = getInstance(instId);
+      if (inst) inst.verkoop_bundel_id = null;
+      renderVerkoopDetail();
+      renderVerkoopList();
+      if (inst) refreshParentUI(inst.parent_type, inst.parent_id);
+    } catch (err) {
+      alert('Kon kaart niet uit de kavel halen: ' + err.message);
+    }
+  }
+
+  // Alleen exemplaren die je zelf bezit en nog in geen enkele kavel zitten
+  // komen hier in beeld — sneller vullen, geen risico dat je iets aanbiedt
+  // dat je niet hebt of al elders in de verkoop hebt staan.
+  function verkoopKandidatenForSet(setNaam) {
+    const canon = canonicalSetName(setNaam).trim().toLowerCase();
+    if (!canon) return [];
+    return allInstances.filter(i => !i.verkoop_bundel_id && (i.set_naam || '').trim().toLowerCase() === canon);
+  }
+
+  function renderVerkoopKandidaten() {
+    const setNaam = document.getElementById('verkoopSetInput').value.trim();
+    const el = document.getElementById('verkoopKandidatenList');
+    if (!setNaam) { el.innerHTML = ''; return; }
+    const kandidaten = verkoopKandidatenForSet(setNaam);
+    if (kandidaten.length === 0) { el.innerHTML = '<p class="sealed-empty-msg">Geen (nog niet gereserveerde) exemplaren van deze set.</p>'; return; }
+    el.innerHTML = kandidaten.map(inst => {
+      const info = resolveInstanceInfo(inst);
+      const maxAantal = parseInt(inst.aantal, 10) || 1;
+      return `<div class="sealed-row" data-inst-id="${inst.id}">
+        <div class="sealed-row-info">
+          <div class="sealed-row-naam">${info.naam}</div>
+          <div class="sealed-row-setinfo">${inst.versie || ''} &middot; &euro; ${fmtEuro(parseFloat(inst.waarde) || 0)} /stuk &middot; ${maxAantal}x in bezit</div>
+        </div>
+        <input type="number" class="verkoop-kandidaat-aantal" data-inst-id="${inst.id}" min="1" max="${maxAantal}" value="${maxAantal}" style="width:48px;">
+        <button type="button" class="btn-primary verkoop-kandidaat-add" data-inst-id="${inst.id}">+ Toevoegen</button>
+      </div>`;
+    }).join('');
+    el.querySelectorAll('.verkoop-kandidaat-add').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const instId = btn.dataset.instId;
+        const aantalInput = el.querySelector(`.verkoop-kandidaat-aantal[data-inst-id="${instId}"]`);
+        const gevraagd = Math.max(1, parseInt(aantalInput.value, 10) || 1);
+        addInstanceToBundle(instId, gevraagd);
+      });
+    });
+  }
+  document.getElementById('verkoopSetInput').addEventListener('input', renderVerkoopKandidaten);
+  document.getElementById('verkoopSetInput').addEventListener('change', renderVerkoopKandidaten);
+  setupFieldPicker('verkoopSetPicker', 'verkoopSetPickerBtn', 'verkoopSetMenu', document.getElementById('verkoopSetInput'), () => allSetsFlat);
+
+  // Past exact genoeg exemplaren in de kavel: als je minder vraagt dan de
+  // volledige 'aantal' op deze rij, splitst dit 'm in tweeën (rest blijft
+  // gewoon in je collectie staan) — zelfde idee als de bestaande aantal-stepper.
+  async function addInstanceToBundle(instId, gevraagdAantal) {
+    const inst = getInstance(instId);
+    if (!inst || !currentVerkoopBundelId) return;
+    const huidigAantal = parseInt(inst.aantal, 10) || 1;
+    const aantal = Math.min(gevraagdAantal, huidigAantal);
+    try {
+      if (aantal >= huidigAantal) {
+        const res = await fetch(instRestUrl(`?id=eq.${instId}`), {
+          method: 'PATCH', cache: 'no-store', headers: authHeaders({ 'Prefer': 'return=minimal' }),
+          body: JSON.stringify({ verkoop_bundel_id: currentVerkoopBundelId })
+        });
+        if (!res.ok) throw new Error(await res.text());
+        inst.verkoop_bundel_id = currentVerkoopBundelId;
+      } else {
+        const nieuwAantalOrigineel = huidigAantal - aantal;
+        const patchRes = await fetch(instRestUrl(`?id=eq.${instId}`), {
+          method: 'PATCH', cache: 'no-store', headers: authHeaders({ 'Prefer': 'return=minimal' }),
+          body: JSON.stringify({ aantal: nieuwAantalOrigineel })
+        });
+        if (!patchRes.ok) throw new Error(await patchRes.text());
+        inst.aantal = nieuwAantalOrigineel;
+        const payload = {
+          parent_type: inst.parent_type, parent_id: inst.parent_id,
+          serie: inst.serie, set_naam: inst.set_naam, versie: inst.versie, kaartnummer: inst.kaartnummer,
+          waarde: inst.waarde, prijs_bron_datum: inst.prijs_bron_datum, prijs_handmatig_datum: inst.prijs_handmatig_datum,
+          aantal, verkoop_bundel_id: currentVerkoopBundelId
+        };
+        const insRes = await fetch(instRestUrl(), {
+          method: 'POST', cache: 'no-store', headers: authHeaders({ 'Prefer': 'return=representation' }),
+          body: JSON.stringify(payload)
+        });
+        if (!insRes.ok) throw new Error(await insRes.text());
+        const created = await insRes.json();
+        allInstances.push(created[0]);
+      }
+      refreshParentUI(inst.parent_type, inst.parent_id);
+      renderVerkoopDetail();
+      renderVerkoopList();
+    } catch (err) {
+      alert('Kon kaart niet aan de kavel toevoegen: ' + err.message);
+    }
+  }
+
+  document.getElementById('verkoopAddBtn').addEventListener('click', async () => {
+    const naam = prompt('Naam voor deze kavel (bijv. "Base Set losse kaarten")');
+    if (naam === null) return;
+    const trimmed = naam.trim();
+    if (!trimmed) return;
+    try {
+      const res = await fetch(verkoopRestUrl(), {
+        method: 'POST', cache: 'no-store', headers: authHeaders({ 'Prefer': 'return=representation' }),
+        body: JSON.stringify({ naam: trimmed })
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const created = await res.json();
+      verkoopBundels.unshift(created[0]);
+      openVerkoopDetail(created[0].id);
+    } catch (err) {
+      alert('Kavel aanmaken mislukt: ' + err.message);
+    }
+  });
+
+  document.getElementById('verkoopVraagprijs').addEventListener('change', async (e) => {
+    const b = verkoopBundels.find(x => String(x.id) === String(currentVerkoopBundelId));
+    if (!b) return;
+    const val = parseSealedMoney(e.target.value);
+    try {
+      const res = await fetch(verkoopRestUrl(`?id=eq.${b.id}`), {
+        method: 'PATCH', cache: 'no-store', headers: authHeaders({ 'Prefer': 'return=minimal' }),
+        body: JSON.stringify({ vraagprijs: val })
+      });
+      if (!res.ok) throw new Error(await res.text());
+      b.vraagprijs = val;
+    } catch (err) {
+      alert('Vraagprijs opslaan mislukt: ' + err.message);
+    }
+  });
+
+  document.getElementById('verkoopMarkeerVerkochtBtn').addEventListener('click', async () => {
+    const b = verkoopBundels.find(x => String(x.id) === String(currentVerkoopBundelId));
+    if (!b) return;
+    const items = verkoopItemsFor(b.id);
+    if (items.length === 0) { alert('Deze kavel heeft nog geen kaarten.'); return; }
+    const bedragRaw = prompt('Voor hoeveel euro is deze kavel verkocht?', b.vraagprijs != null ? formatValue(b.vraagprijs) : '');
+    if (bedragRaw === null) return;
+    const bedrag = parseSealedMoney(bedragRaw);
+    if (bedrag == null) { alert('Ongeldig bedrag.'); return; }
+    if (!confirm(`Kavel "${b.naam}" markeren als verkocht voor € ${fmtEuro(bedrag)}?\n\nDit verwijdert de ${items.length} gekoppelde kaartexemplaren definitief uit je collectie (voorraad bijwerken).`)) return;
+    try {
+      const ids = items.map(i => i.id).join(',');
+      const delRes = await fetch(instRestUrl(`?id=in.(${ids})`), { method: 'DELETE', headers: authHeaders(), cache: 'no-store' });
+      if (!delRes.ok) throw new Error(await delRes.text());
+      const uniqueParents = new Map();
+      items.forEach(i => uniqueParents.set(`${i.parent_type}|||${i.parent_id}`, i));
+      allInstances = allInstances.filter(i => String(i.verkoop_bundel_id) !== String(b.id));
+
+      const patchRes = await fetch(verkoopRestUrl(`?id=eq.${b.id}`), {
+        method: 'PATCH', cache: 'no-store', headers: authHeaders({ 'Prefer': 'return=representation' }),
+        body: JSON.stringify({ status: 'verkocht', verkocht_bedrag: bedrag, verkocht_op: new Date().toISOString().slice(0, 10) })
+      });
+      if (!patchRes.ok) throw new Error(await patchRes.text());
+      const updated = await patchRes.json();
+      const idx = verkoopBundels.findIndex(x => String(x.id) === String(b.id));
+      if (idx > -1) verkoopBundels[idx] = updated[0];
+
+      uniqueParents.forEach(i => refreshParentUI(i.parent_type, i.parent_id));
+      renderVerkoopDetail();
+      renderVerkoopList();
+    } catch (err) {
+      alert('Markeren als verkocht mislukt: ' + err.message);
+    }
+  });
+
+  document.getElementById('verkoopVerwijderKavelBtn').addEventListener('click', async () => {
+    const b = verkoopBundels.find(x => String(x.id) === String(currentVerkoopBundelId));
+    if (!b) return;
+    if (!confirm(`Kavel "${b.naam}" verwijderen? De kaarten erin blijven gewoon in je collectie staan.`)) return;
+    try {
+      const delRes = await fetch(verkoopRestUrl(`?id=eq.${b.id}`), { method: 'DELETE', headers: authHeaders(), cache: 'no-store' });
+      if (!delRes.ok) throw new Error(await delRes.text());
+      verkoopItemsFor(b.id).forEach(i => { i.verkoop_bundel_id = null; });
+      verkoopBundels = verkoopBundels.filter(x => String(x.id) !== String(b.id));
+      backToVerkoopList();
+      renderVerkoopList();
+    } catch (err) {
+      alert('Kavel verwijderen mislukt: ' + err.message);
     }
   });
 
