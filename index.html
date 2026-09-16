@@ -1306,7 +1306,10 @@
   </div>
   <div id="verkoopDetailView" style="display:none;">
     <button type="button" class="btn-secondary" id="verkoopBackBtn">&larr; Terug naar kavels</button>
-    <h3 id="verkoopDetailNaam"></h3>
+    <h3 style="display:flex;align-items:center;justify-content:center;gap:8px;">
+      <span id="verkoopDetailNaam"></span>
+      <button type="button" id="verkoopHernoemBtn" title="Naam wijzigen" style="background:none;border:none;cursor:pointer;font-size:16px;">&#9999;&#65039;</button>
+    </h3>
     <div id="verkoopDetailStatusLine" class="sealed-row-setinfo" style="text-align:center;margin-bottom:8px;"></div>
     <div id="verkoopDetailTotals" style="text-align:center;font-weight:700;color:var(--color-text-dark);margin-bottom:10px;"></div>
     <label class="field-label">Vraagprijs (&euro;)</label>
@@ -1741,7 +1744,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '3.21';
+  const APP_VERSION = '3.22';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -6534,6 +6537,27 @@
     document.getElementById('verkoopListView').style.display = '';
   }
   document.getElementById('verkoopBackBtn').addEventListener('click', () => { backToVerkoopList(); renderVerkoopList(); });
+
+  document.getElementById('verkoopHernoemBtn').addEventListener('click', async () => {
+    const b = verkoopBundels.find(x => String(x.id) === String(currentVerkoopBundelId));
+    if (!b) return;
+    const naam = prompt('Nieuwe naam voor deze kavel', b.naam);
+    if (naam === null) return;
+    const trimmed = naam.trim();
+    if (!trimmed || trimmed === b.naam) return;
+    try {
+      const res = await fetch(verkoopRestUrl(`?id=eq.${b.id}`), {
+        method: 'PATCH', cache: 'no-store', headers: authHeaders({ 'Prefer': 'return=minimal' }),
+        body: JSON.stringify({ naam: trimmed })
+      });
+      if (!res.ok) throw new Error(await res.text());
+      b.naam = trimmed;
+      renderVerkoopDetail();
+      renderVerkoopList();
+    } catch (err) {
+      alert('Naam wijzigen mislukt: ' + err.message);
+    }
+  });
 
   function renderVerkoopDetail() {
     const b = verkoopBundels.find(x => String(x.id) === String(currentVerkoopBundelId));
