@@ -1744,7 +1744,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '3.25';
+  const APP_VERSION = '3.26';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -5572,7 +5572,10 @@
   function extractCoreSpeciesName(cardName) {
     let naam = (cardName || '').trim().replace(/\s+(ex|EX|GX|VMAX|VSTAR|V-UNION|V)$/, '').trim();
     const m = naam.match(/^.+?['’‘´`]s\s+(.+)$/);
-    return (m ? m[1] : naam).trim().toLowerCase();
+    // Regionale vormen ("Hisuian Zorua") horen bij dezelfde Pokédex-soort als
+    // de gewone vorm; "Hisuian" e.d. is geen deel van de soortnaam.
+    return (m ? m[1] : naam).trim().replace(/^(alolan|galarian|hisuian|paldean)\s+/i, '').toLowerCase()
+      .replace(/\s*♀$/, ' f').replace(/\s*♂$/, ' m'); // Pokédex heet "Nidoran F"/"Nidoran M"
   }
 
   // Zoekt (of maakt) de juiste Pokémon/Trainer/Energy-kaart waar dit
