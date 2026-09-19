@@ -1744,7 +1744,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '3.24';
+  const APP_VERSION = '3.25';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -1937,26 +1937,31 @@
     }
   }
 
-  // Aangekondigde (nog niet door TCGdex gepubliceerde) sets — data-driven
-  // alternatief voor het hardcoderen van een nieuwe setnaam in CARD_SERIES.
-  // Zodra de dagelijkse prijsupdate zo'n set bij TCGdex vindt en ophaalt,
-  // wordt 'opgehaald' true en verdwijnt hij hier vanzelf weer uit.
+  // Sets uit aangekondigde_sets — data-driven alternatief voor het hardcoderen
+  // van een nieuwe setnaam in CARD_SERIES. Blijven ook na het ophalen zichtbaar
+  // in de set-kiezers (TCGdex's setlijst bevat geen serie-info, dus die kan dit
+  // niet overnemen).
   const AANGEKONDIGDE_SETS_TABLE = 'aangekondigde_sets';
+  const announcedSetNames = new Set();
   function aangekondigdeSetsRestUrl(path) { return `${config.url}/rest/v1/${AANGEKONDIGDE_SETS_TABLE}${path || ''}`; }
   async function discoverAangekondigdeSets() {
     if (!config) return;
     try {
-      const res = await fetch(aangekondigdeSetsRestUrl('?select=serie,set_naam&opgehaald=eq.false'), { headers: authHeaders(), cache: 'no-store' });
+      const res = await fetch(aangekondigdeSetsRestUrl('?select=serie,set_naam'), { headers: authHeaders(), cache: 'no-store' });
       if (!res.ok) return;
       const rows = await res.json();
       rows.forEach(r => {
         const normSerie = normalizeSerieKey(r.serie);
         if (!dynamicSerieToSets[normSerie]) dynamicSerieToSets[normSerie] = new Set();
         dynamicSerieToSets[normSerie].add(r.set_naam);
+        announcedSetNames.add(r.set_naam);
       });
     } catch (err) {
       console.error('Kon aangekondigde sets niet laden:', err);
     }
+  }
+  function allSetsForPicker() {
+    return [...new Set([...allSetsFlat, ...announcedSetNames])].sort((a, b) => a.localeCompare(b, 'nl'));
   }
 
   setupFieldPicker('iSeriePicker', 'iSeriePickerBtn', 'iSerieMenu', iSerieInput, () =>
@@ -1967,7 +1972,7 @@
     const extraSets = dynamicSerieToSets[normalizeSerieKey(iSerieInput.value)];
     const merged = [...new Set([...staticSets, ...(extraSets ? [...extraSets] : [])])];
     if (merged.length > 0) return merged.sort((a, b) => a.localeCompare(b, 'nl'));
-    return allSetsFlat;
+    return allSetsForPicker();
   });
   setupFieldPicker('iVersiePicker', 'iVersiePickerBtn', 'iVersieMenu', iVersieInput, () => [...CARD_VERSIES, ...CARD_VERSIES_OVERIG].sort((a, b) => a.localeCompare(b, 'nl')));
 
@@ -1981,7 +1986,9 @@
     }
     for (const normKey of Object.keys(dynamicSerieToSets)) {
       if ([...dynamicSerieToSets[normKey]].some(s => s.trim().toLowerCase() === target)) {
-        return dynamicSerieNames.find(n => normalizeSerieKey(n) === normKey) || normKey;
+        return dynamicSerieNames.find(n => normalizeSerieKey(n) === normKey)
+          || Object.keys(CARD_SERIES).find(k => normalizeSerieKey(k) === normKey)
+          || normKey;
       }
     }
     return null;
@@ -5478,7 +5485,7 @@
     const extraSets = dynamicSerieToSets[normalizeSerieKey(soSerieInput.value)];
     const merged = [...new Set([...staticSets, ...(extraSets ? [...extraSets] : [])])];
     if (merged.length > 0) return merged.sort((a, b) => a.localeCompare(b, 'nl'));
-    return allSetsFlat;
+    return allSetsForPicker();
   });
   // Zodra je begint te typen in Set, klopt de eventueel nog getoonde serie
   // meteen niet meer meer — dus die alvast leegmaken (niet pas bij blur/change).
@@ -6405,7 +6412,7 @@
     inp.value = (parseInt(inp.value, 10) || 1) + 1;
   });
 
-  setupFieldPicker('sealedSetPicker', 'sealedSetPickerBtn', 'sealedSetMenu', document.getElementById('sealedSet'), () => allSetsFlat);
+  setupFieldPicker('sealedSetPicker', 'sealedSetPickerBtn', 'sealedSetMenu', document.getElementById('sealedSet'), allSetsForPicker);
   setupFieldPicker('sealedSeriePicker', 'sealedSeriePickerBtn', 'sealedSerieMenu', document.getElementById('sealedSerie'), () => Object.keys(CARD_SERIES));
 
   document.getElementById('sealedSaveBtn').addEventListener('click', async () => {
@@ -6664,7 +6671,7 @@
   document.getElementById('verkoopSetInput').addEventListener('input', renderVerkoopKandidaten);
   document.getElementById('verkoopSetInput').addEventListener('change', renderVerkoopKandidaten);
   document.getElementById('verkoopKandidatenSort').addEventListener('change', renderVerkoopKandidaten);
-  setupFieldPicker('verkoopSetPicker', 'verkoopSetPickerBtn', 'verkoopSetMenu', document.getElementById('verkoopSetInput'), () => allSetsFlat);
+  setupFieldPicker('verkoopSetPicker', 'verkoopSetPickerBtn', 'verkoopSetMenu', document.getElementById('verkoopSetInput'), allSetsForPicker);
 
   // Past exact genoeg exemplaren in de kavel: als je minder vraagt dan de
   // volledige 'aantal' op deze rij, splitst dit 'm in tweeën (rest blijft
