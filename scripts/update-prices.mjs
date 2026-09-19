@@ -125,6 +125,10 @@ async function checkAangekondigdeSets() {
       }
       if (newRows.length === 0) continue;
 
+      // Eerst leegmaken (zoals de "Deze set ophalen"-knop): twee elkaar
+      // overlappende runs hadden anders dubbele kaarten opgeleverd.
+      const delRes = await fetch(restUrl('tcg_set_kaarten', `?set_naam=eq.${encodeURIComponent(row.set_naam)}`), { method: 'DELETE', headers: authHeaders() });
+      if (!delRes.ok) { console.error(`Leegmaken van ${row.set_naam} mislukt:`, await delRes.text()); continue; }
       const insRes = await fetch(restUrl('tcg_set_kaarten'), {
         method: 'POST', headers: authHeaders({ Prefer: 'return=minimal' }), body: JSON.stringify(newRows)
       });
