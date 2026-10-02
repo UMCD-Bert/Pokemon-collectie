@@ -3,7 +3,7 @@
 Eén zelfstandig HTML-bestand (`index.html`, lokaal soms ook aangeleverd als
 `supabase_pokemon_collectie.html`), gehost op GitHub Pages, met Supabase als
 backend (gratis tier, publishable key hardcoded in het bestand). Gedeeld door
-twee gebruikers (Bert & Ellen). Huidige versie: **v3.26**. Sinds v3.17 een echte PWA (`manifest.json`,
+twee gebruikers (Bert & Ellen). Huidige versie: **v3.27**. Sinds v3.17 een echte PWA (`manifest.json`,
 `service-worker.js`, `icons/`, Pokéball-icoon uit `icon-source.svg`); updates
 comen vanzelf door (service worker haalt netwerk-eerst met `cache: 'no-store'`),
 dus de snelkoppeling hoeft na een deploy niet opnieuw toegevoegd te worden.
@@ -74,6 +74,12 @@ en set-opzoeking lopen allemaal via **TCGdex** (gratis, geen API-key).
   `instanceLineValue`). "Markeer als verkocht" verwijdert de gekoppelde
   exemplaren definitief (voorraad bijgewerkt), de kavel blijft als historie.
   Exemplaren in een kavel tonen een 📦-badge in Serie/Set en het detailvenster.
+- **Printlijsten** (Pokémon-tab): "Plaatsvervangende kaartjes", "Mancolijst" en
+  (v3.27) "🔁 Vervanglijst" — Pokémon in bezit waarvan het duurste exemplaar
+  (per stuk) strikt onder een in te vullen bedrag zit (standaard € 1,00, onthouden
+  in localStorage). Exemplaren in een open verkoopkavel tellen niet mee; een
+  Pokémon met een exemplaar zonder prijs wordt overgeslagen. Hergebruikt de
+  manco-print (`manco-mode` + `vervang-mode`, `printIdFilter` in `applyFilter`).
 - **Dashboard** — hub-scherm: tegel-grid, een tegel verbergt het overzicht en
   toont alleen die sectie + "Terug"-knop. Instellingen (⚙️) bevat de
   prijsupdate-statusregel en de checklist-weergave-toggle.
@@ -220,3 +226,4 @@ repo, dit CLAUDE.md hoeft ze niet te reproduceren.
   breedte 700px, kavel hernoemen.
 - v3.25: set-kiezers tonen altijd alle `aangekondigde_sets`.
 - v3.26: regionale vormen en Nidoran koppelen op naam aan de juiste Pokémon.
+- v3.27: Vervanglijst (printlijst kaarten met prioriteit om te vervangen).

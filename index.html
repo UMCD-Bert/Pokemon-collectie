@@ -78,6 +78,11 @@
   }
   #printNowBtn { background: var(--color-accent-blue); }
   #printMancoBtn { background: #2a9d8f; }
+  #printVervangBtn { background: #e76f51; }
+  #vervangDrempel { width: 56px; padding: 8px 6px; border: 1px solid #ccc; border-radius: 8px; font-size: 13px; text-align: center; }
+  #vervangWrap { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #555; }
+  #vervangInfo { font-size: 11px; color: #888; }
+  .row-vervang-value { display: none; color: #666; }
   #viewToggleBtn { background: #2a9d8f; }
   #settingsBtn {
     background: var(--color-primary); position: fixed; top: 10px; right: 10px; z-index: 50;
@@ -603,6 +608,7 @@
 
     body.manco-mode .check-row .row-value-readonly,
     body.manco-mode .check-row .row-num { display: none !important; }
+    body.vervang-mode .check-row .row-vervang-value { display: inline; margin-left: 2mm; }
     body.manco-mode #checklistTable {
       display: grid; grid-auto-flow: column;
       grid-template-columns: repeat(var(--manco-cols, 7), 1fr);
@@ -1073,6 +1079,7 @@
 <div class="toolbar toolbar-actions">
   <button type="button" id="printNowBtn">🖨️ Plaatsvervangende kaartjes</button>
   <button type="button" id="printMancoBtn">📋 Mancolijst</button>
+  <span id="vervangWrap"><button type="button" id="printVervangBtn">🔁 Vervanglijst</button> onder &euro; <input type="text" id="vervangDrempel" inputmode="decimal" value="1,00"><span id="vervangInfo"></span></span>
 </div>
 
 <div id="appVersion"></div>
@@ -1744,7 +1751,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '3.26';
+  const APP_VERSION = '3.27';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -3109,6 +3116,7 @@
           <input type="checkbox" ${owned ? 'checked' : ''}>
           <span class="row-num">#${num.padStart(4,'0')}</span>
           <span class="row-name">${naam}</span>
+          <span class="row-vervang-value"></span>
           <span class="row-value-readonly" id="checkValue-${rec.id}">&euro; 0,00</span>
         </div>`;
     }).join('');
@@ -3167,6 +3175,8 @@
     gaugeArc.setAttribute('stroke-dasharray', `${pct} 100`);
   }
 
+  let printIdFilter = null; // tijdelijk gevuld tijdens het printen van de vervanglijst
+
   function applyFilter() {
     const q = search.value.toLowerCase();
     const mode = filterOwned.value;
@@ -3180,7 +3190,7 @@
       let matchesOwned = true;
       if (mode === 'bezit') matchesOwned = owned;
       if (mode === 'mis') matchesOwned = !owned;
-      const show = matchesText && matchesOwned;
+      const show = matchesText && matchesOwned && (!printIdFilter || printIdFilter.has(String(el.dataset.id)));
       el.classList.toggle('hidden', !show);
       if (show) visible++;
     });
@@ -3243,6 +3253,68 @@
     const restore = () => {
       document.body.classList.remove('manco-mode');
       ['--manco-cols','--manco-rows','--manco-font','--manco-checkbox','--manco-rowheight','--manco-height'].forEach(p => document.documentElement.style.removeProperty(p));
+      search.value = prevSearch; filterOwned.value = prevFilter; sortMode.value = prevSort; setView(prevView);
+      window.removeEventListener('afterprint', restore);
+    };
+    window.addEventListener('afterprint', restore);
+    window.print();
+  });
+
+  // Vervanglijst: Pokémon in bezit waarvan het duurste exemplaar (per stuk)
+  // onder de drempel zit. Exemplaren in een open verkoopkavel tellen niet mee
+  // (die gaan weg). Pokémon met een exemplaar zonder prijs worden overgeslagen:
+  // dan valt niet te zeggen of het duurste exemplaar onder de drempel zit.
+  const VERVANG_DREMPEL_KEY = 'pokemon_vervang_drempel_v1';
+  const vervangDrempelInput = document.getElementById('vervangDrempel');
+  try { const saved = localStorage.getItem(VERVANG_DREMPEL_KEY); if (saved) vervangDrempelInput.value = saved; } catch (e) {}
+
+  function computeVervangRows(drempel) {
+    const result = new Map();
+    let zonderPrijs = 0;
+    records.forEach(rec => {
+      const list = instancesFor('pokemon', rec.id).filter(i => !i.verkoop_bundel_id);
+      if (list.length === 0) return;
+      let max = 0, ontbreekt = false;
+      list.forEach(i => {
+        if (i.waarde === null || i.waarde === undefined || i.waarde === '') ontbreekt = true;
+        else max = Math.max(max, parseFloat(i.waarde) || 0);
+      });
+      if (ontbreekt) { zonderPrijs++; return; }
+      if (max < drempel) result.set(String(rec.id), max);
+    });
+    return { result, zonderPrijs };
+  }
+
+  document.getElementById('printVervangBtn').addEventListener('click', () => {
+    const drempel = parseFloat(String(vervangDrempelInput.value).trim().replace(',', '.'));
+    const infoEl = document.getElementById('vervangInfo');
+    if (isNaN(drempel) || drempel <= 0) { alert('Vul een bedrag in, bijvoorbeeld 1,00.'); return; }
+    try { localStorage.setItem(VERVANG_DREMPEL_KEY, vervangDrempelInput.value.trim()); } catch (e) {}
+    const { result, zonderPrijs } = computeVervangRows(drempel);
+    infoEl.textContent = zonderPrijs > 0 ? `${zonderPrijs} zonder prijs overgeslagen` : '';
+    if (result.size === 0) { alert(`Geen Pokémon in bezit met een duurste exemplaar onder € ${fmtEuro(drempel)}.`); return; }
+
+    const prevView = currentView, prevFilter = filterOwned.value, prevSearch = search.value, prevSort = sortMode.value;
+    printIdFilter = new Set(result.keys());
+    search.value = ''; filterOwned.value = 'bezit'; sortMode.value = 'naam'; setView('checklist');
+    checklistTable.querySelectorAll('.check-row').forEach(row => {
+      const waarde = result.get(String(row.dataset.id));
+      row.querySelector('.row-vervang-value').textContent = waarde !== undefined ? `€ ${fmtEuro(waarde)}` : '';
+    });
+    const visibleCount = checklistTable.querySelectorAll('.check-row:not(.hidden)').length;
+    const layout = computeMancoLayout(Math.max(visibleCount, 1));
+    document.documentElement.style.setProperty('--manco-cols', layout.cols);
+    document.documentElement.style.setProperty('--manco-rows', layout.rows);
+    document.documentElement.style.setProperty('--manco-font', layout.fontMM.toFixed(2) + 'mm');
+    document.documentElement.style.setProperty('--manco-checkbox', layout.checkboxMM.toFixed(2) + 'mm');
+    document.documentElement.style.setProperty('--manco-rowheight', layout.rowHeightMM.toFixed(2) + 'mm');
+    document.documentElement.style.setProperty('--manco-height', layout.totalHeightMM.toFixed(2) + 'mm');
+    document.body.classList.add('manco-mode', 'vervang-mode');
+    const restore = () => {
+      document.body.classList.remove('manco-mode', 'vervang-mode');
+      ['--manco-cols','--manco-rows','--manco-font','--manco-checkbox','--manco-rowheight','--manco-height'].forEach(p => document.documentElement.style.removeProperty(p));
+      printIdFilter = null;
+      document.querySelectorAll('.row-vervang-value').forEach(el => { el.textContent = ''; });
       search.value = prevSearch; filterOwned.value = prevFilter; sortMode.value = prevSort; setView(prevView);
       window.removeEventListener('afterprint', restore);
     };
