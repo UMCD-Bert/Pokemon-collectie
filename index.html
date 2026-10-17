@@ -1751,7 +1751,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '3.27';
+  const APP_VERSION = '3.28';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -2535,21 +2535,21 @@
       return diff !== 0 ? diff : soSortKey(a) - soSortKey(b);
     });
     grid3.innerHTML = rows3.map(row => {
-      const thumbHtml = row.afbeelding ? `<img src="${row.afbeelding}/low.png" alt="">` : `<span class="placeholder-mark">🎴</span>`;
+      const thumbHtml = row.afbeelding ? `<img src="${cardImgLow(row.afbeelding)}" alt="">` : `<span class="placeholder-mark">🎴</span>`;
       const checks = [];
       if (row.heeft_normaal || findInstanceForSetCard(row, 'Normaal')) {
         const eff = effectivePriceForRow(row, 'Normaal');
-        const prijsHtml = eff.waarde != null ? priceFreshnessDotHtml(eff.datum) + fmtEuro(eff.waarde) : '';
+        const prijsHtml = eff.waarde != null ? priceFreshnessDotHtml(eff.datum, eff.bron) + fmtEuro(eff.waarde) : '';
         checks.push(setCheckRowHtml(row, 'Normaal', 'normaal', prijsHtml));
       }
       if (row.heeft_holo || findInstanceForSetCard(row, 'Holo')) {
         const eff = effectivePriceForRow(row, 'Holo');
-        const prijsHtml = eff.waarde != null ? priceFreshnessDotHtml(eff.datum) + fmtEuro(eff.waarde) : '';
+        const prijsHtml = eff.waarde != null ? priceFreshnessDotHtml(eff.datum, eff.bron) + fmtEuro(eff.waarde) : '';
         checks.push(setCheckRowHtml(row, 'Holo', 'holo', prijsHtml));
       }
       if (row.heeft_reverse || findInstanceForSetCard(row, 'Reverse Holo')) {
         const eff = effectivePriceForRow(row, 'Reverse Holo');
-        const prijsHtml = eff.waarde != null ? priceFreshnessDotHtml(eff.datum) + fmtEuro(eff.waarde) : '';
+        const prijsHtml = eff.waarde != null ? priceFreshnessDotHtml(eff.datum, eff.bron) + fmtEuro(eff.waarde) : '';
         checks.push(setCheckRowHtml(row, 'Reverse Holo', 'reverse', prijsHtml));
       }
       return `
@@ -2579,7 +2579,7 @@
         const rows = plRow('Naam', row.naam || '(onbekend)') +
           plRow('Set', [row.serie ? row.serie.replace(/ Series$/, '') : null, row.set_naam].filter(Boolean).join(' · ')) +
           plRow('Nummer', '#' + row.kaartnummer);
-        openPhotoLightbox(row.afbeelding + '/high.png', rows);
+        openPhotoLightbox(cardImgHigh(row.afbeelding), rows);
       });
     });
     wireStepperButtons(grid3);
@@ -4556,7 +4556,20 @@
 
   async function fetchTcgdexCardImage(setName, kaartnummer) {
     const card = await fetchTcgdexCard(setName, kaartnummer);
-    return (card && card.image) ? `${card.image}/high.png` : null;
+    if (card && card.image) return `${card.image}/high.png`;
+    return await fetchCachedSetCardImage(setName, kaartnummer);
+  }
+
+  // Terugval als TCGdex geen foto heeft: de (door de dagelijkse job aangevulde)
+  // foto uit de eigen setcache.
+  async function fetchCachedSetCardImage(setName, kaartnummer) {
+    try {
+      const res = await fetch(setKaartenRestUrl(`?set_naam=eq.${encodeURIComponent(setName)}&afbeelding=not.is.null&select=kaartnummer,afbeelding`), { headers: authHeaders(), cache: 'no-store' });
+      if (!res.ok) return null;
+      const target = normalizeKaartnummer(kaartnummer);
+      const hit = (await res.json()).find(r => normalizeKaartnummer(r.kaartnummer) === target);
+      return hit ? cardImgHigh(hit.afbeelding) : null;
+    } catch (err) { return null; }
   }
 
   // Probeert automatisch een foto op te halen voor een groep (serie+set+
@@ -4782,8 +4795,28 @@
     if (days < 183) return '#f5a623'; // oranje
     return '#e63946';                 // rood
   }
-  function priceFreshnessDotHtml(updatedAt) {
-    return `<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${priceFreshnessColor(updatedAt)};margin-right:5px;vertical-align:middle;" title="${priceFreshnessLabel(updatedAt)}"></span>`;
+  function priceFreshnessDotHtml(updatedAt, bron) {
+    const tip = priceFreshnessLabel(updatedAt) + (bron ? ` \u00b7 bron: ${bron}` : '');
+    return `<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${priceFreshnessColor(updatedAt)};margin-right:5px;vertical-align:middle;" title="${tip}"></span>`;
+  }
+
+  // Foto's in de setcache komen uit twee bronnen: TCGdex (basis-URL, daar hoort
+  // /low.png of /high.png achter) en pokemontcg.io (volledige bestands-URL, groot
+  // = _hires). Altijd via deze helpers tonen, nooit zelf een suffix plakken.
+  function isFullImageUrl(u) { return /\.(png|jpe?g|webp)(\?.*)?$/i.test(u || ''); }
+  function cardImgLow(u) { return isFullImageUrl(u) ? u : `${u}/low.png`; }
+  function cardImgHigh(u) { return isFullImageUrl(u) ? u.replace(/(\.[a-z]+)(\?.*)?$/i, '_hires$1$2') : `${u}/high.png`; }
+
+  // Een door PokéWallet aangevulde prijs mag niet door een lege TCGdex-uitkomst
+  // gewist worden; en prijs_bron volgt altijd de bron van de laatst geschreven prijs.
+  function guardPokewalletPrices(row, patch, before) {
+    const fields = ['prijs_normaal', 'prijs_holo', 'prijs_reverse'];
+    if (row.prijs_bron === 'pokewallet') {
+      fields.forEach(f => { if (f in patch && patch[f] == null) { delete patch[f]; row[f] = before[f]; } });
+    }
+    const any = fields.some(f => patch[f] != null);
+    if (any) { patch.prijs_bron = 'tcgdex'; row.prijs_bron = 'tcgdex'; }
+    else if (row.prijs_bron === 'pokewallet') { delete patch.prijs_updated; row.prijs_updated = before.prijs_updated; }
   }
   // Voor een totaal over meerdere exemplaren: de "zwakste schakel" (oudste
   // brondatum) bepaalt de kleur, zodat je altijd weet dat er íéts verouderds
@@ -5717,9 +5750,9 @@
   function effectivePriceForRow(row, versie) {
     const inst = findInstanceForSetCard(row, versie);
     if (inst && inst.waarde !== null && inst.waarde !== undefined && inst.waarde !== '') {
-      return { waarde: parseFloat(inst.waarde), datum: inst.prijs_bron_datum || row.prijs_updated };
+      return { waarde: parseFloat(inst.waarde), datum: inst.prijs_bron_datum || row.prijs_updated, bron: inst.prijs_handmatig_datum ? 'handmatig' : 'eigen exemplaar (Cardmarket)' };
     }
-    return { waarde: storedRowPrice(row, versie), datum: row.prijs_updated };
+    return { waarde: storedRowPrice(row, versie), datum: row.prijs_updated, bron: ({ tcgdex: 'TCGdex (Cardmarket)', pokewallet: 'PokéWallet (Cardmarket)' })[row.prijs_bron] || null };
   }
 
   async function onAdjustAantal(instId, delta) {
@@ -5910,21 +5943,21 @@
     const rows = computeSoVisibleRows();
     updateSoCountStatus();
     grid2.innerHTML = rows.map(row => {
-      const thumbHtml = row.afbeelding ? `<img src="${row.afbeelding}/low.png" alt="">` : `<span class="placeholder-mark">🎴</span>`;
+      const thumbHtml = row.afbeelding ? `<img src="${cardImgLow(row.afbeelding)}" alt="">` : `<span class="placeholder-mark">🎴</span>`;
       const checks = [];
       if (row.heeft_normaal || findInstanceForSetCard(row, 'Normaal')) {
         const eff = effectivePriceForRow(row, 'Normaal');
-        const prijsHtml = eff.waarde != null ? priceFreshnessDotHtml(eff.datum) + fmtEuro(eff.waarde) : '';
+        const prijsHtml = eff.waarde != null ? priceFreshnessDotHtml(eff.datum, eff.bron) + fmtEuro(eff.waarde) : '';
         checks.push(setCheckRowHtml(row, 'Normaal', 'normaal', prijsHtml));
       }
       if (row.heeft_holo || findInstanceForSetCard(row, 'Holo')) {
         const eff = effectivePriceForRow(row, 'Holo');
-        const prijsHtml = eff.waarde != null ? priceFreshnessDotHtml(eff.datum) + fmtEuro(eff.waarde) : '';
+        const prijsHtml = eff.waarde != null ? priceFreshnessDotHtml(eff.datum, eff.bron) + fmtEuro(eff.waarde) : '';
         checks.push(setCheckRowHtml(row, 'Holo', 'holo', prijsHtml));
       }
       if (row.heeft_reverse || findInstanceForSetCard(row, 'Reverse Holo')) {
         const eff = effectivePriceForRow(row, 'Reverse Holo');
-        const prijsHtml = eff.waarde != null ? priceFreshnessDotHtml(eff.datum) + fmtEuro(eff.waarde) : '';
+        const prijsHtml = eff.waarde != null ? priceFreshnessDotHtml(eff.datum, eff.bron) + fmtEuro(eff.waarde) : '';
         checks.push(setCheckRowHtml(row, 'Reverse Holo', 'reverse', prijsHtml));
       }
       return `
@@ -5959,7 +5992,7 @@
   let soCardModalRow = null;
   function renderSoCardModalPhoto(row) {
     const photoEl = document.getElementById('soCardModalPhoto');
-    photoEl.innerHTML = row.afbeelding ? `<img src="${row.afbeelding}/high.png" alt="">` : `<span class="placeholder-mark">🎴</span>`;
+    photoEl.innerHTML = row.afbeelding ? `<img src="${cardImgHigh(row.afbeelding)}" alt="">` : `<span class="placeholder-mark">🎴</span>`;
   }
   function openSoCardModal(row) {
     soCardModalRow = row;
@@ -6013,7 +6046,8 @@
       }
       const nu = new Date().toISOString();
       const patch = { prijs_updated: nu };
-      if (card.image) { patch.afbeelding = card.image; row.afbeelding = card.image; }
+      const before = { prijs_normaal: row.prijs_normaal, prijs_holo: row.prijs_holo, prijs_reverse: row.prijs_reverse, prijs_updated: row.prijs_updated };
+      if (card.image) { patch.afbeelding = card.image; patch.afbeelding_bron = 'tcgdex'; row.afbeelding = card.image; row.afbeelding_bron = 'tcgdex'; }
       const cm = card.pricing ? card.pricing.cardmarket : null;
       const updatedAt = cm ? cm.updated : null;
       if (row.heeft_normaal || findInstanceForSetCard(row, 'Normaal')) {
@@ -6028,7 +6062,8 @@
         const p = pickTcgdexPrice(cm, 'Reverse Holo'); patch.prijs_reverse = p; row.prijs_reverse = p;
         await applyPriceToInstanceIfEligible(findInstanceForSetCard(row, 'Reverse Holo'), p, updatedAt);
       }
-      row.prijs_updated = nu;
+      guardPokewalletPrices(row, patch, before);
+      if (patch.prijs_updated) row.prijs_updated = nu;
       const res = await fetch(setKaartenRestUrl(`?id=eq.${row.id}`), {
         method: 'PATCH',
         cache: 'no-store',
@@ -6087,6 +6122,7 @@
           kaartnummer: card.localId,
           naam: card.name,
           afbeelding: card.image || null,
+          afbeelding_bron: card.image ? 'tcgdex' : null,
           categorie,
           dexid: (card.dexId && card.dexId[0]) || null,
           heeft_normaal: !!(card.variants && (card.variants.normal || card.variants.firstEdition || card.variants.wPromo)),
@@ -6099,6 +6135,20 @@
       }
       if (onProgress) onProgress(i + 1, briefCards.length);
     }
+
+    // Foto's uit een andere bron (pokemontcg.io) voor kaarten die TCGdex niet heeft,
+    // niet kwijtraken bij opnieuw ophalen.
+    try {
+      const keepRes = await fetch(setKaartenRestUrl(`?set_naam=eq.${encodeURIComponent(setNaam)}&afbeelding_bron=eq.pokemontcg.io&select=kaartnummer,afbeelding,afbeelding_bron`), { headers: authHeaders(), cache: 'no-store' });
+      if (keepRes.ok) {
+        const keep = new Map((await keepRes.json()).map(r => [normalizeKaartnummer(r.kaartnummer), r]));
+        newRows.forEach(r => {
+          if (r.afbeelding) return;
+          const k = keep.get(normalizeKaartnummer(r.kaartnummer));
+          if (k) { r.afbeelding = k.afbeelding; r.afbeelding_bron = k.afbeelding_bron; }
+        });
+      }
+    } catch (err) { /* bewaren is een extraatje; ophalen gaat gewoon door */ }
 
     try {
       const delRes = await fetch(setKaartenRestUrl(`?set_naam=eq.${encodeURIComponent(setNaam)}`), { method: 'DELETE', headers: authHeaders(), cache: 'no-store' });
@@ -6316,6 +6366,7 @@
         const updatedAt = cm ? cm.updated : null;
         const nu = new Date().toISOString();
         const patch = { prijs_updated: nu };
+        const before = { prijs_normaal: row.prijs_normaal, prijs_holo: row.prijs_holo, prijs_reverse: row.prijs_reverse, prijs_updated: row.prijs_updated };
         if (row.heeft_normaal || findInstanceForSetCard(row, 'Normaal')) {
           const p = pickTcgdexPrice(cm, 'Normaal');
           patch.prijs_normaal = p;
@@ -6323,7 +6374,7 @@
           await applyPriceToInstanceIfEligible(findInstanceForSetCard(row, 'Normaal'), p, updatedAt);
           const eff = effectivePriceForRow(row, 'Normaal');
           const el = document.querySelector(`[data-price-row="${row.id}"][data-variant="normaal"]`);
-          if (el) el.innerHTML = eff.waarde != null ? priceFreshnessDotHtml(eff.datum) + fmtEuro(eff.waarde) : '(onbekend)';
+          if (el) el.innerHTML = eff.waarde != null ? priceFreshnessDotHtml(eff.datum, eff.bron) + fmtEuro(eff.waarde) : '(onbekend)';
         }
         if (row.heeft_holo || findInstanceForSetCard(row, 'Holo')) {
           const p = pickTcgdexPrice(cm, 'Holo');
@@ -6332,7 +6383,7 @@
           await applyPriceToInstanceIfEligible(findInstanceForSetCard(row, 'Holo'), p, updatedAt);
           const eff = effectivePriceForRow(row, 'Holo');
           const el = document.querySelector(`[data-price-row="${row.id}"][data-variant="holo"]`);
-          if (el) el.innerHTML = eff.waarde != null ? priceFreshnessDotHtml(eff.datum) + fmtEuro(eff.waarde) : '(onbekend)';
+          if (el) el.innerHTML = eff.waarde != null ? priceFreshnessDotHtml(eff.datum, eff.bron) + fmtEuro(eff.waarde) : '(onbekend)';
         }
         if (row.heeft_reverse || findInstanceForSetCard(row, 'Reverse Holo')) {
           // TCGdex kent geen apart "reverse"-prijsveld — zelfde holo-prijs als benadering.
@@ -6342,9 +6393,10 @@
           await applyPriceToInstanceIfEligible(findInstanceForSetCard(row, 'Reverse Holo'), p, updatedAt);
           const eff = effectivePriceForRow(row, 'Reverse Holo');
           const el = document.querySelector(`[data-price-row="${row.id}"][data-variant="reverse"]`);
-          if (el) el.innerHTML = eff.waarde != null ? priceFreshnessDotHtml(eff.datum) + fmtEuro(eff.waarde) : '(onbekend)';
+          if (el) el.innerHTML = eff.waarde != null ? priceFreshnessDotHtml(eff.datum, eff.bron) + fmtEuro(eff.waarde) : '(onbekend)';
         }
-        row.prijs_updated = nu;
+        guardPokewalletPrices(row, patch, before);
+        if (patch.prijs_updated) row.prijs_updated = nu;
         await fetch(setKaartenRestUrl(`?id=eq.${row.id}`), {
           method: 'PATCH',
           cache: 'no-store',

@@ -3,7 +3,7 @@
 Eén zelfstandig HTML-bestand (`index.html`, lokaal soms ook aangeleverd als
 `supabase_pokemon_collectie.html`), gehost op GitHub Pages, met Supabase als
 backend (gratis tier, publishable key hardcoded in het bestand). Gedeeld door
-twee gebruikers (Bert & Ellen). Huidige versie: **v3.27**. Sinds v3.17 een echte PWA (`manifest.json`,
+twee gebruikers (Bert & Ellen). Huidige versie: **v3.28**. Sinds v3.17 een echte PWA (`manifest.json`,
 `service-worker.js`, `icons/`, Pokéball-icoon uit `icon-source.svg`); updates
 comen vanzelf door (service worker haalt netwerk-eerst met `cache: 'no-store'`),
 dus de snelkoppeling hoeft na een deploy niet opnieuw toegevoegd te worden.
@@ -115,6 +115,13 @@ Cardmarket-zoekresultaat) · ⚠️ Verdachte prijzen.
   toevoegen. Let op: TCGdex' setlijst bevat geen serie-info, dus de dynamische
   ontdekking in de app vult niets aan.
 - `verkoop_bundels` — zie het tabblad Verkoop.
+- `prijs_historie` (v3.28) — prijsverloop per bezeten druk (set_naam, genormaliseerd
+  kaartnummer, versie, prijs, bron, gemeten_op). Door de dagelijkse job gevuld:
+  hooguit wekelijks per druk, of eerder bij een sprong (>= 25% en >= € 0,10), om de
+  gratis Supabase-opslag te sparen. Grafiek in de UI volgt in fase 2.
+- `tcg_set_kaarten.prijs_bron` (`tcgdex` / `pokewallet` / `pw-geen` = PokéWallet had
+  niets, 14 dagen niet opnieuw proberen) en `afbeelding_bron` (`tcgdex` /
+  `pokemontcg.io`).
 
 ## Belangrijke architectuurbeslissing: prijzen (sinds v3.15)
 
@@ -147,6 +154,27 @@ niet-handmatig-overschreven exemplaren; respecteert `prijs_handmatig_datum`
 volledig. Schrijft naar `prijs_update_log`; status zichtbaar in het
 instellingenpaneel. Draait succesvol — deze twee bestanden staan al in de
 repo, dit CLAUDE.md hoeft ze niet te reproduceren.
+
+### Fotobronnen en prijsbronnen (v3.28)
+
+- **Foto's:** TCGdex-URL's zijn een basis-URL (app plakt `/low.png` of `/high.png`
+  erachter); foto's die de job uit **pokemontcg.io** aanvult zijn volledige
+  bestands-URL's (groot = `_hires`). **Toon foto's altijd via `cardImgLow()` /
+  `cardImgHigh()`**, nooit zelf een suffix plakken. "Deze set opnieuw ophalen"
+  bewaart pokemontcg.io-foto's voor kaarten die TCGdex niet heeft.
+  pokemontcg.io is flaky (tijdelijke 500/502) — de job probeert opnieuw en slaat
+  een set anders over tot de volgende run. **Prijzen uit pokemontcg.io niet gebruiken**
+  (lopen maanden achter, gebruiker wil dat expliciet niet).
+- **Prijzen:** TCGdex blijft primair. **PokéWallet** (gratis key, Cardmarket-EUR,
+  zelfde onderliggende data) vult alleen kaarten aan waar TCGdex niets heeft, via
+  `POKEWALLET_KEY` (GitHub-secret + `~/.config/pokewallet.key` lokaal). Gratis plan:
+  100 verzoeken/uur, 1000/dag → de job gebruikt max 85 per run. Setnamen wijken af
+  (`PW_SET_OVERRIDES`). De app-knoppen "Ververs deze kaart"/"Prijzen verversen"
+  gebruiken alleen TCGdex en wissen een PokéWallet-prijs nooit (`guardPokewalletPrices`);
+  PokéWallet loopt alleen via de nachtelijke job (de key mag niet in de publieke app).
+- **Job lokaal testen:** `DRY_RUN=1 JOB_PHASES=photos,pwprices,history node
+  scripts/update-prices.mjs` met `SUPABASE_URL`/`SUPABASE_KEY` (+ `POKEWALLET_KEY`);
+  fasen: `sets,tcgdex,photos,pwprices,instances,history`. De `tcgdex`-fase duurt ~2,5 uur.
 
 ## Vaste technische lessen (opgelost, niet opnieuw laten gebeuren)
 
@@ -227,3 +255,5 @@ repo, dit CLAUDE.md hoeft ze niet te reproduceren.
 - v3.25: set-kiezers tonen altijd alle `aangekondigde_sets`.
 - v3.26: regionale vormen en Nidoran koppelen op naam aan de juiste Pokémon.
 - v3.27: Vervanglijst (printlijst kaarten met prioriteit om te vervangen).
+- v3.28: fase 1 data — foto's uit pokemontcg.io, PokéWallet-prijsterugval, prijsbron in de
+  tooltip, prijsverloop (`prijs_historie`).

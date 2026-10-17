@@ -17,4 +17,5 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          POKEWALLET_KEY: ${{ secrets.POKEWALLET_KEY }}
         run: node scripts/update-prices.mjs
