@@ -5,7 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#eef1f4">
+<meta name="theme-color" content="#eef1f4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1318" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light dark">
 
 <title>Pokemon Collectie (Supabase)</title>
 <style>
@@ -1021,6 +1023,7 @@
   @media print { #moreMenu, #tabBar { display: none !important; } }
   @media (max-width: 700px) {
     :root { --nav-h: 60px; }
+    body { padding-top: max(10px, env(safe-area-inset-top, 0px)); padding-left: max(10px, env(safe-area-inset-left, 0px)); padding-right: max(10px, env(safe-area-inset-right, 0px)); }
     body { padding-bottom: calc(var(--nav-h) + 16px + env(safe-area-inset-bottom, 0px)); }
     #tabBar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 900; margin: 0; gap: 0; flex-wrap: nowrap; justify-content: space-around;
       background: #fff; border-top: 1px solid #d5dae0; padding: 4px 2px calc(4px + env(safe-area-inset-bottom, 0px)); box-shadow: 0 -2px 8px rgba(0,0,0,0.08); }
@@ -1052,6 +1055,240 @@
   .verkoop-thumb-ph { display: flex; align-items: center; justify-content: center; color: #bbb; font-size: 16px; }
   .danger-zone { margin-top: 28px; padding-top: 8px; border-top: 1px dashed #d9a0a0; }
   .danger-zone summary { cursor: pointer; font-weight: 600; color: var(--color-danger-dark); padding: 8px 0; }
+
+  /* ---------- Aanraakdoelen, snelheid ---------- */
+  .card, #extraGrid .card { content-visibility: auto; contain-intrinsic-size: auto 210px; }
+  .so-card { content-visibility: auto; contain-intrinsic-size: auto 330px; }
+  @media print { .card, .so-card { content-visibility: visible; } }
+  @media screen and (max-width: 700px), screen and (pointer: coarse) {
+    .card-footer .card-count { font-size: 12px; }
+    .img-edit-btn, .img-reset-btn { font-size: 13px; width: 28px; height: 28px; }
+  }
+  @media (pointer: coarse), (max-width: 700px) {
+    .so-stepper { gap: 8px; }
+    .so-stepper-btn { width: 40px; height: 40px; font-size: 18px; }
+    .modal-close, #detailCloseBtn, #settingsClose, .sealed-row-delete { min-width: 44px; min-height: 44px; }
+    #settingsBtn { width: 44px; height: 44px; font-size: 18px; }
+    .dropdown-btn, .dropdown-item { min-height: 44px; }
+    input[type="checkbox"], .check-row input[type="checkbox"] { width: 22px; height: 22px; }
+    .so-check { padding: 6px 0; }
+    .crop-tool-btn, .inst-pokedex-toggle, .inst-price-refresh { min-height: 44px; min-width: 44px; }
+    #vervangDrempel { min-height: 40px; }
+  }
+  /* Tekst nooit kleiner dan 12px op telefoon/touch (automatisch afgeleid uit de basisregels) */
+  @media (pointer: coarse), (max-width: 700px) {
+    #vervangInfo,
+    #appVersion,
+    .so-nummer,
+    .so-dexid,
+    .so-prices,
+    .sealed-row-setinfo,
+    .sealed-row-prices,
+    .so-check,
+    .ci-empty,
+    .ci-group-title,
+    .ci-row,
+    .dropdown-btn .caret,
+    .dash-row-meta,
+    .dash-counts-grid .dash-count-label,
+    .ap-setlabel,
+    .extra-set,
+    .extra-type-badge,
+    .field-label-hint,
+    #iKaartnummerStatus,
+    #iPriceFetchStatus,
+    #iCardLookupStatus,
+    .cardlookup-item,
+    .group-thumb-edit-btn,
+    .instance-group-total,
+    .instance-row .inst-sub,
+    .inst-price-refresh,
+    .dash-swap-info .dash-swap-detail,
+    .dash-swap-actions button,
+    #dashPriceUpdateStatus,
+    #soStatus { font-size: 12px; }
+  }
+
+  /* ---------- Donkere modus (volgt de systeeminstelling; neutrale kleuren automatisch omgekeerd) ---------- */
+  @media (prefers-color-scheme: dark) {
+    :root { color-scheme: dark; --color-bg-page: #0f1318; --color-bg-subtle: #1b2128; --color-text-dark: #e6ebf0; --color-text-muted: #9aa5b1; }
+    .toolbar-sep { background: #4c4c4c; }
+    input#search, input#extraSearch, input#soSearchInput, input#apSearchInput, select#filterOwned, select#sortMode { border: 1px solid #4c4c4c; }
+    #searchClearBtn, #soSearchClearBtn, #apSearchClearBtn, #extraSearchClearBtn { color: #808080; }
+    #searchClearBtn:hover, #soSearchClearBtn:hover, #apSearchClearBtn:hover, #extraSearchClearBtn:hover { color: #bfbfbf; }
+    button { color: #262626; }
+    #vervangLabel { color: #a6a6a6; }
+    #vervangDrempel { border: 1px solid #4c4c4c; }
+    #vervangInfo { color: #808080; }
+    .row-vervang-value { color: #999999; }
+    .print-filter-toggle { background: #272f37; border: 1px solid #4c4c4c; }
+    #appVersion { color: #545c65; }
+    #status, #countStatus, #imgHint, #soCountStatus { color: #999999; }
+    #cropModalInner { background: #262626; }
+    #cropCanvas { background: #333333; }
+    .crop-fine-row { color: #a6a6a6; }
+    .crop-fine-row button { border: 1px solid #4c4c4c; background: #2e2e2e; color: #999999; }
+    .crop-hint { color: #8c8c8c; }
+    .photo-toggle-btn { border: 1px solid #4c4c4c; background: #2e2e2e; color: #b3b3b3; }
+    .refresh-all-btn { color: #262626; }
+    .crop-actions button { color: #262626; }
+    #detailModalInner { background: #262626; }
+    #detailHeaderRow { color: #262626; }
+    #detailValueDoneBtn { color: #262626; }
+    #detailImgActions button { color: #262626; }
+    .detail-label { color: #a6a6a6; }
+    #detailNotitie { border: 1px solid #4c4c4c; }
+    #settingsPanel { background: #262626; }
+    .settings-h { color: #808080; }
+    #connDetails { border-top: 1px solid #333333; }
+    #settingsClose { color: #999999; }
+    #settingsPanel label { color: #b3b3b3; }
+    #settingsPanel input { border: 1px solid #4c4c4c; }
+    #settingsPanel p { color: #8c8c8c; }
+    #storageUsageSection { border-top: 1px solid #333333; }
+    #checkStorageBtn { color: #262626; }
+    #storageUsageResult { color: #b3b3b3; }
+    #bulkSyncSection { border-top: 1px solid #333333; }
+    #bulkSyncStartBtn { color: #262626; }
+    #noPriceOverviewBtn { color: #262626; }
+    #zeroValueOverviewBtn { color: #262626; }
+    #bulkSyncStatusText { color: #b3b3b3; }
+    #soFetchSetBtn, #soLoadPricesBtn, #soFetchAllBtn, #soViewLogBtn, #soFetchMissingBtn, #soFetchSerieBtn { color: #262626; }
+    #soLiveCounter { color: #bfbfbf; }
+    #soBulkToggleBtn { color: #999999; }
+    #soBulkPanel { border-top: 1px dashed #4c4c4c; }
+    #soStatusText, #soAllStatusText { color: #b3b3b3; }
+    #soStatus { color: #8c8c8c; }
+    .so-card { background: #262626; }
+    .so-thumb { background: #323232; }
+    .so-thumb .placeholder-mark { color: #4c4c4c; }
+    .so-nummer { color: #808080; }
+    .so-dexid { color: #737373; background: #323232; }
+    #sealedTotalsBar { color: #b3b3b3; }
+    #sealedStatus { color: #8c8c8c; }
+    .sealed-empty-msg { color: #8c8c8c; }
+    .sealed-row { background: #262626; }
+    .sealed-row-setinfo { color: #808080; }
+    .sealed-row-prices { color: #b3b3b3; }
+    .so-check { color: #b3b3b3; }
+    .so-stepper-btn { border: 1px solid #4c4c4c; background: #2e2e2e; color: #b3b3b3; }
+    .so-stepper-btn:hover { background: #383838; }
+    .crop-tool-btn { border: 1px solid #4c4c4c; }
+    .crop-tool-btn:hover { background: #383838; }
+    .placeholder-mark { color: #727272; }
+    .owned-toggle .box { background: #262626; border: 0.5mm solid #262626; }
+    .card-header { color: #262626; }
+    .ci-empty { color: #808080; }
+    .ci-group-title { color: #808080; }
+    .ci-row { color: #b3b3b3; }
+    .img-edit-btn { color: #262626; }
+    .img-reset-btn { color: #262626; }
+    #checklistView { background: #262626; }
+    .dropdown-btn { border: 1px solid #4c4c4c; }
+    .dropdown-menu { background: #262626; border: 1px solid #404040; }
+    .dropdown-item:hover { background: #272f37; }
+    .dropdown-item.active { color: #262626; }
+    .dropdown-empty { color: #737373; }
+    .dropdown-checkbox-item { color: #b3b3b3; border-bottom: 1px solid #333333; }
+    .check-row { border-bottom: 1px solid #333333; }
+    .check-row .row-num { color: #808080; }
+    .tab-btn { border: 1px solid #4c4c4c; }
+    .tab-btn.active { color: #262626; }
+    #dashHero { background: #262626; }
+    #pieChartLegend { color: #b3b3b3; }
+    #pieChartLegend .pie-legend-value { color: #808080; }
+    .dash-hub-label { color: #808080; }
+    .dash-tile { background: #262626; border: 1px solid #333333; }
+    .dash-section { background: #262626; }
+    .dash-row { border-bottom: 1px solid #323232; }
+    .dash-row-rank { color: #666666; }
+    .dash-row-meta { color: #808080; }
+    .dash-row-clickable:hover { background: #2c2c2c; }
+    .dash-empty { color: #737373; }
+    .dash-pager-label { color: #808080; }
+    .dash-bar-track { background: #333333; }
+    .dash-counts-grid .dash-count-label { color: #808080; }
+    .so-card-modal-photo { background: #383838; color: #595959; }
+    #allPrintsStatus { color: #8c8c8c; }
+    .ap-setlabel { color: #808080; }
+    #noPriceSummary { color: #999999; }
+    #noPriceStatusText { color: #b3b3b3; }
+    #noPriceTable th, #noPriceTable td { border-bottom: 1px solid #333333; }
+    #noPriceTable th { color: #999999; }
+    #zeroValueSummary { color: #999999; }
+    #zeroValueTable th, #zeroValueTable td { border-bottom: 1px solid #333333; }
+    #zeroValueTable th { color: #999999; }
+    #bulkPriceQueueProgress { color: #999999; }
+    #bulkPriceQueueCard { background: #2b2b2b; }
+    #bulkPriceQueueCard .bpr-details { color: #8c8c8c; }
+    #bulkPriceQueueValueInput { border: 1px solid #4c4c4c; }
+    #bulkPriceLogSummary { color: #999999; }
+    #bulkPriceLogTable th, #bulkPriceLogTable td { border-bottom: 1px solid #333333; }
+    #bulkPriceLogTable th { color: #999999; }
+    #soFetchLogSummary { color: #999999; }
+    #soFetchLogTable th, #soFetchLogTable td { border-bottom: 1px solid #333333; }
+    #soFetchLogTable th { color: #999999; }
+    #photoLightboxInfo { color: #bfbfbf; }
+    #photoLightboxInfo .pl-row { border-bottom: 1px solid #333333; }
+    #photoLightboxInfo .pl-label { color: #808080; }
+    .extra-card { background: #262626; }
+    .extra-thumb .placeholder-mark { color: #4c4c4c; }
+    .extra-set { color: #808080; }
+    .extra-type-badge { color: #a6a6a6; }
+    #extraFab { color: #262626; }
+    .modal-box { background: #262626; }
+    .field-label { color: #a6a6a6; }
+    .field-label-hint { color: #737373; }
+    #iKaartnummerStatus { color: #808080; }
+    #iPriceFetchStatus { color: #808080; }
+    #iCardLookupStatus { color: #808080; }
+    .cardlookup-item { border: 1px solid #333333; background: #2a2a2a; color: #a6a6a6; }
+    .field-input, .field-textarea { border: 1px solid #4c4c4c; }
+    .btn-primary, .btn-secondary, .btn-danger { color: #262626; }
+    #extraImgActions button { color: #262626; }
+    .add-instance-link { color: #808080; }
+    .detail-section { border-bottom: 1px solid #333333; }
+    .instance-group-photo { border-bottom: 1.5px solid #404040; }
+    .group-thumb { background: #383838; }
+    .group-thumb-inner { color: #595959; }
+    .group-thumb-edit-btn { border: 1.5px solid #262626; color: #262626; }
+    .group-thumb-zoom { background: #262626; }
+    .instance-row { background: #2c2c2c; }
+    .instance-row .inst-thumb { background: #383838; color: #595959; }
+    .instance-row .inst-title { color: #bfbfbf; }
+    .instance-row .inst-sub { color: #808080; }
+    .inst-value-pending { color: #737373; }
+    .inst-pokedex-toggle { border: 1px solid #404040; background: #262626; }
+    .placeholder-mark { color: #4c4c4c; }
+    .dash-swap-row { background: #2c2c2c; }
+    .dash-swap-info .dash-swap-detail { color: #808080; }
+    #dashPriceUpdateStatus { color: #808080; }
+    #settingsViewSection { border-top: 1px solid #333333; }
+    #settingsViewSection #viewToggleBtn { color: #262626; }
+    #instanceImgActions button { color: #262626; }
+    #iAantal { border: 1px solid #4c4c4c; }
+    .pbar { background: #2e3946; }
+    #moreMenu { background: #262626; }
+    #moreMenu button:active { background: #26313b; }
+    .verkoop-set-head { color: #a6a6a6; }
+    .verkoop-set-head span { color: #808080; }
+    .verkoop-thumb { background: #383838; }
+    .verkoop-thumb-ph { color: #595959; }
+    body { background: var(--color-bg-page); }
+    input, select, textarea { background: #1b2128; color: #e6ebf0; border-color: #3a444f; }
+    input::placeholder { color: #7d8895; }
+    .card-header, .tab-btn.active, #extraFab { background: #34495e; color: #fff; }
+    #tabBar { background: #161b21; border-top-color: #2c343d; }
+    .tab-btn.active, .tab-more.active { background: #232b34; color: #fff; }
+    #moreMenu, #settingsPanel, .modal-box, .dropdown-menu { background: #1b2128; color: #e6ebf0; }
+    #moreMenu button { color: #e6ebf0; }
+    #gaugePct, #soGaugePct { fill: #e6ebf0 !important; }
+    a { color: #7fb3e6; }
+    @media (max-width: 700px) {
+      .tab-btn, .tab-more { background: none; border: none; }
+      .tab-btn.active, .tab-more.active { background: #232b34; color: #fff; }
+    }
+  }
 </style>
 </head>
 <body>
@@ -1837,7 +2074,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '3.31';
+  const APP_VERSION = '3.33';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
   document.getElementById('settingsVersion').textContent = `Versie ${APP_VERSION}`;
 
@@ -2315,7 +2552,7 @@
     const fallbackUrl = defaultSpriteUrl(num);
     const holoClass = imgUrl ? holoClassFor('pokemon', rec.id) : '';
     const artBlock = imgUrl
-      ? `<img src="${imgUrl}" alt="${naam}" onerror="this.onerror=null; this.src='${fallbackUrl}'; this.onerror=function(){this.replaceWith(Object.assign(document.createElement('div'),{className:'placeholder-mark',textContent:'?'}))};">`
+      ? `<img src="${imgUrl}" alt="${naam}" loading="lazy" decoding="async" onerror="this.onerror=null; this.src='${fallbackUrl}'; this.onerror=function(){this.replaceWith(Object.assign(document.createElement('div'),{className:'placeholder-mark',textContent:'?'}))};">`
       : `<div class="placeholder-mark">?</div>`;
     const list = instancesFor('pokemon', rec.id);
     return `
@@ -2634,7 +2871,7 @@
       return diff !== 0 ? diff : soSortKey(a) - soSortKey(b);
     });
     grid3.innerHTML = rows3.map(row => {
-      const thumbHtml = row.afbeelding ? `<img src="${cardImgLow(row.afbeelding)}" alt="">` : `<span class="placeholder-mark">🎴</span>`;
+      const thumbHtml = row.afbeelding ? `<img src="${cardImgLow(row.afbeelding)}" alt="" loading="lazy" decoding="async">` : `<span class="placeholder-mark">🎴</span>`;
       const checks = [];
       if (row.heeft_normaal || findInstanceForSetCard(row, 'Normaal')) {
         const eff = effectivePriceForRow(row, 'Normaal');
@@ -3422,6 +3659,24 @@
     window.print();
   });
 
+  // ---------- Toegankelijkheid: labels voor knoppen/velden zonder tekst ----------
+  const ICON_LABELS = { '\u2212': 'Aantal verlagen', '+': 'Aantal verhogen', '\u00d7': 'Sluiten of verwijderen', '\u25be': 'Lijst openen', '\u25b2': 'Hoger', '\u25bc': 'Lager' };
+  function labelIconButtons(root) {
+    (root.querySelectorAll ? root : document).querySelectorAll('button:not([aria-label])').forEach(b => {
+      if (/[\p{L}\p{N}]/u.test(b.textContent)) return;
+      const label = b.getAttribute('title') || ICON_LABELS[b.textContent.trim()];
+      if (label) b.setAttribute('aria-label', label);
+    });
+    (root.querySelectorAll ? root : document).querySelectorAll('input:not([type=hidden]):not([type=checkbox]):not([aria-label]), select:not([aria-label]), textarea:not([aria-label])').forEach(el => {
+      if (el.labels && el.labels.length) return;
+      const label = el.getAttribute('placeholder') || el.getAttribute('title') || el.id;
+      if (label) el.setAttribute('aria-label', label);
+    });
+  }
+  labelIconButtons(document);
+  new MutationObserver(muts => muts.forEach(m => m.addedNodes.forEach(n => { if (n.nodeType === 1) labelIconButtons(n); })))
+    .observe(document.body, { childList: true, subtree: true });
+
   // ---------- Afdrukken-menu ----------
   const printDropdown = document.getElementById('printDropdown');
   document.getElementById('printDropdownBtn').addEventListener('click', (e) => {
@@ -3530,7 +3785,7 @@
     const list = instancesFor(EXTRA_PARENT_TYPE, item.id);
     const imgUrl = mainImageForExtra(item);
     const thumbHtml = imgUrl
-      ? `<img src="${imgUrl}" alt="${item.naam || ''}">`
+      ? `<img src="${imgUrl}" alt="${item.naam || ''}" loading="lazy" decoding="async">`
       : `<span class="placeholder-mark">🎴</span>`;
     const total = totalForInstanceList(list);
     const freshDate = oldestFreshnessDate(list);
@@ -4304,7 +4559,7 @@
       const countLabel = `${groupCount} ${groupCount === 1 ? 'exemplaar' : 'exemplaren'}`;
       const photoUrl = (group.items.find(i => i.afbeelding) || {}).afbeelding;
       const thumbHtml = (photoUrl
-        ? `<div class="group-thumb-inner"><img src="${photoUrl}" alt=""></div><div class="group-thumb-zoom"><img src="${photoUrl}" alt=""></div>`
+        ? `<div class="group-thumb-inner"><img src="${photoUrl}" alt="" loading="lazy" decoding="async"></div><div class="group-thumb-zoom"><img src="${photoUrl}" alt="" loading="lazy" decoding="async"></div>`
         : `<div class="group-thumb-inner">🎴</div>`)
         + `<button type="button" class="group-thumb-edit-btn" title="Foto voor deze druk aanpassen">📷</button>`;
       const groupFreshDate = oldestFreshnessDate(group.items);
@@ -4827,7 +5082,7 @@
     statusEl2.textContent = `${cards.length} druk${cards.length === 1 ? '' : 'ken'} gevonden — kies er een om Serie/Set/Kaartnummer automatisch in te vullen:`;
     resultsEl.innerHTML = withSetInfo.map((w, idx) => {
       const thumbHtml = w.card.image
-        ? `<img src="${w.card.image}/low.png" alt=""><div class="group-thumb-zoom"><img src="${w.card.image}/high.png" alt=""></div>`
+        ? `<img src="${w.card.image}/low.png" alt="" loading="lazy" decoding="async"><div class="group-thumb-zoom"><img src="${w.card.image}/high.png" alt="" loading="lazy" decoding="async"></div>`
         : '🎴';
       const label = `${w.setName} #${w.card.localId}`;
       return `<div class="cardlookup-item" data-idx="${idx}" title="${label}">${thumbHtml}<div class="cardlookup-label">${label}</div></div>`;
@@ -6062,7 +6317,7 @@
     const rows = computeSoVisibleRows();
     updateSoCountStatus();
     grid2.innerHTML = rows.map(row => {
-      const thumbHtml = row.afbeelding ? `<img src="${cardImgLow(row.afbeelding)}" alt="">` : `<span class="placeholder-mark">🎴</span>`;
+      const thumbHtml = row.afbeelding ? `<img src="${cardImgLow(row.afbeelding)}" alt="" loading="lazy" decoding="async">` : `<span class="placeholder-mark">🎴</span>`;
       const checks = [];
       if (row.heeft_normaal || findInstanceForSetCard(row, 'Normaal')) {
         const eff = effectivePriceForRow(row, 'Normaal');
