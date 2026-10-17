@@ -264,6 +264,13 @@ Geldt voor de webapp én de native app (`~/Documenten/Xcode/Berts Code Base/Poke
   (Vision), vergelijken met de binderkaart (`in_pokedex`) per Pokédexnummer, en aangeven wat gewisseld moet worden;
   daarna eventueel kaarten scannen om toe te voegen. Proef op pagina 1 (Pokédex #1–#16) was bemoedigend: Pokémon, set en
   taal goed herkend; Normaal/Reverse Holo alleen aan het setlogo in het plaatje of de glans te onderscheiden.
+- **Pokédex-wissels (dashboard, web én native):** de lijst ("132 te wisselen" in de native app) is nog niet vergeleken met wat
+  er echt in de fysieke binder zit. Bert pakt dit op samen met de binder-check; tot die tijd niets mee doen.
+- **Verdachte prijzen / vaste prijs:** de huidige controle vlagt alleen "Normaal > 3× Holo van dezelfde kaart (en > € 1)". Dat
+  vangt bekende gevallen niet: Fuecoco (Surging Sparks #29, echt € 0,03) en Beedrill (Skyridge #5, staat als Normaal met
+  € 104–127). Een handmatige prijs wordt bovendien overschreven zodra TCGdex een nieuwere datum heeft (dus vrijwel dagelijks).
+  Idee (nog geen besluit): kolom `kaart_exemplaren.prijs_vast` (nooit automatisch overschrijven, ook niet door de job) +
+  dashboardlijst met vaste prijzen en prijssprongen uit `prijs_historie`.
 - **Datacontroles uit de binder-proef:** Wartortle (EX Crystal Guardians #42) staat als "Holo" maar het setlogo in het
   plaatje wijst op een **Reverse Holo**; Beedrill (Skyridge #5) staat als "Normaal" terwijl dat een Holo Rare is, en de
   prijs € 104,09 lijkt die van Crystal #H4 (bekende verkeerde koppeling).
