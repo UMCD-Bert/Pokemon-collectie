@@ -1885,6 +1885,10 @@
     </div>
     <button type="button" id="iPriceFetchBtn" style="display:none;">💶 Marktprijs ophalen (Cardmarket)</button>
     <div id="iPriceFetchStatus"></div>
+    <label style="display:flex;align-items:center;gap:8px;margin:8px 0;font-size:14px;">
+      <input type="checkbox" id="iPrijsVast" style="width:20px;height:20px;">
+      <span>📌 Prijs vastzetten <small style="opacity:.7">(nooit automatisch overschrijven)</small></span>
+    </label>
     <label class="field-label">Aantal</label>
     <div id="instanceAantalRow">
       <button type="button" class="so-stepper-btn" id="iAantalMin">−</button>
@@ -2074,7 +2078,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '3.34';
+  const APP_VERSION = '3.35';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
   document.getElementById('settingsVersion').textContent = `Versie ${APP_VERSION}`;
 
@@ -4514,6 +4518,7 @@
     const pokedexBtn = inst.parent_type === 'pokemon'
       ? `<button type="button" class="inst-pokedex-toggle${inst.in_pokedex ? ' active' : ''}" data-inst-id="${inst.id}" title="${inst.in_pokedex ? 'Zit in de Pokédex-binder — klik om uit te zetten' : 'Zet dit exemplaar in de Pokédex-binder'}">${inst.in_pokedex ? '📖' : '📕'}</button>`
       : '';
+    const pinBtn = `<button type="button" class="inst-pokedex-toggle inst-pin-toggle${inst.prijs_vast ? ' active' : ''}" data-inst-id="${inst.id}" title="${inst.prijs_vast ? 'Prijs is vastgezet — wordt nooit automatisch overschreven. Klik om los te laten.' : 'Prijs vastzetten (nooit automatisch overschrijven)'}">📌</button>`;
     const bundleBadge = inst.verkoop_bundel_id ? `<span class="so-pokedex-badge" title="Zit in een verkoopkavel">&#128230;</span>` : '';
     return `
       <div class="instance-row" data-inst-id="${inst.id}">
@@ -4523,6 +4528,7 @@
         ${stepperHtmlFor(inst)}
         <div class="inst-value">${valueHtml}</div>
         ${pokedexBtn}
+        ${pinBtn}
         ${canTryPrice ? `<button type="button" class="inst-price-refresh" title="Marktprijs ophalen (Cardmarket via TCGdex)" data-inst-id="${inst.id}" ${isPending ? 'disabled' : ''}>💶 Prijs</button>` : ''}
       </div>`;
   }
@@ -4584,6 +4590,12 @@
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         toggleInPokedex(btn.dataset.instId);
+      });
+    });
+    containerEl.querySelectorAll('.inst-pin-toggle').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleInstancePriceLock(btn.dataset.instId);
       });
     });
     containerEl.querySelectorAll('.inst-price-refresh').forEach(btn => {
@@ -4654,6 +4666,7 @@
   const iKaartnummer = document.getElementById('iKaartnummer');
   const iKaartnummerStatus = document.getElementById('iKaartnummerStatus');
   const iWaarde = document.getElementById('iWaarde');
+  const iPrijsVast = document.getElementById('iPrijsVast');
   const iAantal = document.getElementById('iAantal');
   const instanceDeleteBtn = document.getElementById('instanceDeleteBtn');
   let currentInstanceParentType = null;
@@ -4684,6 +4697,25 @@
   // maximaal 1 exemplaar per Pokémon-record gemarkeerd zijn — bij het
   // aanzetten wordt dit dus eerst bij alle andere exemplaren van hetzelfde
   // record uitgezet.
+  // Vastgezette prijs: wordt nergens automatisch overschreven (detailscherm, Serie/Set,
+  // bulk-sync, dagelijkse job) — ook niet als TCGdex een nieuwere datum heeft.
+  async function toggleInstancePriceLock(instId) {
+    const inst = getInstance(instId);
+    if (!inst) return;
+    const nieuw = !inst.prijs_vast;
+    try {
+      const res = await fetch(instRestUrl(`?id=eq.${inst.id}`), {
+        method: 'PATCH', cache: 'no-store', headers: authHeaders({ 'Prefer': 'return=minimal' }),
+        body: JSON.stringify({ prijs_vast: nieuw })
+      });
+      if (!res.ok) throw new Error(await res.text());
+      inst.prijs_vast = nieuw;
+      refreshParentUI(inst.parent_type, inst.parent_id);
+    } catch (err) {
+      alert('Prijs vastzetten mislukt: ' + err.message);
+    }
+  }
+
   async function toggleInPokedex(instId) {
     const inst = getInstance(instId);
     if (!inst || inst.parent_type !== 'pokemon') return;
@@ -4748,6 +4780,7 @@
     iKaartnummerStatus.className = '';
     iWaarde.value = inst ? formatValue(inst.waarde) : '';
     iWaardeAtOpen = inst ? (parseFloat(inst.waarde) || null) : null;
+    iPrijsVast.checked = !!(inst && inst.prijs_vast);
     iAantal.value = inst ? (inst.aantal || 1) : 1;
     instanceDeleteBtn.style.display = inst ? 'inline-block' : 'none';
     // Alleen tonen bij een al opgeslagen exemplaar met set + kaartnummer bekend
@@ -4800,7 +4833,8 @@
       versie: iVersie.value.trim() || null,
       kaartnummer: iKaartnummer.value.trim() || null,
       waarde: waardeNum,
-      aantal: Math.max(1, parseInt(iAantal.value) || 1)
+      aantal: Math.max(1, parseInt(iAantal.value) || 1),
+      prijs_vast: iPrijsVast.checked
     };
     // Handmatige wijziging van de waarde betekent dat een eventuele eerder
     // opgehaalde marktprijs-datum niet meer klopt voor dit (nieuwe) bedrag.
@@ -5282,6 +5316,7 @@
         // tijdstippen, anders wint "vandaag 14:32" altijd van "vandaag"
         // (middernacht), en zou elke ophaling dezelfde dag je eigen invoer
         // alsnog overschrijven.
+        if (inst.prijs_vast) return { status: 'kept-manual', pinned: true };
         if (inst.prijs_handmatig_datum) {
           const manualDateStr = String(inst.prijs_handmatig_datum).slice(0, 10);
           const onlineDateStr = updatedAt ? String(updatedAt).slice(0, 10).replace(/\//g, '-') : null;
@@ -5383,7 +5418,7 @@
       status.innerHTML = priceFreshnessDotHtml(result.updatedAt) + 'Marktprijs gevonden en ingevuld ✓ — check bij twijfel zelf even cardmarket.com.';
       status.className = 'tcgdex-found';
     } else if (result.status === 'kept-manual') {
-      status.textContent = '🔒 Je eigen ingevulde prijs is niet ouder dan de online brondata — niet overschreven.';
+      status.textContent = result.pinned ? '📌 Deze prijs is vastgezet — niet overschreven.' : '🔒 Je eigen ingevulde prijs is niet ouder dan de online brondata — niet overschreven.';
       status.className = '';
     } else if (result.status === 'only-us') {
       status.textContent = `🇺🇸 Geen Cardmarket (EU)-prijs gevonden — wel een TCGplayer (VS)-prijs: $${result.usdPrice.toFixed(2)}. Niet automatisch overgenomen (andere markt/munt); vul zelf iets in als je dat toch wilt gebruiken.`;
@@ -5643,6 +5678,7 @@
   // hieronder — een handmatig ingevoerde prijs blijft staan tenzij TCGdex'
   // eigen datum aantoonbaar nieuwer is dan de handmatige invoerdatum.
   function manualPriceBlocksUpdate(inst, updatedAt) {
+    if (inst.prijs_vast) return true;   // 📌 vastgezet: nooit automatisch overschrijven
     if (!inst.prijs_handmatig_datum) return false;
     const manualDateStr = String(inst.prijs_handmatig_datum).slice(0, 10);
     const onlineDateStr = updatedAt ? String(updatedAt).slice(0, 10).replace(/\//g, '-') : null;
@@ -7215,7 +7251,7 @@
         const payload = {
           parent_type: inst.parent_type, parent_id: inst.parent_id,
           serie: inst.serie, set_naam: inst.set_naam, versie: inst.versie, kaartnummer: inst.kaartnummer,
-          waarde: inst.waarde, prijs_bron_datum: inst.prijs_bron_datum, prijs_handmatig_datum: inst.prijs_handmatig_datum,
+          waarde: inst.waarde, prijs_bron_datum: inst.prijs_bron_datum, prijs_handmatig_datum: inst.prijs_handmatig_datum, prijs_vast: !!inst.prijs_vast,
           aantal, verkoop_bundel_id: currentVerkoopBundelId
         };
         const insRes = await fetch(instRestUrl(), {
@@ -7348,6 +7384,7 @@
     renderDashCounts();
     await renderDashPokedexSwaps();
     renderDashTopExpensive();
+    await loadDashPriceJumps();
     renderDashSuspiciousPrices();
     renderDashMostCopies();
     renderDashSurplus();
@@ -7504,6 +7541,39 @@
   document.getElementById('dashTopExpensiveNext').addEventListener('click', () => { dashTopExpensivePage++; renderDashTopExpensive(); });
 
   let dashSuspiciousPage = 0;
+  let dashPriceJumpFlags = []; // prijssprongen uit prijs_historie (async geladen bij openen dashboard)
+  function histKey(setNaam, kaartnummer, versie) {
+    return `${(setNaam || '').trim().toLowerCase()}|||${normalizeKaartnummer(kaartnummer).toUpperCase()}|||${(versie || '').trim().toLowerCase()}`;
+  }
+  // Vergelijkt per druk de laatste twee metingen: een stijging van >= 25% (en >= € 0,10) in de afgelopen
+  // 14 dagen is een signaal voor handmatige controle (bekend TCGdex-euvel: prijzen die plots omhoog springen).
+  async function loadDashPriceJumps() {
+    dashPriceJumpFlags = [];
+    try {
+      const since = new Date(Date.now() - 60 * 86400000).toISOString().slice(0, 10);
+      let all = [], offset = 0;
+      while (true) {
+        const res = await fetch(`${config.url}/rest/v1/prijs_historie?select=set_naam,kaartnummer,versie,prijs,gemeten_op&gemeten_op=gte.${since}&order=gemeten_op.asc,id.asc&limit=1000&offset=${offset}`, { headers: authHeaders(), cache: 'no-store' });
+        if (!res.ok) return;
+        const batch = await res.json();
+        all = all.concat(batch);
+        if (batch.length < 1000) break;
+        offset += 1000;
+      }
+      const perDruk = new Map();
+      all.forEach(r => { const k = histKey(r.set_naam, r.kaartnummer, r.versie); if (!perDruk.has(k)) perDruk.set(k, []); perDruk.get(k).push(r); });
+      const grens = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);
+      allInstances.forEach(inst => {
+        const pts = perDruk.get(histKey(inst.set_naam, inst.kaartnummer, inst.versie));
+        if (!pts || pts.length < 2) return;
+        const last = pts[pts.length - 1], prev = pts[pts.length - 2];
+        const a = parseFloat(prev.prijs), b = parseFloat(last.prijs);
+        if (last.gemeten_op >= grens && b - a >= 0.10 && b >= a * 1.25) {
+          dashPriceJumpFlags.push({ inst, reason: `Prijssprong: &euro; ${fmtEuro(a)} &rarr; &euro; ${fmtEuro(b)} (${last.gemeten_op})` });
+        }
+      });
+    } catch (err) { console.error('Prijssprongen laden mislukt:', err); }
+  }
   let dashSuspiciousUsdFlags = []; // resultaat van de TCGplayer-scan (los van de synchrone Normaal/Holo-check)
 
   // Vindt exemplaren met een vermoedelijk foute prijs — dit is een bekend
@@ -7547,6 +7617,9 @@
     });
 
     dashSuspiciousUsdFlags.forEach(({ inst, reason }) => flag(inst, reason));
+    // 📌 Vastgezette prijzen (jouw eigen correcties) en recente prijssprongen uit prijs_historie.
+    allInstances.forEach(inst => { if (inst.prijs_vast) flag(inst, '📌 Prijs vastgezet (wordt niet automatisch bijgewerkt)'); });
+    dashPriceJumpFlags.forEach(({ inst, reason }) => flag(inst, reason));
 
     const alle = Array.from(flagged.values()).sort((a, b) => (parseFloat(b.inst.waarde) || 0) - (parseFloat(a.inst.waarde) || 0));
     if (alle.length === 0) {

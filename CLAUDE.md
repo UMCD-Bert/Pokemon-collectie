@@ -3,7 +3,7 @@
 Eén zelfstandig HTML-bestand (`index.html`, lokaal soms ook aangeleverd als
 `supabase_pokemon_collectie.html`), gehost op GitHub Pages, met Supabase als
 backend (gratis tier, publishable key hardcoded in het bestand). Gedeeld door
-twee gebruikers (Bert & Ellen). Huidige versie: **v3.34**. Sinds v3.17 een echte PWA (`manifest.json`,
+twee gebruikers (Bert & Ellen). Huidige versie: **v3.35**. Sinds v3.17 een echte PWA (`manifest.json`,
 `service-worker.js`, `icons/`, Pokéball-icoon uit `icon-source.svg`); updates
 comen vanzelf door (service worker haalt netwerk-eerst met `cache: 'no-store'`),
 dus de snelkoppeling hoeft na een deploy niet opnieuw toegevoegd te worden.
@@ -115,6 +115,7 @@ Cardmarket-zoekresultaat) · ⚠️ Verdachte prijzen.
   toevoegen. Let op: TCGdex' setlijst bevat geen serie-info, dus de dynamische
   ontdekking in de app vult niets aan.
 - `verkoop_bundels` — zie het tabblad Verkoop.
+- `kaart_exemplaren.prijs_vast` (v3.35, boolean): 📌 vastgezet = nooit automatisch overschrijven. Let op: ook zonder vast-vinkje slaat de dagelijkse job exemplaren met `prijs_handmatig_datum` over; alleen de knoppen in de app (detail/Serie-Set/bulk) overschrijven een handmatige prijs als TCGdex een nieuwere datum heeft.
 - `prijs_historie` (v3.28) — prijsverloop per bezeten druk (set_naam, genormaliseerd
   kaartnummer, versie, prijs, bron, gemeten_op). Door de dagelijkse job gevuld:
   hooguit wekelijks per druk, of eerder bij een sprong (>= 25% en >= € 0,10), om de
@@ -266,11 +267,6 @@ Geldt voor de webapp én de native app (`~/Documenten/Xcode/Berts Code Base/Poke
   taal goed herkend; Normaal/Reverse Holo alleen aan het setlogo in het plaatje of de glans te onderscheiden.
 - **Pokédex-wissels (dashboard, web én native):** de lijst ("132 te wisselen" in de native app) is nog niet vergeleken met wat
   er echt in de fysieke binder zit. Bert pakt dit op samen met de binder-check; tot die tijd niets mee doen.
-- **Verdachte prijzen / vaste prijs:** de huidige controle vlagt alleen "Normaal > 3× Holo van dezelfde kaart (en > € 1)". Dat
-  vangt bekende gevallen niet: Fuecoco (Surging Sparks #29, echt € 0,03) en Beedrill (Skyridge #5, staat als Normaal met
-  € 104–127). Een handmatige prijs wordt bovendien overschreven zodra TCGdex een nieuwere datum heeft (dus vrijwel dagelijks).
-  Idee (nog geen besluit): kolom `kaart_exemplaren.prijs_vast` (nooit automatisch overschrijven, ook niet door de job) +
-  dashboardlijst met vaste prijzen en prijssprongen uit `prijs_historie`.
 - **Datacontroles uit de binder-proef:** Wartortle (EX Crystal Guardians #42) staat als "Holo" maar het setlogo in het
   plaatje wijst op een **Reverse Holo**; Beedrill (Skyridge #5) staat als "Normaal" terwijl dat een Holo Rare is, en de
   prijs € 104,09 lijkt die van Crystal #H4 (bekende verkeerde koppeling).
@@ -311,6 +307,7 @@ Geldt voor de webapp én de native app (`~/Documenten/Xcode/Berts Code Base/Poke
 - v3.26: regionale vormen en Nidoran koppelen op naam aan de juiste Pokémon.
 - v3.27: Vervanglijst (printlijst kaarten met prioriteit om te vervangen).
 - v3.34: handmatig geplaatste foto's worden goed getoond en bewaard.
+- v3.35: 📌 prijs vastzetten (`kaart_exemplaren.prijs_vast`, nooit automatisch overschreven: detailscherm, Serie/Set, bulk-sync en de dagelijkse job); "Verdachte prijzen" toont ook vastgezette prijzen en prijssprongen (>= 25% en >= € 0,10 in 14 dagen, uit `prijs_historie`).
 - v3.29–v3.33: UX-schoonmaak (kop zonder overlap, instellingen als venster, onderbalk, Afdrukken-menu, compacte
   voortgang, beheerscherm, Verkoop-kavel per set met plaatjes, lazy loading, aanraakdoelen, donkere modus).
 - v3.28: fase 1 data — foto's uit pokemontcg.io, PokéWallet-prijsterugval, prijsbron in de

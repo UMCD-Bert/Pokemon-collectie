@@ -341,7 +341,7 @@ async function fillPricesFromPokewallet() {
 // of eerder bij een flinke sprong (>= 25% en >= € 0,10) ----------
 async function recordPriceHistory() {
   const inst = await fetchAllPages('kaart_exemplaren',
-    'select=set_naam,kaartnummer,versie,waarde,prijs_handmatig_datum&set_naam=not.is.null&kaartnummer=not.is.null&versie=not.is.null&waarde=not.is.null&order=id.asc');
+    'select=set_naam,kaartnummer,versie,waarde,prijs_handmatig_datum,prijs_vast&set_naam=not.is.null&kaartnummer=not.is.null&versie=not.is.null&waarde=not.is.null&order=id.asc');
   const since = new Date(Date.now() - 60 * 86400000).toISOString().slice(0, 10);
   const hist = await fetchAllPages('prijs_historie', `select=set_naam,kaartnummer,versie,prijs,gemeten_op&gemeten_op=gte.${since}&order=gemeten_op.desc,id.desc`);
   const last = new Map();
@@ -362,7 +362,7 @@ async function recordPriceHistory() {
       const sprong = delta >= 0.10 && delta / prev.prijs >= 0.25;
       if (delta < 0.005 || (dagen < 7 && !sprong)) continue;
     }
-    rows.push({ set_naam: i.set_naam, kaartnummer: num, versie: i.versie, prijs: w, bron: i.prijs_handmatig_datum ? 'handmatig' : 'cardmarket' });
+    rows.push({ set_naam: i.set_naam, kaartnummer: num, versie: i.versie, prijs: w, bron: (i.prijs_handmatig_datum || i.prijs_vast) ? 'handmatig' : 'cardmarket' });
   }
   for (let i = 0; i < rows.length; i += 500) {
     const res = await fetch(restUrl('prijs_historie'), {
@@ -442,7 +442,7 @@ async function main() {
 
     const instances = await fetchAllPages(
       'kaart_exemplaren',
-      'select=id,set_naam,kaartnummer,versie,prijs_handmatig_datum&prijs_handmatig_datum=is.null&set_naam=not.is.null&kaartnummer=not.is.null&order=id.asc'
+      'select=id,set_naam,kaartnummer,versie,prijs_handmatig_datum&prijs_handmatig_datum=is.null&prijs_vast=eq.false&set_naam=not.is.null&kaartnummer=not.is.null&order=id.asc'
     );
     console.log(`${instances.length} eigen exemplaren om te controleren.`);
 
