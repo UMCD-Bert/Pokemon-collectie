@@ -467,7 +467,8 @@ async function main() {
 
   await runPhase('history', recordPriceHistory);
 
-  await writeLog({ setsVerwerkt, kaartenVerwerkt, nieuweSetsGeimporteerd, succes: true, foutmelding: null });
+  // Alleen een volledige run (met de TCGdex-fase) komt in het logboek; een deelrun zou "0 sets" tonen.
+  if (PHASES.has('tcgdex')) await writeLog({ setsVerwerkt, kaartenVerwerkt, nieuweSetsGeimporteerd, succes: true, foutmelding: null });
 }
 
 async function writeLog({ setsVerwerkt, kaartenVerwerkt, nieuweSetsGeimporteerd, succes, foutmelding }) {
