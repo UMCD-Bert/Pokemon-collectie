@@ -3,7 +3,7 @@
 Eén zelfstandig HTML-bestand (`index.html`, lokaal soms ook aangeleverd als
 `supabase_pokemon_collectie.html`), gehost op GitHub Pages, met Supabase als
 backend (gratis tier, publishable key hardcoded in het bestand). Gedeeld door
-twee gebruikers (Bert & Ellen). Huidige versie: **v3.33**. Sinds v3.17 een echte PWA (`manifest.json`,
+twee gebruikers (Bert & Ellen). Huidige versie: **v3.34**. Sinds v3.17 een echte PWA (`manifest.json`,
 `service-worker.js`, `icons/`, Pokéball-icoon uit `icon-source.svg`); updates
 comen vanzelf door (service worker haalt netwerk-eerst met `cache: 'no-store'`),
 dus de snelkoppeling hoeft na een deploy niet opnieuw toegevoegd te worden.
@@ -176,6 +176,17 @@ repo, dit CLAUDE.md hoeft ze niet te reproduceren.
   scripts/update-prices.mjs` met `SUPABASE_URL`/`SUPABASE_KEY` (+ `POKEWALLET_KEY`);
   fasen: `sets,tcgdex,photos,pwprices,instances,history`. De `tcgdex`-fase duurt ~2,5 uur.
 
+### Ontbrekende foto's aanvullen (dialoog met Bert)
+
+Foto's die TCGdex en pokemontcg.io niet hebben, levert Bert zelf aan: ik noem een batch van **max. 5** kaarten
+(op kaartnaam, want Dex nummert sommige sets anders dan TCGdex, bijv. de 30th Classic Collection), Bert zet de
+bestanden in `~/Downloads/kaartfotos` en zegt "klaar". Ik herken de kaart, maak er een jpg van (max. ~800 px breed),
+upload naar de bucket `afbeeldingen` onder `setkaarten/<set>-<nummer>.jpg` (POST met `x-upsert`), en zet
+`tcg_set_kaarten.afbeelding` + `afbeelding_bron='handmatig'` én de `afbeelding` van bijbehorende eigen exemplaren
+(`kaart_exemplaren`, alleen waar die leeg is). "MEP Black Star Promos" en "Mega Evolution Promos" zijn dezelfde
+60 kaarten: één foto voor beide. Plaatjes die alleen als afbeelding in de chat staan, komen niet als bestand op de
+Mac — vraag dan om de map. Minimaal ~500 px breed per kaart; kleine thumbnails uit lijstjes zijn te klein.
+
 ### UX-opzet (v3.29–v3.33)
 
 - **Navigatie:** op telefoon (<= 700px) een vaste onderbalk met 5 tabs; Sealed en
@@ -274,7 +285,10 @@ repo, dit CLAUDE.md hoeft ze niet te reproduceren.
 - v3.25: set-kiezers tonen altijd alle `aangekondigde_sets`.
 - v3.26: regionale vormen en Nidoran koppelen op naam aan de juiste Pokémon.
 - v3.27: Vervanglijst (printlijst kaarten met prioriteit om te vervangen).
+- v3.34: handmatig geplaatste foto's worden goed getoond en bewaard.
 - v3.29–v3.33: UX-schoonmaak (kop zonder overlap, instellingen als venster, onderbalk, Afdrukken-menu, compacte
   voortgang, beheerscherm, Verkoop-kavel per set met plaatjes, lazy loading, aanraakdoelen, donkere modus).
 - v3.28: fase 1 data — foto's uit pokemontcg.io, PokéWallet-prijsterugval, prijsbron in de
   tooltip, prijsverloop (`prijs_historie`).
+
+- **Native app:** `~/Documenten/Xcode/Berts Code Base/Pokemon` (SwiftUI, iPhone/iPad/Mac, zelfde database). Logica-regels die hier in `index.html` veranderen (prijs, naam-koppeling, binderkaart) moeten ook in `PokemonKern/Logica.swift`.
