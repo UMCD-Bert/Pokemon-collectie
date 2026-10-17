@@ -250,6 +250,24 @@ Mac — vraag dan om de map. Minimaal ~500 px breed per kaart; kleine thumbnails
 - "Verdachte prijzen" blijft fundamenteel een handmatig-controle-hulpmiddel,
   geen waterdicht automatisch systeem.
 
+## Backlog (nog geen besluit of nog niet ingepland)
+
+Geldt voor de webapp én de native app (`~/Documenten/Xcode/Berts Code Base/Pokemon`).
+
+- **Duo-/tag-teamkaarten onderbrengen** ("Pikachu & Zekrom GX", "Reshiram & Zekrom GX", ...): een exemplaar hangt aan precies
+  één Pokédex-regel. TCGdex geeft alleen het dexid van de eerst genoemde Pokémon mee; bij 30th Classic Collection #008
+  ontbreekt dat dexid, waardoor aanvinken nu faalt ("Kon geen Pokémon vinden"). **Besluit open (Bert denkt na):**
+  (a) altijd de eerst genoemde Pokémon (bij naam met " & " het eerste deel proberen; in `findRecordBySpeciesName` in
+  `index.html` én `KaartLogica.vindPokemon` in PokemonKern), of (b) Bert kiest bij het aanvinken onder welke Pokémon.
+  Beide Pokémon tegelijk is bewust uitgesloten (dubbel geteld, en maar één binderplek).
+- **Camera in de native app (iPhone/iPad):** binder-check met een foto van een binderpagina (4×4): kaarten herkennen
+  (Vision), vergelijken met de binderkaart (`in_pokedex`) per Pokédexnummer, en aangeven wat gewisseld moet worden;
+  daarna eventueel kaarten scannen om toe te voegen. Proef op pagina 1 (Pokédex #1–#16) was bemoedigend: Pokémon, set en
+  taal goed herkend; Normaal/Reverse Holo alleen aan het setlogo in het plaatje of de glans te onderscheiden.
+- **Datacontroles uit de binder-proef:** Wartortle (EX Crystal Guardians #42) staat als "Holo" maar het setlogo in het
+  plaatje wijst op een **Reverse Holo**; Beedrill (Skyridge #5) staat als "Normaal" terwijl dat een Holo Rare is, en de
+  prijs € 104,09 lijkt die van Crystal #H4 (bekende verkeerde koppeling).
+
 ## Ook besproken (niet gebouwd)
 
 - Commerciële/App Store-versie afgeraden (Pokémon-IP/TCGdex-voorwaarden/
