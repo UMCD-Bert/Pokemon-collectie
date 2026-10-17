@@ -32,6 +32,10 @@
     padding: 20px;
   }
   h1 { text-align: center; color: var(--color-text-dark); }
+  #appHeader { position: relative; display: flex; align-items: center; justify-content: center; padding: 0 46px; margin: 0 0 6px 0; }
+  #appHeader h1 { margin: 18px 0 14px 0; font-size: 28px; line-height: 1.15; }
+  @media (max-width: 600px) { #appHeader h1 { font-size: 21px; margin: 6px 0 8px 0; } }
+  @media print { #appHeader { display: none; } }
   .toolbar {
     display: flex;
     flex-wrap: wrap;
@@ -42,13 +46,13 @@
   }
   .toolbar-actions { margin-bottom: 4px; }
   .toolbar-sep { width: 1px; height: 24px; background: #ccc; display: inline-block; }
-  input#search, input#soSearchInput, input#apSearchInput, select#filterOwned, select#sortMode {
+  input#search, input#extraSearch, input#soSearchInput, input#apSearchInput, select#filterOwned, select#sortMode {
     padding: 10px 14px;
     border-radius: 8px;
     border: 1px solid #ccc;
     font-size: 15px;
   }
-  input#search, input#soSearchInput, input#apSearchInput { width: 240px; max-width: 100%; padding-right: 28px; box-sizing: border-box; }
+  input#search, input#extraSearch, input#soSearchInput, input#apSearchInput { width: 240px; max-width: 100%; padding-right: 28px; box-sizing: border-box; }
   .search-wrap { position: relative; display: inline-block; max-width: 90%; }
   #searchClearBtn, #soSearchClearBtn, #apSearchClearBtn, #extraSearchClearBtn {
     display: none;
@@ -85,7 +89,7 @@
   .row-vervang-value { display: none; color: #666; }
   #viewToggleBtn { background: #2a9d8f; }
   #settingsBtn {
-    background: var(--color-primary); position: fixed; top: 10px; right: 10px; z-index: 50;
+    background: var(--color-primary); position: absolute; top: 50%; right: 0; transform: translateY(-50%); z-index: 50;
     width: 34px; height: 34px; padding: 0; border-radius: 50%; font-size: 15px;
     display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 4px rgba(0,0,0,0.25);
   }
@@ -301,23 +305,26 @@
     box-sizing: border-box;
   }
 
+  #settingsBackdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1090; }
+  #settingsBackdrop.open { display: block; }
   #settingsPanel {
     display: none;
-    max-width: 520px;
-    margin: 0 auto 16px auto;
+    position: fixed; z-index: 1100; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    width: min(520px, calc(100vw - 24px)); max-height: calc(100vh - 32px); max-height: calc(100dvh - 32px); overflow-y: auto;
     background: white;
-    border-radius: 10px;
-    padding: 16px 20px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    border-radius: 12px;
+    padding: 18px 20px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.35);
   }
   #settingsPanel.open { display: block; }
+  #settingsClose { position: absolute; top: 4px; right: 6px; background: none; color: #666; font-size: 24px; line-height: 1; padding: 6px 12px; }
   #settingsPanel label { display: block; font-size: 13px; color: #444; margin: 8px 0 3px 0; }
   #settingsPanel input { width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px; }
   #settingsPanel .settings-actions { margin-top: 12px; display: flex; gap: 8px; justify-content: flex-end; }
   #settingsSaveBtn { background: var(--color-value-positive); }
   #settingsCancelBtn { background: var(--color-text-muted); }
   #settingsPanel p { font-size: 12px; color: #777; margin: 4px 0 0 0; }
-  @media print { #settingsPanel { display: none !important; } }
+  @media print { #settingsPanel, #settingsBackdrop { display: none !important; } }
   #storageUsageSection { margin-top: 14px; padding-top: 12px; border-top: 1px solid #eee; }
   #checkStorageBtn { background: var(--color-accent-blue); color: white; border: none; padding: 8px 12px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
   #storageUsageResult { margin-top: 8px; font-size: 12px; color: #444; }
@@ -335,7 +342,7 @@
   #bulkSyncStatusText { font-size: 12px; color: #444; }
 
   /* ---------- Serie/Set-overzicht ---------- */
-  #soActionsRow { display: flex; gap: 8px; margin: 8px 0; flex-wrap: wrap; }
+  #soActionsRow { display: flex; gap: 8px; margin: 8px 0; flex-wrap: wrap; justify-content: center; }
   #soFetchSetBtn, #soLoadPricesBtn, #soFetchAllBtn, #soViewLogBtn, #soFetchMissingBtn, #soFetchSerieBtn {
     background: var(--color-accent-blue); color: white; border: none; padding: 8px 12px; border-radius: 8px;
     font-size: 13px; font-weight: 600; cursor: pointer;
@@ -351,10 +358,10 @@
   .toolbar-so .field-with-picker { width: 100%; }
   #soBulkToggleBtn {
     background: none; border: none; color: #666; font-size: 12px; cursor: pointer;
-    padding: 4px 0; margin: 4px 0 0 0; display: block;
+    padding: 4px 0; margin: 4px auto 0 auto; display: block;
   }
   #soBulkPanel { border-top: 1px dashed #ccc; margin-top: 6px; padding-top: 8px; }
-  #soBulkActionsRow { display: flex; gap: 8px; flex-wrap: wrap; }
+  #soBulkActionsRow { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
   #soProgressWrap, #soAllProgressWrap { margin: 8px 0; }
   #soBarTrack, #soAllBarTrack { width: 100%; height: 10px; border-radius: 6px; background: var(--color-bg-page); overflow: hidden; margin-bottom: 6px; }
   #soBarFill { height: 100%; border-radius: 6px; background: var(--color-primary); width: 0%; transition: width 0.2s ease; }
@@ -800,6 +807,7 @@
     text-transform: uppercase; letter-spacing: 0.3px; padding: 1px 6px; border-radius: 4px; margin-top: 3px;
   }
 
+  #extraSection { padding-bottom: 90px; }
   #extraFab {
     position: fixed; bottom: 22px; right: max(22px, calc(50vw - 550px + 22px)); width: 54px; height: 54px; border-radius: 50%;
     background: var(--color-text-dark); color: white; font-size: 28px; border: none; box-shadow: 0 2px 10px rgba(0,0,0,0.3);
@@ -941,6 +949,10 @@
   .instance-row .inst-sub { font-size: 11px; color: #888; }
   .instance-row .inst-value { font-size: 12.5px; font-weight: 700; color: var(--color-value-positive); flex-shrink: 0; }
   .instance-row .so-stepper { margin: 0; flex-shrink: 0; }
+  @media (max-width: 600px) {
+    .instance-row { flex-wrap: wrap; }
+    .instance-row .inst-info { flex: 1 1 100%; }
+  }
   .inst-value-pending { color: #999; font-weight: 500; font-style: italic; }
   .inst-price-refresh {
     flex-shrink: 0; padding: 4px 8px; border-radius: 6px; border: none;
@@ -994,7 +1006,10 @@
 </style>
 </head>
 <body>
-<h1>Pokemon collectie van Bert &amp; Ellen</h1>
+<header id="appHeader">
+  <h1>Pokemon collectie van Bert &amp; Ellen</h1>
+  <button id="settingsBtn" type="button" title="Instellingen en beheer" aria-label="Instellingen en beheer">⚙️</button>
+</header>
 
 <div id="tabBar">
   <button type="button" class="tab-btn active" data-tab="pokemon">Pokémon</button>
@@ -1007,9 +1022,9 @@
 
 
 
-<button id="settingsBtn" title="Supabase-instellingen">⚙️</button>
-
-<div id="settingsPanel">
+<div id="settingsBackdrop"></div>
+<div id="settingsPanel" role="dialog" aria-label="Instellingen en beheer">
+  <button type="button" id="settingsClose" title="Sluiten" aria-label="Sluiten">&times;</button>
   <label for="cfgUrl">Project URL</label>
   <input type="text" id="cfgUrl" placeholder="https://xxxxxxxxxxxxx.supabase.co">
   <label for="cfgTable">Tabelnaam</label>
@@ -1751,7 +1766,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '3.28';
+  const APP_VERSION = '3.29';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
 
   const search = document.getElementById('search');
@@ -2054,7 +2069,16 @@
   const cfgTable = document.getElementById('cfgTable');
   const cfgKey = document.getElementById('cfgKey');
 
+  const settingsBackdrop = document.getElementById('settingsBackdrop');
+  function closeSettings() {
+    settingsPanel.classList.remove('open');
+    settingsBackdrop.classList.remove('open');
+  }
+  settingsBackdrop.addEventListener('click', closeSettings);
+  document.getElementById('settingsClose').addEventListener('click', closeSettings);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSettings(); });
   settingsBtn.addEventListener('click', () => {
+    if (settingsPanel.classList.contains('open')) { closeSettings(); return; }
     const existing = loadConfig();
     if (existing) {
       cfgUrl.value = existing.url || '';
@@ -2063,8 +2087,9 @@
     }
     renderDashPriceUpdateStatus();
     settingsPanel.classList.add('open');
+    settingsBackdrop.classList.add('open');
   });
-  document.getElementById('settingsCancelBtn').addEventListener('click', () => settingsPanel.classList.remove('open'));
+  document.getElementById('settingsCancelBtn').addEventListener('click', closeSettings);
   document.getElementById('settingsSaveBtn').addEventListener('click', async () => {
     const cfg = {
       url: cfgUrl.value.trim().replace(/\/+$/, ''),
@@ -2074,7 +2099,7 @@
     if (!cfg.url || !cfg.key) { alert('Vul zowel Project URL als Publishable key in.'); return; }
     saveConfig(cfg);
     config = cfg;
-    settingsPanel.classList.remove('open');
+    closeSettings();
     await loadAllRecords();
   });
 
@@ -3340,6 +3365,7 @@
   });
 
   function activateMainTab(tab) {
+      closeSettings();
       currentMainTab = tab;
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
       document.getElementById('pokemonSection').style.display = (tab === 'pokemon') ? '' : 'none';
