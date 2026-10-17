@@ -2,7 +2,7 @@
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#eef1f4">
@@ -80,12 +80,12 @@
     cursor: pointer;
     color: white;
   }
-  #printNowBtn { background: var(--color-accent-blue); }
-  #printMancoBtn { background: #2a9d8f; }
-  #printVervangBtn { background: #e76f51; }
-  #vervangDrempel { width: 56px; padding: 8px 6px; border: 1px solid #ccc; border-radius: 8px; font-size: 13px; text-align: center; }
-  #vervangWrap { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #555; }
-  #vervangInfo { font-size: 11px; color: #888; }
+  #printMenu { left: auto; right: 0; min-width: 270px; }
+  #vervangWrap { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; padding-right: 10px; }
+  #vervangWrap #printVervangBtn { flex: 1 1 auto; width: auto; }
+  #vervangLabel { font-size: 13px; color: #555; white-space: nowrap; }
+  #vervangDrempel { width: 58px; padding: 6px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px; text-align: center; }
+  #vervangInfo { flex-basis: 100%; font-size: 11px; color: #888; padding: 0 14px 6px; }
   .row-vervang-value { display: none; color: #666; }
   #viewToggleBtn { background: #2a9d8f; }
   #settingsBtn {
@@ -1003,6 +1003,41 @@
   .mini-picker { flex-shrink: 0; }
   .mini-picker .picker-btn { height: 100%; padding: 0 12px; font-size: 14px; }
   .mini-picker .dropdown-menu { right: 0; left: auto; min-width: 220px; max-height: 220px; overflow-y: auto; }
+
+  /* ---------- Navigatie: iconen + onderbalk op telefoon ---------- */
+  .tab-btn { white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; }
+  .tab-ico { font-size: 15px; line-height: 1; }
+  .lbl-mob, .tab-more, #moreMenu { display: none; }
+  .pbar { display: none; height: 8px; background: #dfe4ea; border-radius: 6px; overflow: hidden; margin: 6px auto 4px auto; max-width: 320px; }
+  .pbar-fill { height: 100%; width: 0; background: #3ecf8e; border-radius: 6px; }
+  #moreMenu { position: fixed; right: 8px; bottom: calc(var(--nav-h, 60px) + 8px + env(safe-area-inset-bottom, 0px)); z-index: 950;
+    background: #fff; border-radius: 12px; box-shadow: 0 4px 18px rgba(0,0,0,0.25); padding: 6px; min-width: 230px; }
+  #moreMenu button { display: block; width: 100%; text-align: left; background: none; color: var(--color-text-dark); padding: 12px 14px; font-size: 15px; border-radius: 8px; }
+  #moreMenu button:active { background: #eef1f4; }
+  @media print { #moreMenu, #tabBar { display: none !important; } }
+  @media (max-width: 700px) {
+    :root { --nav-h: 60px; }
+    body { padding-bottom: calc(var(--nav-h) + 16px + env(safe-area-inset-bottom, 0px)); }
+    #tabBar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 900; margin: 0; gap: 0; flex-wrap: nowrap; justify-content: space-around;
+      background: #fff; border-top: 1px solid #d5dae0; padding: 4px 2px calc(4px + env(safe-area-inset-bottom, 0px)); box-shadow: 0 -2px 8px rgba(0,0,0,0.08); }
+    .tab-btn, .tab-more { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+      background: none; border: none; border-radius: 10px; padding: 4px 2px; min-height: 50px; color: var(--color-text-muted); font-size: 12px; font-weight: 600; }
+    .tab-btn.active, .tab-more.active { background: var(--color-bg-page); color: var(--color-text-dark); border: none; }
+    .tab-ico { font-size: 21px; }
+    .tab-sealed, .lbl-extra, .lbl-desk { display: none; }
+    .lbl-mob { display: inline; }
+    .tab-more { display: flex; }
+    #moreMenu.open { display: block; }
+    #extraFab { bottom: calc(var(--nav-h) + 16px + env(safe-area-inset-bottom, 0px)); right: 16px; }
+    #progressDashboard svg, #soGaugeWrap svg { display: none; }
+    .pbar { display: block; }
+    #gaugeLabel, #soGaugeLabel { margin-top: 0; }
+    #progressDashboard { margin-bottom: 6px; }
+    #appVersion { display: none; }
+    #soActionsRow button { flex: 1 1 0; padding: 8px 6px; font-size: 12.5px; }
+    #soStatus { font-size: 11px; }
+    input, select, textarea { font-size: 16px; }
+  }
 </style>
 </head>
 <body>
@@ -1012,12 +1047,17 @@
 </header>
 
 <div id="tabBar">
-  <button type="button" class="tab-btn active" data-tab="pokemon">Pokémon</button>
-  <button type="button" class="tab-btn" data-tab="trainers">Trainers &amp; Energy</button>
-  <button type="button" class="tab-btn" data-tab="setoverzicht">Serie/Set</button>
-  <button type="button" class="tab-btn" data-tab="sealed">Sealed</button>
-  <button type="button" class="tab-btn" data-tab="verkoop">📦 Verkoop</button>
-  <button type="button" class="tab-btn" data-tab="dashboard">Dashboard</button>
+  <button type="button" class="tab-btn active" data-tab="pokemon"><span class="tab-ico">🎴</span><span class="tab-lbl">Pokémon</span></button>
+  <button type="button" class="tab-btn" data-tab="trainers"><span class="tab-ico">🃏</span><span class="tab-lbl">Trainers<span class="lbl-extra"> &amp; Energy</span></span></button>
+  <button type="button" class="tab-btn" data-tab="setoverzicht"><span class="tab-ico">📚</span><span class="tab-lbl"><span class="lbl-desk">Serie/Set</span><span class="lbl-mob">Sets</span></span></button>
+  <button type="button" class="tab-btn tab-sealed" data-tab="sealed"><span class="tab-ico">🎁</span><span class="tab-lbl">Sealed</span></button>
+  <button type="button" class="tab-btn" data-tab="verkoop"><span class="tab-ico">📦</span><span class="tab-lbl">Verkoop</span></button>
+  <button type="button" class="tab-btn" data-tab="dashboard"><span class="tab-ico">📊</span><span class="tab-lbl">Dashboard</span></button>
+  <button type="button" class="tab-more" id="tabMoreBtn" aria-haspopup="true"><span class="tab-ico">⋯</span><span class="tab-lbl">Meer</span></button>
+</div>
+<div id="moreMenu">
+  <button type="button" data-go="sealed">🎁 Sealed</button>
+  <button type="button" id="moreSettingsBtn">⚙️ Instellingen &amp; beheer</button>
 </div>
 
 
@@ -1050,6 +1090,7 @@
     <button type="button" id="noPriceOverviewBtn" style="margin-top:8px;">📋 Kaarten zonder ooit opgehaalde prijs bekijken</button>
     <button type="button" id="zeroValueOverviewBtn" style="margin-top:8px;">🔍 Kaarten met waarde € 0,00 bekijken</button>
   </div>
+  <p id="settingsVersion" style="text-align:center;margin-top:10px;"></p>
   <div class="settings-actions">
     <button id="settingsCancelBtn">Annuleren</button>
     <button id="settingsSaveBtn">Opslaan &amp; laden</button>
@@ -1090,11 +1131,18 @@
       <button type="button" class="dropdown-item" data-value="waarde">Op waarde</button>
     </div>
   </div>
-</div>
-<div class="toolbar toolbar-actions">
-  <button type="button" id="printNowBtn">🖨️ Plaatsvervangende kaartjes</button>
-  <button type="button" id="printMancoBtn">📋 Mancolijst</button>
-  <span id="vervangWrap"><button type="button" id="printVervangBtn">🔁 Vervanglijst</button> onder &euro; <input type="text" id="vervangDrempel" inputmode="decimal" value="1,00"><span id="vervangInfo"></span></span>
+  <div class="dropdown" id="printDropdown">
+    <button type="button" class="dropdown-btn" id="printDropdownBtn">🖨️ Afdrukken <span class="caret">▾</span></button>
+    <div class="dropdown-menu" id="printMenu">
+      <button type="button" class="dropdown-item" id="printNowBtn">🖨️ Plaatsvervangende kaartjes</button>
+      <button type="button" class="dropdown-item" id="printMancoBtn">📋 Mancolijst</button>
+      <div id="vervangWrap">
+        <button type="button" class="dropdown-item" id="printVervangBtn">🔁 Vervanglijst</button>
+        <label id="vervangLabel">onder &euro; <input type="text" id="vervangDrempel" inputmode="decimal" value="1,00"></label>
+        <span id="vervangInfo"></span>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div id="appVersion"></div>
@@ -1104,6 +1152,7 @@
     <path id="gaugeArc" d="M 15 100 A 85 85 0 0 1 185 100" fill="none" stroke="#3ecf8e" stroke-width="16" stroke-linecap="round" pathLength="100" stroke-dasharray="0 100"/>
     <text id="gaugePct" x="100" y="90" text-anchor="middle">0%</text>
   </svg>
+  <div class="pbar"><div class="pbar-fill" id="gaugeBarFill"></div></div>
   <div id="gaugeLabel">0 / 0</div>
 </div>
 <div id="countStatus" style="display:none;"></div>
@@ -1272,6 +1321,7 @@
       <path id="soGaugeArc" d="M 15 100 A 85 85 0 0 1 185 100" fill="none" stroke="#3ecf8e" stroke-width="16" stroke-linecap="round" pathLength="100" stroke-dasharray="0 100"/>
       <text id="soGaugePct" x="100" y="90" text-anchor="middle" style="font-size:22px;font-weight:800;fill:#2c3e50;">0%</text>
     </svg>
+    <div class="pbar"><div class="pbar-fill" id="soGaugeBarFill"></div></div>
     <div id="soGaugeLabel">Verzameld: 0 / 0</div>
   </div>
 
@@ -1766,8 +1816,9 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '3.29';
+  const APP_VERSION = '3.30';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
+  document.getElementById('settingsVersion').textContent = `Versie ${APP_VERSION}`;
 
   const search = document.getElementById('search');
   const filterOwned = document.getElementById('filterOwned');
@@ -1833,6 +1884,8 @@
   const gaugePct = document.getElementById('gaugePct');
   const gaugeArc = document.getElementById('gaugeArc');
 
+  function isMobileNav() { return window.matchMedia('(max-width: 700px)').matches; }
+  window.matchMedia('(max-width: 700px)').addEventListener('change', () => { updateProgress(); if (soCachedRows.length) updateSetGauge(); });
   const CONFIG_KEY = 'supabase_pokemon_config_v1';
 
   // ---------- Series / set / versie reference data ----------
@@ -3195,7 +3248,8 @@
     const total = records.length;
     const owned = records.filter(r => r.inbezit).length;
     const pct = total > 0 ? Math.round((owned / total) * 100) : 0;
-    gaugeLabel.textContent = `${owned} / ${total}`;
+    gaugeLabel.textContent = `${owned} / ${total}` + (isMobileNav() ? ` · ${pct}%` : '');
+    document.getElementById('gaugeBarFill').style.width = pct + '%';
     gaugePct.textContent = pct + '%';
     gaugeArc.setAttribute('stroke-dasharray', `${pct} 100`);
   }
@@ -3347,6 +3401,16 @@
     window.print();
   });
 
+  // ---------- Afdrukken-menu ----------
+  const printDropdown = document.getElementById('printDropdown');
+  document.getElementById('printDropdownBtn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    const wasOpen = printDropdown.classList.contains('open');
+    document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
+    if (!wasOpen) printDropdown.classList.add('open');
+  });
+  document.getElementById('vervangWrap').addEventListener('click', (e) => { if (e.target.id !== 'printVervangBtn') e.stopPropagation(); });
+
   // ---------- Tabs ----------
   const EXTRA_TABLE = 'tcg_extra';
   const EXTRA_PARENT_TYPE = 'extra'; // constant parent_type for kaart_exemplaren linkage, independent of the (editable) Type field
@@ -3363,9 +3427,16 @@
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => activateMainTab(btn.dataset.tab));
   });
+  const moreMenu = document.getElementById('moreMenu');
+  document.getElementById('tabMoreBtn').addEventListener('click', (e) => { e.stopPropagation(); moreMenu.classList.toggle('open'); });
+  document.addEventListener('click', (e) => { if (!moreMenu.contains(e.target)) moreMenu.classList.remove('open'); });
+  moreMenu.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => activateMainTab(b.dataset.go)));
+  document.getElementById('moreSettingsBtn').addEventListener('click', () => { moreMenu.classList.remove('open'); settingsBtn.click(); });
 
   function activateMainTab(tab) {
       closeSettings();
+      document.getElementById('moreMenu').classList.remove('open');
+      document.getElementById('tabMoreBtn').classList.toggle('active', tab === 'sealed');
       currentMainTab = tab;
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
       document.getElementById('pokemonSection').style.display = (tab === 'pokemon') ? '' : 'none';
@@ -5686,7 +5757,8 @@
     const owned = soCachedRows.filter(rowIsOwned).length;
     const total = soCachedRows.length;
     const pct = total ? Math.round((owned / total) * 100) : 0;
-    document.getElementById('soGaugeLabel').textContent = `Verzameld: ${owned} / ${total}`;
+    document.getElementById('soGaugeLabel').textContent = `Verzameld: ${owned} / ${total}` + (isMobileNav() ? ` · ${pct}%` : '');
+    document.getElementById('soGaugeBarFill').style.width = pct + '%';
     document.getElementById('soGaugePct').textContent = pct + '%';
     document.getElementById('soGaugeArc').setAttribute('stroke-dasharray', `${pct} 100`);
     gaugeWrap.style.display = '';
