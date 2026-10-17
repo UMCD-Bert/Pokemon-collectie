@@ -317,6 +317,10 @@
     box-shadow: 0 8px 30px rgba(0,0,0,0.35);
   }
   #settingsPanel.open { display: block; }
+  .settings-title { margin: 0 0 6px 0; text-align: left; font-size: 18px; }
+  .settings-h { font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: #888; margin: 16px 0 6px 0; font-weight: 700; }
+  #connDetails { margin-top: 14px; padding-top: 10px; border-top: 1px solid #eee; }
+  #connDetails summary { cursor: pointer; font-weight: 600; color: var(--color-text-dark); padding: 6px 0; }
   #settingsClose { position: absolute; top: 4px; right: 6px; background: none; color: #666; font-size: 24px; line-height: 1; padding: 6px 12px; }
   #settingsPanel label { display: block; font-size: 13px; color: #444; margin: 8px 0 3px 0; }
   #settingsPanel input { width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px; }
@@ -1038,6 +1042,16 @@
     #soStatus { font-size: 11px; }
     input, select, textarea { font-size: 16px; }
   }
+
+  /* ---------- Verkoop: kavel-detail ---------- */
+  .verkoop-title { text-align: center; }
+  #verkoopHernoemBtn { display: inline-block; vertical-align: middle; background: none; border: none; cursor: pointer; font-size: 18px; padding: 6px 10px; color: inherit; }
+  .verkoop-set-head { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; font-weight: 700; color: #555; margin: 12px 2px 2px 2px; }
+  .verkoop-set-head span { font-weight: 600; color: #888; white-space: nowrap; }
+  .verkoop-thumb { width: 34px; height: 48px; border-radius: 4px; object-fit: cover; background: #e8e8e8; flex-shrink: 0; }
+  .verkoop-thumb-ph { display: flex; align-items: center; justify-content: center; color: #bbb; font-size: 16px; }
+  .danger-zone { margin-top: 28px; padding-top: 8px; border-top: 1px dashed #d9a0a0; }
+  .danger-zone summary { cursor: pointer; font-weight: 600; color: var(--color-danger-dark); padding: 8px 0; }
 </style>
 </head>
 <body>
@@ -1065,17 +1079,13 @@
 <div id="settingsBackdrop"></div>
 <div id="settingsPanel" role="dialog" aria-label="Instellingen en beheer">
   <button type="button" id="settingsClose" title="Sluiten" aria-label="Sluiten">&times;</button>
-  <label for="cfgUrl">Project URL</label>
-  <input type="text" id="cfgUrl" placeholder="https://xxxxxxxxxxxxx.supabase.co">
-  <label for="cfgTable">Tabelnaam</label>
-  <input type="text" id="cfgTable" placeholder="pokemon" value="pokemon">
-  <label for="cfgKey">Publishable key (sb_publishable_...)</label>
-  <input type="password" id="cfgKey" placeholder="sb_publishable_XXXXXXXXXXXXXX">
-  <p>Deze gegevens worden alleen lokaal in je browser bewaard en rechtstreeks vanuit jouw apparaat naar Supabase gestuurd — ze gaan niet via Claude.</p>
+  <h3 class="settings-title">Instellingen &amp; beheer</h3>
   <div id="settingsViewSection">
     <div id="dashPriceUpdateStatus"></div>
+    <div class="settings-h">Weergave</div>
     <button type="button" id="viewToggleBtn" title="Wissel weergave">☰ Checklist-weergave</button>
   </div>
+  <div class="settings-h">Beheer</div>
   <div id="storageUsageSection">
     <button type="button" id="checkStorageBtn">📦 Opslaggebruik controleren</button>
     <div id="storageUsageResult"></div>
@@ -1090,11 +1100,21 @@
     <button type="button" id="noPriceOverviewBtn" style="margin-top:8px;">📋 Kaarten zonder ooit opgehaalde prijs bekijken</button>
     <button type="button" id="zeroValueOverviewBtn" style="margin-top:8px;">🔍 Kaarten met waarde € 0,00 bekijken</button>
   </div>
-  <p id="settingsVersion" style="text-align:center;margin-top:10px;"></p>
-  <div class="settings-actions">
-    <button id="settingsCancelBtn">Annuleren</button>
-    <button id="settingsSaveBtn">Opslaan &amp; laden</button>
-  </div>
+  <details id="connDetails">
+    <summary>Verbinding met Supabase</summary>
+    <label for="cfgUrl">Project URL</label>
+    <input type="text" id="cfgUrl" placeholder="https://xxxxxxxxxxxxx.supabase.co">
+    <label for="cfgTable">Tabelnaam</label>
+    <input type="text" id="cfgTable" placeholder="pokemon" value="pokemon">
+    <label for="cfgKey">Publishable key (sb_publishable_...)</label>
+    <input type="password" id="cfgKey" placeholder="sb_publishable_XXXXXXXXXXXXXX">
+    <p>Deze gegevens worden alleen lokaal in je browser bewaard en rechtstreeks vanuit jouw apparaat naar Supabase gestuurd — ze gaan niet via Claude.</p>
+    <div class="settings-actions">
+      <button id="settingsCancelBtn">Annuleren</button>
+      <button id="settingsSaveBtn">Opslaan &amp; laden</button>
+    </div>
+  </details>
+  <p id="settingsVersion" style="text-align:center;margin-top:12px;"></p>
 </div>
 
 <div id="pokemonSection">
@@ -1378,16 +1398,12 @@
   </div>
   <div id="verkoopDetailView" style="display:none;">
     <button type="button" class="btn-secondary" id="verkoopBackBtn">&larr; Terug naar kavels</button>
-    <h3 style="display:flex;align-items:center;justify-content:center;gap:8px;">
-      <span id="verkoopDetailNaam"></span>
-      <button type="button" id="verkoopHernoemBtn" title="Naam wijzigen" style="background:none;border:none;cursor:pointer;font-size:16px;">&#9999;&#65039;</button>
-    </h3>
+    <h3 class="verkoop-title"><span id="verkoopDetailNaam"></span>&nbsp;<button type="button" id="verkoopHernoemBtn" title="Naam wijzigen" aria-label="Naam wijzigen">&#9999;&#65039;</button></h3>
     <div id="verkoopDetailStatusLine" class="sealed-row-setinfo" style="text-align:center;margin-bottom:8px;"></div>
     <div id="verkoopDetailTotals" style="text-align:center;font-weight:700;color:var(--color-text-dark);margin-bottom:10px;"></div>
     <label class="field-label">Vraagprijs (&euro;)</label>
     <input type="text" class="field-input" id="verkoopVraagprijs" placeholder="bijv. 45,00">
     <button type="button" class="btn-primary" id="verkoopMarkeerVerkochtBtn" style="margin-top:10px;">&#9989; Markeer als verkocht</button>
-    <button type="button" class="btn-danger" id="verkoopVerwijderKavelBtn">&#128465;&#65039; Kavel verwijderen</button>
 
     <h4>Kaarten in deze kavel</h4>
     <div id="verkoopItemsList"></div>
@@ -1411,6 +1427,11 @@
       </div>
       <div id="verkoopKandidatenList"></div>
     </div>
+
+    <details class="danger-zone">
+      <summary>Gevaarlijk</summary>
+      <button type="button" class="btn-danger" id="verkoopVerwijderKavelBtn">&#128465;&#65039; Kavel verwijderen</button>
+    </details>
   </div>
 </div>
 
@@ -1816,7 +1837,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '3.30';
+  const APP_VERSION = '3.31';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
   document.getElementById('settingsVersion').textContent = `Versie ${APP_VERSION}`;
 
@@ -6815,17 +6836,27 @@
     if (items.length === 0) {
       itemsList.innerHTML = '<p class="sealed-empty-msg">Nog geen kaarten toegevoegd.</p>';
     } else {
-      itemsList.innerHTML = items.map(inst => {
+      const groups = new Map();
+      items.forEach(i => { const k = i.set_naam || 'Overig'; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(i); });
+      const rowHtml = (inst) => {
         const info = resolveInstanceInfo(inst);
         const aantalInst = parseInt(inst.aantal, 10) || 1;
+        const thumb = inst.afbeelding ? `<img class="verkoop-thumb" src="${inst.afbeelding}" alt="" loading="lazy">` : '<div class="verkoop-thumb verkoop-thumb-ph">🎴</div>';
         return `<div class="sealed-row" data-inst-id="${inst.id}">
+          ${thumb}
           <div class="sealed-row-info">
-            <div class="sealed-row-naam">${info.naam}${aantalInst > 1 ? ` (${aantalInst}x)` : ''}</div>
-            <div class="sealed-row-setinfo">${inst.set_naam || ''}${inst.versie ? ' &middot; ' + inst.versie : ''}</div>
+            <div class="sealed-row-naam">${inst.kaartnummer ? '#' + inst.kaartnummer + ' ' : ''}${info.naam}${aantalInst > 1 ? ` (${aantalInst}x)` : ''}</div>
+            <div class="sealed-row-setinfo">${inst.versie || ''}</div>
           </div>
           <div class="sealed-row-prices">&euro; ${fmtEuro(instanceLineValue(inst))}</div>
-          ${isVerkocht ? '' : `<button type="button" class="sealed-row-delete" data-inst-id="${inst.id}" title="Uit kavel halen">&times;</button>`}
+          ${isVerkocht ? '' : `<button type="button" class="sealed-row-delete" data-inst-id="${inst.id}" title="Uit kavel halen" aria-label="Uit kavel halen">&times;</button>`}
         </div>`;
+      };
+      itemsList.innerHTML = [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0], 'nl')).map(([setNaam, list]) => {
+        list.sort((a, b) => soSortKey(a) - soSortKey(b));
+        const cnt = list.reduce((sum, i) => sum + (parseInt(i.aantal, 10) || 1), 0);
+        const tot = list.reduce((sum, i) => sum + instanceLineValue(i), 0);
+        return `<div class="verkoop-set-head">${setNaam}<span>${cnt} kaart${cnt === 1 ? '' : 'en'} &middot; &euro; ${fmtEuro(tot)}</span></div>` + list.map(rowHtml).join('');
       }).join('');
       if (!isVerkocht) {
         itemsList.querySelectorAll('.sealed-row-delete').forEach(btn => {
