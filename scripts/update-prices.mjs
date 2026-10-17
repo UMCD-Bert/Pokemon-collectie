@@ -186,7 +186,7 @@ const PTCG_SET_OVERRIDES = {
 };
 
 async function fillMissingPhotos() {
-  const rows = await fetchAllPages('tcg_set_kaarten', 'select=id,set_naam,kaartnummer&or=(afbeelding.is.null,afbeelding.eq.)&order=id.asc');
+  const rows = await fetchAllPages('tcg_set_kaarten', 'select=id,set_naam,kaartnummer,naam&or=(afbeelding.is.null,afbeelding.eq.)&order=id.asc');
   if (rows.length === 0) return 0;
   const bySet = new Map();
   rows.forEach(r => { if (!bySet.has(r.set_naam)) bySet.set(r.set_naam, []); bySet.get(r.set_naam).push(r); });
@@ -198,11 +198,17 @@ async function fillMissingPhotos() {
     const ptcgId = idByName.get(normalizeSetName(override || setNaam));
     if (!ptcgId) { console.log(`Foto's: geen pokemontcg.io-set voor "${setNaam}" (${list.length} kaarten).`); continue; }
     const images = new Map();
+    const byName = new Map(); // genormaliseerde kaartnaam -> url (alleen als de naam in de set uniek is)
     try {
       for (let page = 1; page <= 5; page++) {
-        const r = await getJson(`${PTCG_BASE}/cards?q=set.id:${ptcgId}&page=${page}&pageSize=250&select=number,images`, { headers: UA_HEADERS });
+        const r = await getJson(`${PTCG_BASE}/cards?q=set.id:${ptcgId}&page=${page}&pageSize=250&select=number,name,images`, { headers: UA_HEADERS });
         const data = (r.json && r.json.data) || [];
-        data.forEach(c => { if (c.images && c.images.small) images.set(normNum(c.number), c.images.small); });
+        data.forEach(c => {
+          if (!(c.images && c.images.small)) return;
+          images.set(normNum(c.number), c.images.small);
+          const nk = normalizeSetName(c.name);
+          byName.set(nk, byName.has(nk) ? null : c.images.small);
+        });
         if (data.length < 250) break;
       }
     } catch (err) {
@@ -211,7 +217,8 @@ async function fillMissingPhotos() {
     }
     let n = 0;
     for (const row of list) {
-      const url = images.get(normNum(row.kaartnummer));
+      // Eerst op kaartnummer; lukt dat niet (bijv. Classic Collection heeft andere nummering), dan op unieke kaartnaam.
+      const url = images.get(normNum(row.kaartnummer)) || byName.get(normalizeSetName(row.naam)) || null;
       if (!url) continue;
       const res = await fetch(restUrl('tcg_set_kaarten', `?id=eq.${row.id}`), {
         method: 'PATCH', headers: authHeaders({ Prefer: 'return=minimal' }),

@@ -2074,7 +2074,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '3.33';
+  const APP_VERSION = '3.34';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
   document.getElementById('settingsVersion').textContent = `Versie ${APP_VERSION}`;
 
@@ -5178,7 +5178,11 @@
   // = _hires). Altijd via deze helpers tonen, nooit zelf een suffix plakken.
   function isFullImageUrl(u) { return /\.(png|jpe?g|webp)(\?.*)?$/i.test(u || ''); }
   function cardImgLow(u) { return isFullImageUrl(u) ? u : `${u}/low.png`; }
-  function cardImgHigh(u) { return isFullImageUrl(u) ? u.replace(/(\.[a-z]+)(\?.*)?$/i, '_hires$1$2') : `${u}/high.png`; }
+  function cardImgHigh(u) {
+    if (!isFullImageUrl(u)) return `${u}/high.png`;
+    // alleen pokemontcg.io heeft een _hires-variant; handmatig geplaatste foto's zijn al groot genoeg
+    return /images\.pokemontcg\.io/.test(u) ? u.replace(/(\.[a-z]+)(\?.*)?$/i, '_hires$1$2') : u;
+  }
 
   // Een door PokéWallet aangevulde prijs mag niet door een lege TCGdex-uitkomst
   // gewist worden; en prijs_bron volgt altijd de bron van de laatst geschreven prijs.
@@ -6513,7 +6517,7 @@
     // Foto's uit een andere bron (pokemontcg.io) voor kaarten die TCGdex niet heeft,
     // niet kwijtraken bij opnieuw ophalen.
     try {
-      const keepRes = await fetch(setKaartenRestUrl(`?set_naam=eq.${encodeURIComponent(setNaam)}&afbeelding_bron=eq.pokemontcg.io&select=kaartnummer,afbeelding,afbeelding_bron`), { headers: authHeaders(), cache: 'no-store' });
+      const keepRes = await fetch(setKaartenRestUrl(`?set_naam=eq.${encodeURIComponent(setNaam)}&afbeelding_bron=in.(pokemontcg.io,handmatig)&select=kaartnummer,afbeelding,afbeelding_bron`), { headers: authHeaders(), cache: 'no-store' });
       if (keepRes.ok) {
         const keep = new Map((await keepRes.json()).map(r => [normalizeKaartnummer(r.kaartnummer), r]));
         newRows.forEach(r => {
