@@ -267,9 +267,13 @@ Geldt voor de webapp én de native app (`~/Documenten/Xcode/Berts Code Base/Poke
   taal goed herkend; Normaal/Reverse Holo alleen aan het setlogo in het plaatje of de glans te onderscheiden.
 - **Pokédex-wissels (dashboard, web én native):** de lijst ("132 te wisselen" in de native app) is nog niet vergeleken met wat
   er echt in de fysieke binder zit. Bert pakt dit op samen met de binder-check; tot die tijd niets mee doen.
-- **Datacontroles uit de binder-proef:** Wartortle (EX Crystal Guardians #42) staat als "Holo" maar het setlogo in het
-  plaatje wijst op een **Reverse Holo**; Beedrill (Skyridge #5) staat als "Normaal" terwijl dat een Holo Rare is, en de
-  prijs € 104,09 lijkt die van Crystal #H4 (bekende verkeerde koppeling).
+- **Datacontroles uit de binder-proef (afgehandeld 18-10-2026):** Beedrill (Skyridge #5, exemplaar 3969) stond als Normaal
+  met € 104,09: TCGdex heeft de prijzen van Skyridge #5 en Crystal Beedrill H04 omgewisseld (PokéWallet bevestigt:
+  #5 = € 29,19 holo, H04 = € 104,09). Gezet op Holo, € 29,19 en 📌 vastgezet. De setcache voor die twee kaarten blijft
+  door TCGdex elke dag verkeerd gevuld worden. Wartortle (EX Crystal Guardians #42, exemplaar 3964) stond als Holo maar
+  is een Reverse Holo (Cardmarket noemt dat 'holo', € 24); versie aangepast, prijs bleef € 23,57.
+  Lering: TCGdex wisselt soms prijzen tussen kaarten met bijna hetzelfde nummer (H04 ↔ 5); controleer verdachte
+  hoge prijzen bij PokéWallet voordat je ze vertrouwt.
 
 ## Ook besproken (niet gebouwd)
 
