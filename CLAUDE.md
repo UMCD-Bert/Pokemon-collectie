@@ -188,6 +188,17 @@ upload naar de bucket `afbeeldingen` onder `setkaarten/<set>-<nummer>.jpg` (POST
 60 kaarten: één foto voor beide. Plaatjes die alleen als afbeelding in de chat staan, komen niet als bestand op de
 Mac — vraag dan om de map. Minimaal ~500 px breed per kaart; kleine thumbnails uit lijstjes zijn te klein.
 
+### Eigen kopie van kaartfoto's (18–21-10-2026)
+
+TCGdex (`assets.tcgdex.net`) had op 21-10-2026 een storing (503), waardoor alle foto's verdwenen. Daarom spiegelt
+`scripts/mirror-photos.mjs` (laatste stap van de dagelijkse job, `continue-on-error`) de TCGdex-foto's van **eigen
+exemplaren** naar de eigen opslag: `afbeeldingen/spiegel/<sleutel>.jpg` (TCGdex `high.jpg`, ~90 KB; ~230 MB voor ~2800
+foto's), en zet `kaart_exemplaren.afbeelding` en de bijbehorende `tcg_set_kaarten.afbeelding` (met
+`afbeelding_bron='spiegel'`) op de eigen URL. Idempotent; mislukte downloads (TCGdex 503) komen de volgende dag opnieuw
+aan de beurt. Een opnieuw opgehaalde set zet de basis-URL van TCGdex terug; de job spiegelt die weer. Kaarten die je nog
+niet bezit blijven van TCGdex afhangen. Handmatig draaien: `SUPABASE_URL=… SUPABASE_KEY=… node scripts/mirror-photos.mjs`
+(`MIRROR_LIMIT=5` om te testen).
+
 ### UX-opzet (v3.29–v3.33)
 
 - **Navigatie:** op telefoon (<= 700px) een vaste onderbalk met 5 tabs; Sealed en

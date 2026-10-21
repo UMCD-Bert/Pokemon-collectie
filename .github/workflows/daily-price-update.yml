@@ -19,3 +19,11 @@ jobs:
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
           POKEWALLET_KEY: ${{ secrets.POKEWALLET_KEY }}
         run: node scripts/update-prices.mjs
+      - name: Eigen kopie van kaartfoto's bijwerken
+        # Spiegelt foto's van eigen exemplaren naar de eigen opslag (TCGdex-storingen vangen we zo op).
+        # Mislukt dit, dan komt het de volgende dag opnieuw aan de beurt; de prijsupdate hierboven blijft geldig.
+        continue-on-error: true
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: node scripts/mirror-photos.mjs
