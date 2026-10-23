@@ -194,6 +194,13 @@ Mac — vraag dan om de map. Minimaal ~500 px breed per kaart; kleine thumbnails
 `lorcana_set_kaarten` (USD, nieuwe sets vanzelf; bezit blijft ongemoeid). De native app toont dit onder het spel Lorcana.
 Lokaal: `SUPABASE_URL=… SUPABASE_KEY=… node scripts/update-lorcana.mjs` (`DRY_RUN=1`, `ONLY_SET=14`).
 
+### Magic (23-10-2026)
+
+Magic zit alleen in de native app. Tabellen `magic_kaarten` (druk uit Scryfall: id = Scryfall-uuid, EUR-prijzen `prijs_normaal/foil/etched`,
+`finishes`) en `magic_exemplaren` (uniek per kaart + versie Normaal/Foil/Etched; `on delete cascade`); geen RLS. Alleen sets die je opent
+(en kaarten die je zoekt en aanvinkt) komen in `magic_kaarten`, vanwege de gratis opslag. `scripts/update-magic.mjs` (stap in de dagelijkse job,
+`continue-on-error`) ververst de prijzen van **eigen** kaarten via Scryfall `/cards/collection`. Lokaal: `SUPABASE_URL=… SUPABASE_KEY=… node scripts/update-magic.mjs`.
+
 ### Eigen kopie van kaartfoto's (18–21-10-2026)
 
 TCGdex (`assets.tcgdex.net`) had op 21-10-2026 een storing (503), waardoor alle foto's verdwenen. Daarom spiegelt

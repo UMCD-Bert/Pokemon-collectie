@@ -34,3 +34,10 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
         run: node scripts/update-lorcana.mjs
+      - name: Magic-prijzen (EUR) van eigen kaarten bijwerken
+        # Scryfall -> magic_kaarten, alleen kaarten in magic_exemplaren. Los van de Pokémon-update.
+        continue-on-error: true
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: node scripts/update-magic.mjs
