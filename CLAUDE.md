@@ -188,6 +188,12 @@ upload naar de bucket `afbeeldingen` onder `setkaarten/<set>-<nummer>.jpg` (POST
 60 kaarten: één foto voor beide. Plaatjes die alleen als afbeelding in de chat staan, komen niet als bestand op de
 Mac — vraag dan om de map. Minimaal ~500 px breed per kaart; kleine thumbnails uit lijstjes zijn te klein.
 
+### Lorcana-prijzen (23-10-2026)
+
+`scripts/update-lorcana.mjs` (stap in de dagelijkse job, `continue-on-error`) ververst alle Lorcast-sets/-kaarten naar
+`lorcana_set_kaarten` (USD, nieuwe sets vanzelf; bezit blijft ongemoeid). De native app toont dit onder het spel Lorcana.
+Lokaal: `SUPABASE_URL=… SUPABASE_KEY=… node scripts/update-lorcana.mjs` (`DRY_RUN=1`, `ONLY_SET=14`).
+
 ### Eigen kopie van kaartfoto's (18–21-10-2026)
 
 TCGdex (`assets.tcgdex.net`) had op 21-10-2026 een storing (503), waardoor alle foto's verdwenen. Daarom spiegelt
