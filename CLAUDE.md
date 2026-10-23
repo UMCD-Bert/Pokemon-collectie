@@ -290,7 +290,7 @@ Geldt voor de webapp én de native app (`~/Documenten/Xcode/Berts Code Base/Poke
 
 - Commerciële/App Store-versie afgeraden (Pokémon-IP/TCGdex-voorwaarden/
   Nintendo-handhaving).
-- Lorcana/Magic-zusterapps besproken, nog niet gebouwd.
+- Lorcana (sinds 23-10-2026) en later Magic komen in de **native app** als extra spellen (spelkiezer); zie `CLAUDE.md` van de native app. De webapp blijft Pokémon; de losse Lorcana-webapp gaat uit zodra de native versie bevalt.
 - pokemontcg.io als fallback-beeldbron voor TCGdex-datagaten (bijv. Dragon
   Majesty, set-id "sm75") — nog niet geïmplementeerd, alleen genoteerd.
 - Nieuwe Dashboard-ideeën geopperd (nog geen besluit): overzicht ontbrekende
