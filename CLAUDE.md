@@ -201,6 +201,24 @@ Magic zit alleen in de native app. Tabellen `magic_kaarten` (druk uit Scryfall: 
 (en kaarten die je zoekt en aanvinkt) komen in `magic_kaarten`, vanwege de gratis opslag. `scripts/update-magic.mjs` (stap in de dagelijkse job,
 `continue-on-error`) ververst de prijzen van **eigen** kaarten via Scryfall `/cards/collection`. Lokaal: `SUPABASE_URL=… SUPABASE_KEY=… node scripts/update-magic.mjs`.
 
+### Robuuste prijzen (24-10-2026)
+
+Aanleiding: TCGdex koppelt soms twee kaarten aan één Cardmarket-product (Raikou Neo Revelation #22 kreeg de prijs van de holo #13: € 136 i.p.v. ≈ € 15);
+bij 11 van de 28 duurste kaarten was de app-prijs > 2× te hoog. Daarom krijgt elke prijs van een eigen exemplaar een **betrouwbaarheid**:
+`kaart_exemplaren.prijs_betrouwbaarheid` = `solide` (≥ 2 onafhankelijke bronnen binnen 1,6× of € 1,50 van elkaar) · `enkel` (één bron, niet gecontroleerd) ·
+`twijfel` (bronnen spreken elkaar tegen, gedeeld product, editie onbekend of springerige markt); `prijs_toelichting` (tekst), `prijs_bewijs` (jsonb: `bronnen` + `ruw`),
+`prijs_gecontroleerd_op`. 📌 vastgezet / handmatig blijft ongemoeid. De `waarde` is bij solide de mediaan van de overeenkomende bronnen, bij twijfel de **laagste** geloofwaardige
+(nooit te hoog staan bij verkoop). Zuivere logica + tests: `scripts/lib/prijsoordeel.mjs` (`node --test scripts/test`).
+- **Pokémon** — `scripts/prijs-controle.mjs`, eigen workflow `prijs-controle.yml` (09:30 UTC, ~4 uur, wacht tussen PokéWallet-verzoeken: max 100 per uur / 1000 per dag).
+  Bronnen: TCGdex-setcache (onbetrouwbaar als ≥ 2 kaarten in een set exact dezelfde prijsset ≥ € 3 hebben), PokéWallet Cardmarket per kaart (`/search?q=<naam> <nr>`; alleen bij
+  smalle zoekopdrachten staat het `cardmarket`-blok erbij, niet bij zoeken op setnaam), PokéWallet TCGplayer (`/search?q=<setnaam>`, dollars × ECB-koers van frankfurter.dev).
+  `/sets/<id>` geeft géén prijzen. Eerst TCGplayer per set (duurste sets eerst), dan Cardmarket per kaart (duurste eerst); eerder opgehaalde bronprijzen (`prijs_bewijs.ruw`) blijven 7 dagen geldig.
+  **Editie**: `kaart_exemplaren.editie` (1st Edition / Shadowless / Unlimited) voor Base Set, Jungle, Fossil, Team Rocket, Gym Heroes/Challenge en Neo Genesis/Discovery/Revelation/Destiny;
+  onbekend = Unlimited-prijs aangehouden en `twijfel` als 1st Edition > 1,6× duurder. `update-prices.mjs` laat solide/twijfel-exemplaren met rust (tot de controle 10 dagen oud is).
+- **Magic** — in `update-magic.mjs`: Scryfall geeft Cardmarket-euro's én TCGplayer-dollars (omgerekend): twee onafhankelijke bronnen per versie.
+- **Lorcana** — in `update-lorcana.mjs`: maar één bron (TCGplayer via Lorcast, in dollars), dus nooit solide; `twijfel` bij een Common/Uncommon > $ 15, foil goedkoper dan normaal, of een sprong ≥ 3× (> $ 5).
+- Apps tonen het teken per prijs (✅ solide, ❓ enkel, ⚠️ twijfel, 📌 vast) en bij tikken het bewijs. Web volgt later.
+
 ### Eigen kopie van kaartfoto's (18–21-10-2026)
 
 TCGdex (`assets.tcgdex.net`) had op 21-10-2026 een storing (503), waardoor alle foto's verdwenen. Daarom spiegelt

@@ -1,0 +1,27 @@
+name: Prijscontrole (robuuste prijzen)
+
+# Controleert de prijs van elk eigen Pokémon-exemplaar tegen onafhankelijke bronnen (zie CLAUDE.md, "Robuuste prijzen").
+# PokéWallet staat 100 verzoeken per uur toe; het script wacht tussen de verzoeken, dus dit duurt een paar uur.
+on:
+  schedule:
+    - cron: '30 9 * * *'
+  workflow_dispatch: {}
+
+jobs:
+  prijscontrole:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Unit-tests van het oordeel
+        run: node --test scripts/test
+      - name: Prijzen controleren
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          POKEWALLET_KEY: ${{ secrets.POKEWALLET_KEY }}
+          PW_MAX_CALLS: '400'
+        run: node scripts/prijs-controle.mjs

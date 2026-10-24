@@ -442,7 +442,9 @@ async function main() {
 
     const instances = await fetchAllPages(
       'kaart_exemplaren',
-      'select=id,set_naam,kaartnummer,versie,prijs_handmatig_datum&prijs_handmatig_datum=is.null&prijs_vast=eq.false&set_naam=not.is.null&kaartnummer=not.is.null&order=id.asc'
+      'select=id,set_naam,kaartnummer,versie,prijs_handmatig_datum&prijs_handmatig_datum=is.null&prijs_vast=eq.false&set_naam=not.is.null&kaartnummer=not.is.null' +
+      // prijzen die scripts/prijs-controle.mjs net heeft beoordeeld (solide/twijfel) laat deze fase met rust, tot de controle 10 dagen oud is
+      `&or=(prijs_betrouwbaarheid.is.null,prijs_betrouwbaarheid.eq.enkel,prijs_gecontroleerd_op.lt.${new Date(Date.now() - 10 * 86400000).toISOString()})&order=id.asc`
     );
     console.log(`${instances.length} eigen exemplaren om te controleren.`);
 
