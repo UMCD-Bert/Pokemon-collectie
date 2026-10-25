@@ -219,6 +219,11 @@ bij 11 van de 28 duurste kaarten was de app-prijs > 2× te hoog. Daarom krijgt e
 - **Lorcana** — in `update-lorcana.mjs`: maar één bron (TCGplayer via Lorcast, in dollars), dus nooit solide; `twijfel` bij een Common/Uncommon > $ 15, foil goedkoper dan normaal, of een sprong ≥ 3× (> $ 5).
 - Apps tonen het teken per prijs (✅ solide, ❓ enkel, ⚠️ twijfel, 📌 vast) en bij tikken het bewijs. Web volgt later.
 
+### Verkoop per spel (25-10-2026)
+
+`verkoop_bundels.spel` en `sealed_producten.spel` (standaard `pokemon`); Lorcana/Magic-kavels bewaren hun inhoud in `verkoop_regels` (bundel_id, spel, exemplaar_id, aantal;
+on delete cascade). Het webapp-deel (Pokémon) gebruikt nog alleen `verkoop_bundels` zonder filter op spel: kavels van andere spellen zijn alleen in de native app te zien.
+
 ### Eigen kopie van kaartfoto's (18–21-10-2026)
 
 TCGdex (`assets.tcgdex.net`) had op 21-10-2026 een storing (503), waardoor alle foto's verdwenen. Daarom spiegelt
