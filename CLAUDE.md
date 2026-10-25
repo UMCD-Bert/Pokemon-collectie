@@ -219,6 +219,11 @@ bij 11 van de 28 duurste kaarten was de app-prijs > 2× te hoog. Daarom krijgt e
 - **Lorcana** — in `update-lorcana.mjs`: maar één bron (TCGplayer via Lorcast, in dollars), dus nooit solide; `twijfel` bij een Common/Uncommon > $ 15, foil goedkoper dan normaal, of een sprong ≥ 3× (> $ 5).
 - Apps tonen het teken per prijs (✅ solide, ❓ enkel, ⚠️ twijfel, 📌 vast) en bij tikken het bewijs. Web volgt later.
 
+### Waarde door de tijd (25-10-2026)
+
+`scripts/waarde-snapshot.mjs` (laatste stap van de dagelijkse job) bewaart per dag per spel een rij in `waarde_historie` (datum, spel, kaarten_waarde, sealed_waarde, aantal, unieke,
+solide/enkel/twijfel; alles in euro, Lorcana omgerekend met de ECB-koers). Begonnen op 25-10-2026; er is geen terugwerkende geschiedenis. De native app tekent er de grafiek van in "Alle spellen".
+
 ### Verkoop per spel (25-10-2026)
 
 `verkoop_bundels.spel` en `sealed_producten.spel` (standaard `pokemon`); Lorcana/Magic-kavels bewaren hun inhoud in `verkoop_regels` (bundel_id, spel, exemplaar_id, aantal;

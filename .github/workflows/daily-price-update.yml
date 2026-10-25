@@ -41,3 +41,10 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
         run: node scripts/update-magic.mjs
+      - name: Waarde van de collecties bewaren (grafiek in de app)
+        # Eén rij per dag per spel in waarde_historie; draait als laatste, na alle prijsupdates.
+        continue-on-error: true
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: node scripts/waarde-snapshot.mjs
