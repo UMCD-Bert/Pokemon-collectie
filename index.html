@@ -2078,7 +2078,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '3.35';
+  const APP_VERSION = '3.36';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
   document.getElementById('settingsVersion').textContent = `Versie ${APP_VERSION}`;
 
@@ -6853,7 +6853,7 @@
       const pageSize = 1000;
       let offset = 0;
       while (true) {
-        const res = await fetch(sealedRestUrl(`?select=*&order=id.desc&limit=${pageSize}&offset=${offset}`), { headers: authHeaders(), cache: 'no-store' });
+        const res = await fetch(sealedRestUrl(`?select=*&spel=eq.pokemon&order=id.desc&limit=${pageSize}&offset=${offset}`), { headers: authHeaders(), cache: 'no-store' });
         if (!res.ok) throw new Error(`status ${res.status}`);
         const batch = await res.json();
         sealedItems = sealedItems.concat(batch);
@@ -7023,7 +7023,7 @@
     const statusEl4 = document.getElementById('verkoopStatus');
     statusEl4.textContent = 'Bezig met laden...';
     try {
-      const res = await fetch(verkoopRestUrl('?select=*&order=aangemaakt_op.desc'), { headers: authHeaders(), cache: 'no-store' });
+      const res = await fetch(verkoopRestUrl('?select=*&spel=eq.pokemon&order=aangemaakt_op.desc'), { headers: authHeaders(), cache: 'no-store' });
       if (!res.ok) throw new Error(`status ${res.status}`);
       verkoopBundels = await res.json();
       statusEl4.textContent = '';

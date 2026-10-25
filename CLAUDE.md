@@ -3,7 +3,7 @@
 Eén zelfstandig HTML-bestand (`index.html`, lokaal soms ook aangeleverd als
 `supabase_pokemon_collectie.html`), gehost op GitHub Pages, met Supabase als
 backend (gratis tier, publishable key hardcoded in het bestand). Gedeeld door
-twee gebruikers (Bert & Ellen). Huidige versie: **v3.35**. Sinds v3.17 een echte PWA (`manifest.json`,
+twee gebruikers (Bert & Ellen). Huidige versie: **v3.36**. Sinds v3.17 een echte PWA (`manifest.json`,
 `service-worker.js`, `icons/`, Pokéball-icoon uit `icon-source.svg`); updates
 comen vanzelf door (service worker haalt netwerk-eerst met `cache: 'no-store'`),
 dus de snelkoppeling hoeft na een deploy niet opnieuw toegevoegd te worden.
@@ -222,7 +222,7 @@ bij 11 van de 28 duurste kaarten was de app-prijs > 2× te hoog. Daarom krijgt e
 ### Verkoop per spel (25-10-2026)
 
 `verkoop_bundels.spel` en `sealed_producten.spel` (standaard `pokemon`); Lorcana/Magic-kavels bewaren hun inhoud in `verkoop_regels` (bundel_id, spel, exemplaar_id, aantal;
-on delete cascade). Het webapp-deel (Pokémon) gebruikt nog alleen `verkoop_bundels` zonder filter op spel: kavels van andere spellen zijn alleen in de native app te zien.
+on delete cascade). De webapp (v3.36) filtert op `spel=eq.pokemon`.
 
 ### Eigen kopie van kaartfoto's (18–21-10-2026)
 
@@ -358,6 +358,7 @@ Geldt voor de webapp én de native app (`~/Documenten/Xcode/Berts Code Base/Poke
 - v3.26: regionale vormen en Nidoran koppelen op naam aan de juiste Pokémon.
 - v3.27: Vervanglijst (printlijst kaarten met prioriteit om te vervangen).
 - v3.34: handmatig geplaatste foto's worden goed getoond en bewaard.
+- v3.36: Verkoop en Sealed tonen alleen Pokémon (kavels en sealed van Lorcana/Magic horen bij de native app; `spel`-kolom).
 - v3.35: 📌 prijs vastzetten (`kaart_exemplaren.prijs_vast`, nooit automatisch overschreven: detailscherm, Serie/Set, bulk-sync en de dagelijkse job); "Verdachte prijzen" toont ook vastgezette prijzen en prijssprongen (>= 25% en >= € 0,10 in 14 dagen, uit `prijs_historie`).
 - v3.29–v3.33: UX-schoonmaak (kop zonder overlap, instellingen als venster, onderbalk, Afdrukken-menu, compacte
   voortgang, beheerscherm, Verkoop-kavel per set met plaatjes, lazy loading, aanraakdoelen, donkere modus).
