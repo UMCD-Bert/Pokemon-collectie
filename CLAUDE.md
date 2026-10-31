@@ -224,6 +224,13 @@ bij 11 van de 28 duurste kaarten was de app-prijs > 2× te hoog. Daarom krijgt e
 `scripts/waarde-snapshot.mjs` (laatste stap van de dagelijkse job) bewaart per dag per spel een rij in `waarde_historie` (datum, spel, kaarten_waarde, sealed_waarde, aantal, unieke,
 solide/enkel/twijfel; alles in euro, Lorcana omgerekend met de ECB-koers). Begonnen op 25-10-2026; er is geen terugwerkende geschiedenis. De native app tekent er de grafiek van in "Alle spellen".
 
+### Prijsverloop per Lorcana-/Magic-kaart (31-10-2026)
+
+Tabel `prijs_historie_spel` (spel, kaart_id, versie, prijs, bron, gemeten_op; geen RLS): `kaart_id` = `lorcana_set_kaarten.id` resp. `magic_kaarten.id`. `scripts/prijs-historie-spel.mjs` (stap in de dagelijkse job,
+`continue-on-error`, na de prijsupdates) bewaart per **eigen** druk wekelijks een meting, of eerder bij een sprong (>= 25% en >= 0,10), zelfde regel als `prijs_historie`. Prijs = wat de app toont
+(exemplaar-`waarde` anders kaartprijs); Lorcana in dollars (de app rekent om met de koers van vandaag), Magic in euro. Idempotent; test in `scripts/test`. Eerste meting 31-10-2026; er is geen terugwerkende geschiedenis.
+Native app: knop "Prijsverloop <versie>" in het kaartvenster (Lorcana/Magic), via `PrijsVerloopView`. De webapp heeft dit niet.
+
 ### Verkoop per spel (25-10-2026)
 
 `verkoop_bundels.spel` en `sealed_producten.spel` (standaard `pokemon`); Lorcana/Magic-kavels bewaren hun inhoud in `verkoop_regels` (bundel_id, spel, exemplaar_id, aantal;
