@@ -3,7 +3,7 @@
 Eén zelfstandig HTML-bestand (`index.html`, lokaal soms ook aangeleverd als
 `supabase_pokemon_collectie.html`), gehost op GitHub Pages, met Supabase als
 backend (gratis tier, publishable key hardcoded in het bestand). Gedeeld door
-twee gebruikers (Bert & Ellen). Huidige versie: **v3.36**. Sinds v3.17 een echte PWA (`manifest.json`,
+twee gebruikers (Bert & Ellen). Huidige versie: **v3.37**. Sinds v3.17 een echte PWA (`manifest.json`,
 `service-worker.js`, `icons/`, Pokéball-icoon uit `icon-source.svg`); updates
 comen vanzelf door (service worker haalt netwerk-eerst met `cache: 'no-store'`),
 dus de snelkoppeling hoeft na een deploy niet opnieuw toegevoegd te worden.
@@ -314,12 +314,7 @@ niet bezit blijven van TCGdex afhangen. Handmatig draaien: `SUPABASE_URL=… SUP
 
 Geldt voor de webapp én de native app (`~/Documenten/Xcode/Berts Code Base/Pokemon`).
 
-- **Duo-/tag-teamkaarten onderbrengen** ("Pikachu & Zekrom GX", "Reshiram & Zekrom GX", ...): een exemplaar hangt aan precies
-  één Pokédex-regel. TCGdex geeft alleen het dexid van de eerst genoemde Pokémon mee; bij 30th Classic Collection #008
-  ontbreekt dat dexid, waardoor aanvinken nu faalt ("Kon geen Pokémon vinden"). **Besluit open (Bert denkt na):**
-  (a) altijd de eerst genoemde Pokémon (bij naam met " & " het eerste deel proberen; in `findRecordBySpeciesName` in
-  `index.html` én `KaartLogica.vindPokemon` in PokemonKern), of (b) Bert kiest bij het aanvinken onder welke Pokémon.
-  Beide Pokémon tegelijk is bewust uitgesloten (dubbel geteld, en maar één binderplek).
+- **Duo-/tag-teamkaarten** (afgehandeld 6-11-2026, besluit A): een kaart met " & " in de naam hangt onder de eerst genoemde Pokémon (`findRecordBySpeciesName`/`extractCoreSpeciesName` in `index.html`, `KaartLogica.eerstGenoemd` in PokemonKern). Beide Pokémon tegelijk blijft uitgesloten.
 - **Camera in de native app (iPhone/iPad):** binder-check met een foto van een binderpagina (4×4): kaarten herkennen
   (Vision), vergelijken met de binderkaart (`in_pokedex`) per Pokédexnummer, en aangeven wat gewisseld moet worden;
   daarna eventueel kaarten scannen om toe te voegen. Proef op pagina 1 (Pokédex #1–#16) was bemoedigend: Pokémon, set en
@@ -370,6 +365,7 @@ Geldt voor de webapp én de native app (`~/Documenten/Xcode/Berts Code Base/Poke
 - v3.26: regionale vormen en Nidoran koppelen op naam aan de juiste Pokémon.
 - v3.27: Vervanglijst (printlijst kaarten met prioriteit om te vervangen).
 - v3.34: handmatig geplaatste foto's worden goed getoond en bewaard.
+- v3.37: kaarten van twee Pokémon ("Darkrai & Cresselia LEGEND", "Pikachu & Zekrom GX") hangen onder de eerst genoemde Pokémon (backlog-besluit A, 6-11-2026; ook `KaartLogica.eerstGenoemd` in de native app).
 - v3.36: Verkoop en Sealed tonen alleen Pokémon (kavels en sealed van Lorcana/Magic horen bij de native app; `spel`-kolom).
 - v3.35: 📌 prijs vastzetten (`kaart_exemplaren.prijs_vast`, nooit automatisch overschreven: detailscherm, Serie/Set, bulk-sync en de dagelijkse job); "Verdachte prijzen" toont ook vastgezette prijzen en prijssprongen (>= 25% en >= € 0,10 in 14 dagen, uit `prijs_historie`).
 - v3.29–v3.33: UX-schoonmaak (kop zonder overlap, instellingen als venster, onderbalk, Afdrukken-menu, compacte

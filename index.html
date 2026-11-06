@@ -2078,7 +2078,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '3.36';
+  const APP_VERSION = '3.37';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
   document.getElementById('settingsVersion').textContent = `Versie ${APP_VERSION}`;
 
@@ -6089,7 +6089,8 @@
   // en bij "Naam's Soort"-kaarten (elk apostrofteken: ' ’ ‘ ´ `) alles vóór de
   // eerste "'s " weg, zodat "N's Darumaka" -> "darumaka" wordt.
   function extractCoreSpeciesName(cardName) {
-    let naam = (cardName || '').trim().replace(/\s+(ex|EX|GX|VMAX|VSTAR|V-UNION|V)$/, '').trim();
+    // Kaarten van twee Pokémon ("Darkrai & Cresselia LEGEND"): de eerst genoemde telt.
+    let naam = (cardName || '').trim().split(' & ')[0].trim().replace(/\s+(ex|EX|GX|VMAX|VSTAR|V-UNION|V)$/, '').trim();
     const m = naam.match(/^.+?['’‘´`]s\s+(.+)$/);
     // Regionale vormen ("Hisuian Zorua") horen bij dezelfde Pokédex-soort als
     // de gewone vorm; "Hisuian" e.d. is geen deel van de soortnaam.
@@ -6103,7 +6104,7 @@
   // via extractCoreSpeciesName. Alleen als terugval als het dexid ontbreekt.
   function findRecordBySpeciesName(cardName) {
     if (!cardName) return null;
-    const lower = (cardName || '').trim().replace(/\s+(ex|EX|GX|VMAX|VSTAR|V-UNION|V)$/, '').trim().toLowerCase();
+    const lower = (cardName || '').trim().split(' & ')[0].trim().replace(/\s+(ex|EX|GX|VMAX|VSTAR|V-UNION|V)$/, '').trim().toLowerCase();
     let rec = records.find(r => (r.naam || '').trim().toLowerCase() === lower);
     if (rec) return rec;
     const core = extractCoreSpeciesName(cardName);
