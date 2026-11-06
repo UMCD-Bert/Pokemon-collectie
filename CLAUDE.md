@@ -185,7 +185,7 @@ bestanden in `~/Downloads/kaartfotos` en zegt "klaar". Ik herken de kaart, maak 
 upload naar de bucket `afbeeldingen` onder `setkaarten/<set>-<nummer>.jpg` (POST met `x-upsert`), en zet
 `tcg_set_kaarten.afbeelding` + `afbeelding_bron='handmatig'` én de `afbeelding` van bijbehorende eigen exemplaren
 (`kaart_exemplaren`, alleen waar die leeg is). "MEP Black Star Promos" en "Mega Evolution Promos" zijn dezelfde
-60 kaarten: één foto voor beide. Plaatjes die alleen als afbeelding in de chat staan, komen niet als bestand op de
+kaarten (6-11-2026: dubbele set "MEP Black Star Promos" uit `tcg_set_kaarten` verwijderd, alleen "Mega Evolution Promos" blijft; TCGdex noemt de set `mep`, 112 kaarten, nog zonder foto's; bestaande sets worden niet door de job aangevuld met nieuwe kaarten, dat gaat met een INSERT van alleen de ontbrekende nummers). Plaatjes die alleen als afbeelding in de chat staan, komen niet als bestand op de
 Mac — vraag dan om de map. Minimaal ~500 px breed per kaart; kleine thumbnails uit lijstjes zijn te klein.
 
 ### Lorcana-prijzen (23-10-2026)
