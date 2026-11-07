@@ -3,7 +3,7 @@
 Eén zelfstandig HTML-bestand (`index.html`, lokaal soms ook aangeleverd als
 `supabase_pokemon_collectie.html`), gehost op GitHub Pages, met Supabase als
 backend (gratis tier, publishable key hardcoded in het bestand). Gedeeld door
-twee gebruikers (Bert & Ellen). Huidige versie: **v3.37**. Sinds v3.17 een echte PWA (`manifest.json`,
+twee gebruikers (Bert & Ellen). Huidige versie: **v3.38**. Sinds v3.17 een echte PWA (`manifest.json`,
 `service-worker.js`, `icons/`, Pokéball-icoon uit `icon-source.svg`); updates
 comen vanzelf door (service worker haalt netwerk-eerst met `cache: 'no-store'`),
 dus de snelkoppeling hoeft na een deploy niet opnieuw toegevoegd te worden.
@@ -115,6 +115,13 @@ Cardmarket-zoekresultaat) · ⚠️ Verdachte prijzen.
   toevoegen. Let op: TCGdex' setlijst bevat geen serie-info, dus de dynamische
   ontdekking in de app vult niets aan.
 - `verkoop_bundels` — zie het tabblad Verkoop.
+- **Pokédex-binder (v3.38):** een gewone binder in `binders` (id 16, `spel = 'pokedex'`) met de kaart per Pokémon in `binder_kaarten`
+  (`spel = 'pokedex'`, `slot` = Pokédexnummer = `pokemon.id`, `exemplaar_id` = tekst). De webapp leest en schrijft die plekken
+  (`loadPokedexBinder`, `writePokedexPlek`; schrijven is een upsert op `binder_id,slot`); `inst.in_pokedex` is in de webapp afgeleid van de plekken.
+  `kaart_exemplaren.in_pokedex` blijft als spiegel bestaan: twee database-triggers (`sync_pokedex_naar_binder`, `sync_binder_naar_pokedex`)
+  houden vlag en plek in beide richtingen gelijk, voor oudere native builds. Ontbreekt de binder of mislukt het laden, dan valt de webapp
+  terug op de vlag. De webapp kent de set-binders (o.a. "30th Celebration") niet: de lijst "Pokédex-wissels" houdt daar dus geen rekening mee
+  (de native app wel, zie de voorrangsregel in diens `CLAUDE.md`).
 - `kaart_exemplaren.prijs_vast` (v3.35, boolean): 📌 vastgezet = nooit automatisch overschrijven. Let op: ook zonder vast-vinkje slaat de dagelijkse job exemplaren met `prijs_handmatig_datum` over; alleen de knoppen in de app (detail/Serie-Set/bulk) overschrijven een handmatige prijs als TCGdex een nieuwere datum heeft.
 - `prijs_historie` (v3.28) — prijsverloop per bezeten druk (set_naam, genormaliseerd
   kaartnummer, versie, prijs, bron, gemeten_op). Door de dagelijkse job gevuld:
@@ -365,6 +372,7 @@ Geldt voor de webapp én de native app (`~/Documenten/Xcode/Berts Code Base/Poke
 - v3.26: regionale vormen en Nidoran koppelen op naam aan de juiste Pokémon.
 - v3.27: Vervanglijst (printlijst kaarten met prioriteit om te vervangen).
 - v3.34: handmatig geplaatste foto's worden goed getoond en bewaard.
+- v3.38: Pokédex-binder als gewone binder: de webapp leest/schrijft `binder_kaarten` (spel `pokedex`) in plaats van alleen de vlag `in_pokedex` (die de database spiegelt); zelfde stap als native build 51.
 - v3.37: kaarten van twee Pokémon ("Darkrai & Cresselia LEGEND", "Pikachu & Zekrom GX") hangen onder de eerst genoemde Pokémon (backlog-besluit A, 6-11-2026; ook `KaartLogica.eerstGenoemd` in de native app).
 - v3.36: Verkoop en Sealed tonen alleen Pokémon (kavels en sealed van Lorcana/Magic horen bij de native app; `spel`-kolom).
 - v3.35: 📌 prijs vastzetten (`kaart_exemplaren.prijs_vast`, nooit automatisch overschreven: detailscherm, Serie/Set, bulk-sync en de dagelijkse job); "Verdachte prijzen" toont ook vastgezette prijzen en prijssprongen (>= 25% en >= € 0,10 in 14 dagen, uit `prijs_historie`).

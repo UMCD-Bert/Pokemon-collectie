@@ -2078,7 +2078,7 @@
   // App-versienummer: bij elke inhoudelijke wijziging hier ophogen (bijv. 1.1 -> 1.2),
   // zodat je op je telefoon direct kunt zien of de nieuwste versie geladen is
   // (handig bij twijfel over PWA-cache).
-  const APP_VERSION = '3.37';
+  const APP_VERSION = '3.38';
   document.getElementById('appVersion').textContent = `v${APP_VERSION}`;
   document.getElementById('settingsVersion').textContent = `Versie ${APP_VERSION}`;
 
@@ -4162,6 +4162,55 @@
 
   function instRestUrl(path) { return `${config.url}/rest/v1/kaart_exemplaren${path || ''}`; }
 
+  // Pokédex-binder (v3.38): een gewone binder in `binders` (spel 'pokedex'); de kaart per Pokémon staat in `binder_kaarten`
+  // (spel 'pokedex', slot = Pokédexnummer = records.id). De webapp leest en schrijft die plekken; `kaart_exemplaren.in_pokedex`
+  // blijft als spiegel bestaan (de database houdt hem gelijk, voor oudere versies van de native app). `inst.in_pokedex` hieronder
+  // is dus afgeleid van de plekken. Ontbreekt de binder (of mislukt het laden), dan valt alles terug op de vlag zelf.
+  let pokedexBinderId = null;
+  function plekRestUrl(path) { return `${config.url}/rest/v1/binder_kaarten${path || ''}`; }
+
+  async function loadPokedexBinder() {
+    pokedexBinderId = null;
+    try {
+      const rb = await fetch(`${config.url}/rest/v1/binders?spel=eq.pokedex&select=id&order=id.asc&limit=1`, { headers: authHeaders(), cache: 'no-store' });
+      if (!rb.ok) throw new Error(`status ${rb.status}`);
+      const binders = await rb.json();
+      if (!binders.length) return;
+      const inBinder = new Set();
+      const pageSize = 1000;
+      let offset = 0;
+      while (true) {
+        const res = await fetch(plekRestUrl(`?spel=eq.pokedex&select=exemplaar_id&order=id.asc&limit=${pageSize}&offset=${offset}`), { headers: authHeaders(), cache: 'no-store' });
+        if (!res.ok) throw new Error(`status ${res.status}`);
+        const batch = await res.json();
+        batch.forEach(r => inBinder.add(String(r.exemplaar_id)));
+        if (batch.length < pageSize) break;
+        offset += pageSize;
+      }
+      allInstances.forEach(i => { i.in_pokedex = inBinder.has(String(i.id)); });
+      pokedexBinderId = binders[0].id;
+    } catch (err) {
+      console.error('Kon de Pokédex-binder niet laden (terugval op in_pokedex):', err);
+      pokedexBinderId = null;
+    }
+  }
+
+  // Zet het exemplaar als kaart van de Pokédex-binder (vervangt wat er voor die Pokémon zat), of haalt het eruit.
+  async function writePokedexPlek(inst, aan) {
+    if (aan) {
+      const res = await fetch(plekRestUrl('?on_conflict=binder_id,slot'), {
+        method: 'POST', cache: 'no-store', headers: authHeaders({ 'Prefer': 'resolution=merge-duplicates,return=minimal' }),
+        body: JSON.stringify({ binder_id: pokedexBinderId, spel: 'pokedex', exemplaar_id: String(inst.id), slot: String(inst.parent_id) })
+      });
+      if (!res.ok) throw new Error(await res.text());
+    } else {
+      const res = await fetch(plekRestUrl(`?binder_id=eq.${pokedexBinderId}&slot=eq.${encodeURIComponent(String(inst.parent_id))}&exemplaar_id=eq.${encodeURIComponent(String(inst.id))}`), {
+        method: 'DELETE', cache: 'no-store', headers: authHeaders({ 'Prefer': 'return=minimal' })
+      });
+      if (!res.ok) throw new Error(await res.text());
+    }
+  }
+
   async function loadAllInstances() {
     try {
       if (!extraLoaded) {
@@ -4179,6 +4228,7 @@
         if (batch.length < pageSize) break;
         offset += pageSize;
       }
+      await loadPokedexBinder();
       await migrateExtraInstanceParentTypes();
       await migrateLegacyOwnedToInstances();
       await migrateInitialInPokedex();
@@ -4345,12 +4395,21 @@
     });
     if (winners.length === 0) return;
     try {
-      const res = await fetch(instRestUrl(`?id=in.(${winners.join(',')})`), {
-        method: 'PATCH', cache: 'no-store', headers: authHeaders({ 'Prefer': 'return=minimal' }),
-        body: JSON.stringify({ in_pokedex: true })
-      });
-      if (!res.ok) throw new Error(await res.text());
-      winners.forEach(id => { const inst = getInstance(id); if (inst) inst.in_pokedex = true; });
+      if (pokedexBinderId != null) {
+        for (const id of winners) {
+          const inst = getInstance(id);
+          if (!inst) continue;
+          await writePokedexPlek(inst, true);
+          inst.in_pokedex = true;
+        }
+      } else {
+        const res = await fetch(instRestUrl(`?id=in.(${winners.join(',')})`), {
+          method: 'PATCH', cache: 'no-store', headers: authHeaders({ 'Prefer': 'return=minimal' }),
+          body: JSON.stringify({ in_pokedex: true })
+        });
+        if (!res.ok) throw new Error(await res.text());
+        winners.forEach(id => { const inst = getInstance(id); if (inst) inst.in_pokedex = true; });
+      }
     } catch (err) {
       console.error('Kon initiële "in pokedex"-toewijzing niet opslaan:', err);
     }
@@ -4721,21 +4780,28 @@
     if (!inst || inst.parent_type !== 'pokemon') return;
     const turningOn = !inst.in_pokedex;
     try {
-      if (turningOn) {
-        const res = await fetch(instRestUrl(`?parent_type=eq.pokemon&parent_id=eq.${inst.parent_id}&id=neq.${inst.id}`), {
+      if (pokedexBinderId != null) {
+        // Pokédex-binder als gewone binder: de plek van deze Pokémon krijgt dit exemplaar (de vorige verdwijnt daar vanzelf).
+        await writePokedexPlek(inst, turningOn);
+      } else {
+        if (turningOn) {
+          const res = await fetch(instRestUrl(`?parent_type=eq.pokemon&parent_id=eq.${inst.parent_id}&id=neq.${inst.id}`), {
+            method: 'PATCH', cache: 'no-store', headers: authHeaders({ 'Prefer': 'return=minimal' }),
+            body: JSON.stringify({ in_pokedex: false })
+          });
+          if (!res.ok) throw new Error(await res.text());
+        }
+        const res2 = await fetch(instRestUrl(`?id=eq.${inst.id}`), {
           method: 'PATCH', cache: 'no-store', headers: authHeaders({ 'Prefer': 'return=minimal' }),
-          body: JSON.stringify({ in_pokedex: false })
+          body: JSON.stringify({ in_pokedex: turningOn })
         });
-        if (!res.ok) throw new Error(await res.text());
+        if (!res2.ok) throw new Error(await res2.text());
+      }
+      if (turningOn) {
         allInstances.forEach(i => {
           if (i.parent_type === 'pokemon' && String(i.parent_id) === String(inst.parent_id) && String(i.id) !== String(inst.id)) i.in_pokedex = false;
         });
       }
-      const res2 = await fetch(instRestUrl(`?id=eq.${inst.id}`), {
-        method: 'PATCH', cache: 'no-store', headers: authHeaders({ 'Prefer': 'return=minimal' }),
-        body: JSON.stringify({ in_pokedex: turningOn })
-      });
-      if (!res2.ok) throw new Error(await res2.text());
       inst.in_pokedex = turningOn;
       // Als dit exemplaar zelf nog geen foto heeft, meteen (niet pas bij de
       // volgende keer laden) de foto van een zusje-exemplaar overnemen —
