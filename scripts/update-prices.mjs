@@ -2,6 +2,7 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
 const TCGDEX_BASE = 'https://api.tcgdex.net/v2/en';
 const REQUEST_DELAY_MS = 120;
+import { niveauWaarde, aanDeBeurt, GRENS_LAAG } from './lib/verversniveau.mjs';
 const PHASES = new Set((process.env.JOB_PHASES || 'sets,tcgdex,photos,pwprices,instances,history').split(',').map(x => x.trim()));
 const DRY_RUN = process.env.DRY_RUN === '1';
 const POKEWALLET_KEY = process.env.POKEWALLET_KEY || '';
@@ -337,7 +338,7 @@ async function fillPricesFromPokewallet() {
   return updated;
 }
 
-// ---------- Prijsverloop: alleen voor drukken die je bezit; hooguit wekelijks per druk (gratis opslag),
+// ---------- Prijsverloop: alleen voor drukken die je bezit; hooguit wekelijks per druk (maandelijks onder € 0,50; gratis opslag),
 // of eerder bij een flinke sprong (>= 25% en >= € 0,10) ----------
 async function recordPriceHistory() {
   const inst = await fetchAllPages('kaart_exemplaren',
@@ -360,7 +361,8 @@ async function recordPriceHistory() {
       const delta = Math.abs(prev.prijs - w);
       const dagen = (Date.now() - Date.parse(prev.datum)) / 86400000;
       const sprong = delta >= 0.10 && delta / prev.prijs >= 0.25;
-      if (delta < 0.005 || (dagen < 7 && !sprong)) continue;
+      const interval = niveauWaarde(prev.prijs, w) < GRENS_LAAG ? 30 : 7;   // goedkope kaarten maandelijks, de rest wekelijks
+      if (delta < 0.005 || (dagen < interval && !sprong)) continue;
     }
     rows.push({ set_naam: i.set_naam, kaartnummer: num, versie: i.versie, prijs: w, bron: (i.prijs_handmatig_datum || i.prijs_vast) ? 'handmatig' : 'cardmarket' });
   }
@@ -442,13 +444,13 @@ async function main() {
 
     const instances = await fetchAllPages(
       'kaart_exemplaren',
-      'select=id,set_naam,kaartnummer,versie,prijs_handmatig_datum&prijs_handmatig_datum=is.null&prijs_vast=eq.false&set_naam=not.is.null&kaartnummer=not.is.null' +
+      'select=id,set_naam,kaartnummer,versie,waarde,prijs_gecontroleerd_op,prijs_handmatig_datum&prijs_handmatig_datum=is.null&prijs_vast=eq.false&set_naam=not.is.null&kaartnummer=not.is.null' +
       // prijzen die scripts/prijs-controle.mjs net heeft beoordeeld (solide/twijfel) laat deze fase met rust, tot de controle 10 dagen oud is
       `&or=(prijs_betrouwbaarheid.is.null,prijs_betrouwbaarheid.eq.enkel,prijs_gecontroleerd_op.lt.${new Date(Date.now() - 10 * 86400000).toISOString()})&order=id.asc`
     );
     console.log(`${instances.length} eigen exemplaren om te controleren.`);
 
-    let exemplarenBijgewerkt = 0;
+    let exemplarenBijgewerkt = 0, overgeslagenGoedkoop = 0;
     for (const inst of instances) {
       const setKey = (inst.set_naam || '').trim().toLowerCase();
       const num = normalizeKaartnummer(inst.kaartnummer);
@@ -461,6 +463,8 @@ async function main() {
         if (pw) { price = pwPickPrice(pw, inst.versie); datum = pw.updated ? pwIso(pw.updated).slice(0, 10) : null; }
       }
       if (price == null) continue;
+      // goedkope kaarten (onder € 0,50, ook volgens de setcache van vandaag) maar eens per 30 dagen; een stijger telt meteen weer mee
+      if (niveauWaarde(inst.waarde, price) < GRENS_LAAG && !aanDeBeurt(inst.prijs_gecontroleerd_op, 30)) { overgeslagenGoedkoop++; continue; }
       try {
         const res = await fetch(restUrl('kaart_exemplaren', `?id=eq.${inst.id}`), {
           method: 'PATCH', headers: authHeaders({ Prefer: 'return=minimal' }),
@@ -471,7 +475,7 @@ async function main() {
         console.error(`Exemplaar ${inst.id} bijwerken mislukt:`, err.message);
       }
     }
-    console.log(`${exemplarenBijgewerkt} eigen exemplaren bijgewerkt.`);
+    console.log(`${exemplarenBijgewerkt} eigen exemplaren bijgewerkt, ${overgeslagenGoedkoop} goedkope (< € 0,50) overgeslagen tot de maandelijkse beurt.`);
   }
 
   await runPhase('history', recordPriceHistory);

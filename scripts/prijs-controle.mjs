@@ -7,8 +7,10 @@
 //   pw-tp    TCGplayer via PokéWallet (hele set in 1 verzoek), dollars x ECB-koers
 //
 // Gebruik: SUPABASE_URL=… SUPABASE_KEY=… POKEWALLET_KEY=… node scripts/prijs-controle.mjs
+// Verversritme per druk naar waarde (scripts/lib/verversniveau.mjs): vanaf € 4 dagelijks, € 0,50 tot € 4 wekelijks, daaronder maandelijks.
 //   DRY_RUN=1 alleen rekenen en tonen · ONLY_SET="Neo Revelation" · MAX_DRUKKEN=30 · PW_MAX_CALLS=380 · PW_PACE_MS=38000 (100 per uur toegestaan)
 import { oordeel, springerigheid, eur } from './lib/prijsoordeel.mjs';
+import { verversDagen, niveauWaarde, aanDeBeurt, TCGPLAYER_DAGEN } from './lib/verversniveau.mjs';
 
 const SUPABASE_URL = process.env.SUPABASE_URL, SUPABASE_KEY = process.env.SUPABASE_KEY, PW_KEY = process.env.POKEWALLET_KEY || '';
 const DRY_RUN = process.env.DRY_RUN === '1';
@@ -16,7 +18,6 @@ const PW_MAX_CALLS = parseInt(process.env.PW_MAX_CALLS || '380', 10);
 const PW_PACE_MS = parseInt(process.env.PW_PACE_MS || '38000', 10);
 const MAX_DRUKKEN = parseInt(process.env.MAX_DRUKKEN || '0', 10) || Infinity;
 const ONLY_SET = (process.env.ONLY_SET || '').toLowerCase();
-const VERS = 7 * 86400000;   // zo oud mag een eerder opgehaalde bronprijs zijn
 if (!SUPABASE_URL || !SUPABASE_KEY) { console.error('SUPABASE_URL en/of SUPABASE_KEY ontbreken.'); process.exit(1); }
 
 const SB = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' };
@@ -133,10 +134,21 @@ async function main() {
     if (!drukken.has(sleutel)) drukken.set(sleutel, { sleutel, setNaam: e.set_naam, setK: norm(e.set_naam), nummer: nr(e.kaartnummer), versie: e.versie, editie: e.editie || null, exemplaren: [], waarde: 0 });
     const d = drukken.get(sleutel); d.exemplaren.push(e); d.waarde = Math.max(d.waarde, (e.waarde || 0));
     const ruw = e.prijs_bewijs && e.prijs_bewijs.ruw;
-    if (ruw && Date.now() - Date.parse(ruw.datum) < VERS) d.ruw = ruw;   // eerder opgehaald en nog vers
+    if (ruw && (!d.ruw || Date.parse(ruw.cm?.datum || ruw.datum) > Date.parse(d.ruw.cm?.datum || d.ruw.datum))) d.ruw = ruw;   // eerder opgehaald: de nieuwste
   }
-  let lijst = [...drukken.values()].sort((a, b) => b.waarde - a.waarde).slice(0, MAX_DRUKKEN);
-  console.log(`${exemplaren.length} exemplaren in ${lijst.length} drukken om te controleren.`);
+  // verversritme per druk: de hoogste van de eigen waarde en de prijs in de setcache (een stijger gaat meteen naar een hoger niveau)
+  for (const d of drukken.values()) {
+    d.niveauWaarde = niveauWaarde(d.waarde, cachePrijs(d, perSet));
+    d.dagen = verversDagen(d.niveauWaarde);
+    d.cmDue = !(d.ruw && d.ruw.cm && !aanDeBeurt(d.ruw.cm.datum, d.dagen));
+    d.tpDue = !(d.ruw && d.ruw.tp && !aanDeBeurt(d.ruw.tpDatum || d.ruw.datum, TCGPLAYER_DAGEN));
+  }
+  let lijst = [...drukken.values()].sort((a, b) => b.niveauWaarde - a.niveauWaarde).slice(0, MAX_DRUKKEN);
+  const perNiveau = (dagen) => lijst.filter(d => d.dagen === dagen);
+  console.log(`${exemplaren.length} exemplaren in ${lijst.length} drukken om te controleren: ` +
+    `${perNiveau(1).length} dagelijks (${perNiveau(1).filter(d => d.cmDue).length} aan de beurt), ` +
+    `${perNiveau(7).length} wekelijks (${perNiveau(7).filter(d => d.cmDue).length}), ` +
+    `${perNiveau(30).length} maandelijks (${perNiveau(30).filter(d => d.cmDue).length}).`);
 
   // pass 1: TCGplayer per set (1 verzoek per set), duurste sets eerst
   const pwSets = PW_KEY ? await pw('/sets') : null;
@@ -145,8 +157,9 @@ async function main() {
   lijst.forEach(d => setWaarde.set(d.setK, (setWaarde.get(d.setK) || 0) + d.waarde));
   const tpPerSet = new Map();
   for (const [setK] of [...setWaarde].sort((a, b) => b[1] - a[1])) {
-    const heeftVers = lijst.filter(d => d.setK === setK).every(d => d.ruw && d.ruw.tp);
-    if (heeftVers || pwStop) continue;
+    // een hele set ophalen kost meerdere verzoeken: alleen als er een druk vanaf € 0,50 in zit waarvan de TCGplayer-prijs te oud is
+    const nodigTp = lijst.some(d => d.setK === setK && d.dagen <= 7 && d.tpDue);
+    if (!nodigTp || pwStop) continue;
     const naam = lijst.find(d => d.setK === setK).setNaam;
     const set = pwSetVoor(naam);
     if (!set) { console.log(`PokéWallet kent de set niet: ${naam}`); continue; }
@@ -171,11 +184,11 @@ async function main() {
     const set = tpPerSet.get(d.setK);
     if (!set) continue;
     const c = (d.editie === 'Shadowless' && set.schaduwKaarten.get(d.nummer)) || set.kaarten.get(d.nummer);
-    d.ruw = { ...(d.ruw || {}), tp: c ? tpPrijzen(c) : (d.ruw && d.ruw.tp) || {}, datum: new Date().toISOString() };
+    d.ruw = { ...(d.ruw || {}), tp: c ? tpPrijzen(c) : (d.ruw && d.ruw.tp) || {}, tpDatum: new Date().toISOString() };
   }
 
-  // pass 2: Cardmarket per kaart (PokéWallet), duurste drukken eerst, alleen als er nog geen verse waarde is
-  const nodig = lijst.filter(d => !(d.ruw && d.ruw.cm) && PW_KEY);
+  // pass 2: Cardmarket per kaart (PokéWallet), duurste drukken eerst, alleen als de waarde ouder is dan het ritme van die druk
+  const nodig = lijst.filter(d => d.cmDue && PW_KEY);
   for (const d of nodig) {
     if (pwStop) break;
     const naam = (drukkenNaam(d, perSet) || '').replace(/δ/g, '').trim();
@@ -186,11 +199,20 @@ async function main() {
     const hit = (res.results || []).find(r => norm(r.card_info.set_name) === pwNaam && nr(String(r.card_info.card_number).split('/')[0]) === d.nummer);
     const cmPrijzen = (hit && hit.cardmarket && hit.cardmarket.prices) || [];
     const per = (t) => { const x = cmPrijzen.find(p => p.variant_type === t); return x ? { trend: x.trend, avg: x.avg, avg7: x.avg7, avg30: x.avg30, low: x.low } : null; };
-    d.ruw = { ...(d.ruw || {}), cm: cmPrijzen.length ? { normal: per('normal'), holo: per('holo'), datum: new Date().toISOString() } : { geen: true, datum: new Date().toISOString() }, datum: new Date().toISOString() };
+    d.ruw = { ...(d.ruw || {}), cm: cmPrijzen.length ? { normal: per('normal'), holo: per('holo'), datum: new Date().toISOString() } : { geen: true, datum: new Date().toISOString() } };
     if ((pwCalls % 40) === 0) await schrijf(lijst, perSet, gedeeld, koers);   // tussentijds bewaren
   }
   await schrijf(lijst, perSet, gedeeld, koers);
   console.log(`Klaar: ${pwCalls} PokéWallet-verzoeken.`);
+}
+
+/** Prijs van deze druk in de setcache (TCGdex, elke dag vers); 0 als die er niet is. */
+function cachePrijs(d, perSet) {
+  const c = perSet.get(d.setK) && perSet.get(d.setK).get(d.nummer);
+  if (!c) return 0;
+  const v = (d.versie || '').toLowerCase();
+  const a = v.includes('reverse') ? (c.prijs_reverse ?? c.prijs_holo) : v === 'holo' ? (c.prijs_holo ?? c.prijs_normaal) : c.prijs_normaal;
+  return a > 0 ? Number(a) : 0;
 }
 
 function drukkenNaam(d, perSet) {
@@ -223,7 +245,7 @@ function bepaal(d, perSet, gedeeld, koers) {
     // C: TCGplayer
     const sub = tpSubtype(d.versie, editie, d.setNaam);
     const usd = ruw.tp && ruw.tp[sub];
-    if (usd > 0) bronnen.push({ id: 'pw-tp', label: `TCGplayer ${sub}`, eur: Math.round(usd * koers * 100) / 100, datum: ruw.datum?.slice(0, 10) });
+    if (usd > 0) bronnen.push({ id: 'pw-tp', label: `TCGplayer ${sub}`, eur: Math.round(usd * koers * 100) / 100, datum: (ruw.tpDatum || ruw.datum)?.slice(0, 10) });
     const cm = bronnen.find(b => b.id === 'pw-cm');
     return { bronnen, springer: cm && cm.det ? springerigheid(cm.det.trend, cm.det.avg30) : null };
   };

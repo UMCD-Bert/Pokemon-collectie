@@ -226,6 +226,16 @@ bij 11 van de 28 duurste kaarten was de app-prijs > 2× te hoog. Daarom krijgt e
 - **Lorcana** — in `update-lorcana.mjs`: maar één bron (TCGplayer via Lorcast, in dollars), dus nooit solide; `twijfel` bij een Common/Uncommon > $ 15, foil goedkoper dan normaal, of een sprong ≥ 3× (> $ 5).
 - Apps tonen het teken per prijs (✅ solide, ❓ enkel, ⚠️ twijfel, 📌 vast) en bij tikken het bewijs. Web volgt later.
 
+### Prijsniveaus: verversritme naar waarde (10-11-2026)
+
+Aanleiding: het gratis PokéWallet-plan (100 verzoeken/uur, 1000/dag) ging deels op aan ruim 3000 drukken van < € 0,50 (87% van de drukken, ≈ 12% van de waarde), terwijl 113 drukken vanaf € 4 goed zijn voor ≈ 62%.
+Zuivere logica + tests: `scripts/lib/verversniveau.mjs` (`node --test scripts/test`). Het niveau volgt de **hoogste van de eigen waarde en de prijs in de setcache** (TCGdex, elke dag vers), zodat een stijger meteen een hoger niveau krijgt.
+- **vanaf € 4 dagelijks · € 0,50 tot € 4 wekelijks · onder € 0,50 maandelijks.**
+- `prijs-controle.mjs`: Cardmarket per kaart (PokéWallet) alleen als `prijs_bewijs.ruw.cm.datum` ouder is dan het ritme van die druk (0,25 dag speling); duurste eerst. TCGplayer per set (kost meerdere verzoeken) nooit vaker dan wekelijks (`ruw.tpDatum`), en alleen voor sets met een druk vanaf € 0,50. Het oordeel zelf wordt elke dag opnieuw berekend (de TCGdex-bron is gratis en dagvers). Verwacht ≈ 270 verzoeken/dag in plaats van 400; de eerste dagen is er een achterstand (1586 goedkope drukken hadden nog geen Cardmarket-meting).
+- `update-prices.mjs`: de exemplaren-fase slaat exemplaren onder € 0,50 over zolang `prijs_gecontroleerd_op` jonger is dan 30 dagen (en de setcache ook onder € 0,50 zit). De TCGdex-fase (setcache, alle kaarten) blijft dagelijks: geen bekende limiet.
+- `prijs_historie`: onder € 0,50 maandelijks een meting in plaats van wekelijks (sprong >= 25% en >= € 0,10 blijft direct).
+- `ruw.datum` (oud, gold voor beide bronnen) is vervangen door `ruw.cm.datum` en `ruw.tpDatum`; oude rijen vallen terug op `ruw.datum`.
+
 ### Waarde door de tijd (25-10-2026)
 
 `scripts/waarde-snapshot.mjs` (laatste stap van de dagelijkse job) bewaart per dag per spel een rij in `waarde_historie` (datum, spel, kaarten_waarde, sealed_waarde, aantal, unieke,
